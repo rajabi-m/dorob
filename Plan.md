@@ -2,7 +2,7 @@
 
 Created: September 30, 2026
 
-Status: Project initialized with a working Persian RTL hello-world frontend. Phase 1 (design system) is incomplete and its current visual direction is not approved. Phases 2 and 3 have not started.
+Status: Project initialized with a working Persian RTL hello-world frontend. Phase 1 remains incomplete; the owner selected سنجش with the لاجورد palette and the supplied ring-and-cap logo as the direction for continued component development. Phases 2 and 3 have not started.
 
 ## Product vision
 
@@ -65,7 +65,7 @@ Create only the packages needed by the active phase. Shared browser-safe code mu
 
 ## Phase 1 — Design system
 
-Status: Pending redesign and approval. The existing `/design-system` page is an initial experiment, not an accepted design system or a completed phase deliverable. Acceptance of the hello-world frontend confirms project initialization only.
+Status: Visual direction selected; component development and validation remain incomplete. The exploration showcase is preserved before simplifying it to سنجش / لاجورد / the supplied logo. This selection does not complete phase 1.
 
 ### Objective
 
@@ -250,3 +250,34 @@ Revisit the visual direction with the product owner and redesign the phase 1 fou
 - Lint and type checking pass. Both frontend routes returned HTTP 200 locally. The production build remains blocked by a Turbopack local-port permission error, including after an escalated retry; full visual and accessibility validation remains pending.
 - Remaining in phase 1: redesign and approve the visual direction, expand tokens and component states, implement forms and overlays, and build the course-specific showcase.
 - The user authorized committing the project initialization and these documentation updates.
+
+## Phase 1 design exploration — September 30, 2026
+
+- Replaced the initial design-system experiment with an interactive review lab at `/design-system`.
+- Added three proposed visual directions: سنجش (compact comparison), رویش (spacious discovery), and جهش (bold graphic). Each has three palettes, for nine preview combinations.
+- Each direction changes typography weights, spacing, radii, borders, and course-card treatments. All use the existing locally bundled Persian-capable Vazirmatn font.
+- Added scoped semantic color and feedback tokens, responsive layouts, button and badge states, sample search, a free filter, course selection, and inline sample comparison. Fictional providers and prices are labeled.
+- This is phase 1 component exploration; it does not start phase 2. No final brand, palette, or design-system approval is implied. Full component coverage and shared-package extraction remain pending selection.
+- Lint, type checking, and the RTL detector pass. The local preview returns HTTP 200. Browser-based visual, mobile, and keyboard validation remains pending because no browser was available. Production build still fails on the existing Turbopack local-port permission restriction, including an escalated retry.
+- Next: review the three directions and nine palettes with the owner, select a direction, and complete its reusable component system and accessibility review. No commit has been authorized for these changes.
+
+### Logo prototype review
+
+- Added five original vector proposals (جوانه، کتاب، هم‌سنج، مسیر، دال) with a persistent session selection across all three directions and nine palettes.
+- Selected marks appear in the preview header and hero, alongside wordmark, small-size, and reversed-color specimens. SVG downloads use the selected primary color. Added standalone teal SVGs and a reusable renderer/export helper.
+- No logo is approved or applied to the welcome page. Phase 1 remains active.
+- Lint, type checking, and the RTL detector pass; the preview route returns HTTP 200. Production build still encounters the Turbopack local-port restriction after an escalated retry. Browser visual, keyboard, and mobile review remain pending. No commit was requested.
+
+### Expanded logo exploration
+
+- Added the user-supplied `logo.svg` as option six, preserving its geometry and viewBox while adapting its ring, cap, and tassel to active semantic palette colors. The source file remains untouched.
+- Added four ring-and-cap alternatives: مدار (open orbit), پیوند (paired loops), درگاه (rounded portal), and شکوفه (leaf-like ring). There are exactly ten selectable logos across all nine theme combinations.
+- Updated vector rendering and SVG downloads to support per-mark viewBoxes, circles, and multiple semantic colors. Your supplied mark is selected on initial load; all options follow the palette.
+- Rendered and visually reviewed all ten vector marks. Lint, type checking, RTL audit, and diff whitespace checks pass; the preview route returns HTTP 200. Full browser interaction/mobile review remains pending. The production build still fails on the existing Turbopack worker-port restriction after an escalated retry.
+
+### Authorized exploration checkpoint
+
+- The owner selected سنجش, the لاجورد palette, and نشان شما (the supplied ring-and-cap SVG) for continued phase 1 work.
+- The owner explicitly requested committing the current exploration before removing the alternative options. This checkpoint preserves all three systems, nine palettes, and ten logos.
+- After this checkpoint, simplify the design-system page to the selected direction and leave that work uncommitted so more components can be added. Phase 1 remains incomplete; no phase 2 work is authorized.
+- Local skill files under `.agents/` are outside this frontend checkpoint and are not staged.
