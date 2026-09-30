@@ -2,7 +2,7 @@
 
 Created: September 30, 2026
 
-Status: Planning complete; phase 1 implementation has not started.
+Status: Project initialized with a working Persian RTL hello-world frontend. Phase 1 (design system) is incomplete and its current visual direction is not approved. Phases 2 and 3 have not started.
 
 ## Product vision
 
@@ -19,6 +19,8 @@ Examples:
 AI supports course grouping and factual content comparison. Dorob is not a personal learning agent.
 
 ## Confirmed decisions
+
+The Persian project name is «دورُب», combining «دوره» and «ترب».
 
 | Area | Decision |
 | --- | --- |
@@ -40,7 +42,7 @@ These defaults make the implementation plan concrete. They are proposals, not ad
 
 - Use TypeScript across frontend, backend, and shared packages. It runs in the JavaScript ecosystem and supports shared typed contracts.
 - Use Next.js App Router for the web application and Tailwind CSS for styling, with semantic CSS custom properties as the source of design tokens.
-- Use a pnpm workspace so the web app, Node.js API, ingestion worker, and shared packages live in one repository.
+- Use a Bun workspace so the web app, future Node.js API, ingestion worker, and shared packages live in one repository. Bun replaces the originally proposed pnpm default for the initial implementation because it is available locally and the machine's Homebrew Node binary cannot start. The backend remains in the JavaScript/TypeScript ecosystem; its runtime decision is deferred to phase 3.
 - Build the design-system showcase at `/design-system` in the web app. A separate Storybook setup is not required initially.
 - Keep reusable UI in `packages/ui` and public domain types and validation schemas in `packages/core`.
 - Select the Node.js API framework, database, background-job tools, and AI provider during phase 3 planning. PostgreSQL is a candidate, not a committed dependency.
@@ -62,6 +64,8 @@ Plan.md
 Create only the packages needed by the active phase. Shared browser-safe code must not expose provider credentials, scraping logic, or server-only dependencies.
 
 ## Phase 1 — Design system
+
+Status: Pending redesign and approval. The existing `/design-system` page is an initial experiment, not an accepted design system or a completed phase deliverable. Acceptance of the hello-world frontend confirms project initialization only.
 
 ### Objective
 
@@ -232,4 +236,17 @@ Replace mock data with traceable provider data and connect the existing frontend
 
 ## Immediate next step
 
-Begin phase 1 with the Next.js workspace, initial brand tokens, and the `/design-system` page. Present the first visual direction for review before expanding the component library.
+Revisit the visual direction with the product owner and redesign the phase 1 foundations and showcase. Do not start phase 2 until the design system meets its completion criteria and is approved.
+
+## Implementation progress — September 30, 2026
+
+- Initialized Git and committed the project plan, `.gitignore`, and `AGENTS.md` as the initial repository setup.
+- Added a commit policy requiring explicit user confirmation and documentation updates before each authorized commit.
+- Scaffolded `apps/web` with Next.js App Router, React, TypeScript, Tailwind CSS, and a Bun workspace.
+- Added a Persian RTL welcome page with a teal-and-ivory palette, an original vector graduation-cap mark, and responsive CSS artwork.
+- Added an experimental `/design-system` page covering color tokens, locally bundled Vazirmatn typography, buttons, links, and badges. Its design direction was not approved.
+- Added setup and workflow documentation in `README.md`.
+- Accepted the working welcome page as the project's initial hello-world frontend, with the Persian name «دورُب» (from «دوره» and «ترب»).
+- Lint and type checking pass. Both frontend routes returned HTTP 200 locally. The production build remains blocked by a Turbopack local-port permission error, including after an escalated retry; full visual and accessibility validation remains pending.
+- Remaining in phase 1: redesign and approve the visual direction, expand tokens and component states, implement forms and overlays, and build the course-specific showcase.
+- The user authorized committing the project initialization and these documentation updates.
