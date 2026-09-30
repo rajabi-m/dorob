@@ -65,7 +65,7 @@ Create only the packages needed by the active phase. Shared browser-safe code mu
 
 ## Phase 1 — Design system
 
-Status: Visual direction selected; component development and validation remain incomplete. The exploration showcase is preserved before simplifying it to سنجش / لاجورد / the supplied logo. This selection does not complete phase 1.
+Status: Visual direction selected; component development and validation remain incomplete. The exploration showcase is preserved in commit `f56b49f`; the working page now shows only سنجش / لاجورد / the supplied logo. This selection does not complete phase 1.
 
 ### Objective
 
@@ -236,7 +236,7 @@ Replace mock data with traceable provider data and connect the existing frontend
 
 ## Immediate next step
 
-Revisit the visual direction with the product owner and redesign the phase 1 foundations and showcase. Do not start phase 2 until the design system meets its completion criteria and is approved.
+Expand components using the selected سنجش / لاجورد / supplied-logo direction. Do not start phase 2 until the design system meets its completion criteria and is approved.
 
 ## Implementation progress — September 30, 2026
 
@@ -281,3 +281,33 @@ Revisit the visual direction with the product owner and redesign the phase 1 fou
 - The owner explicitly requested committing the current exploration before removing the alternative options. This checkpoint preserves all three systems, nine palettes, and ten logos.
 - After this checkpoint, simplify the design-system page to the selected direction and leave that work uncommitted so more components can be added. Phase 1 remains incomplete; no phase 2 work is authorized.
 - Local skill files under `.agents/` are outside this frontend checkpoint and are not staged.
+
+### Selected showcase — component checkpoint
+
+- Created exploration checkpoint `f56b49f` before simplifying the page, as explicitly requested.
+- Removed all design, palette, and logo selectors and alternative theme styles from `/design-system`. It now always uses سنجش, لاجورد, and the supplied mark. The outer page header also uses the selected mark.
+- Retained component demos, semantic swatches, typography, sample comparison, logo-size/reversed specimens, and the palette-colored SVG download. Exploration logo assets remain archived in the repository.
+- Updated current documentation. These changes are included in the owner-authorized component checkpoint. Phase 1 remains incomplete; the welcome page is unchanged.
+
+Validation for the selected showcase: lint, type checking, and RTL audit pass; the route responds with HTTP 200. Turbopack remains blocked by worker-port permissions. A Webpack fallback (`bun run --cwd apps/web build --webpack`) compiles and type-checks successfully, then fails during page-data collection with a Bun CommonJS function-wrapper error. Full browser, keyboard, and mobile review remains pending.
+
+- Wordmark exploration: colored only the damma (ُ) in the selected showcase’s brand lockups with the لاجورد gold accent. Added a reusable inline wordmark with its complete accessible Persian name; ordinary text remains unchanged. This preview is included in the component checkpoint.
+
+### Discovery component expansion — component checkpoint
+
+- Added six interactive category cards and full-content-width rectangular course rows with provider, level, duration, format, sample labels, price, details, and comparison actions. Existing compact cards remain as a second variant.
+- Added combined sample search/category/level/price filters, removable chips, price/duration sorting, pagination, an independent comparison tray and semantic scrollable table, and a native modal details dialog with sample syllabus.
+- Added reusable price presentation (paid, discounted, free, unavailable), source/freshness notices, AI-attribution placeholder, native accordions, and selectable skeleton/empty/error states. No source facts, live provider connections, or AI output are implied.
+- Preserved سنجش / لاجورد / selected ring-and-cap mark and gold wordmark accent. Responsive rules reflow course actions and allow comparison-table scrolling.
+- Lint, type checking, and RTL detector pass. Route returns HTTP 200; production build remains affected by the existing worker-port restriction. Firefox Computer Use permission was unavailable, so full visual/mobile and keyboard/dialog validation remain pending.
+- Phase 1 continues; no commit, phase 2 pages, or backend integration was added.
+
+### Card imagery preview
+
+Phase 1 now includes three illustrated categories (programming, design, data) and three sample course covers (Python, UX, automation). Reusable decorative SVG artwork lives in `apps/web/src/components/course-artwork.tsx`, uses the selected brand colors with muted secondary tones, and contains no provider claims or embedded text. Other course rows demonstrate a missing-image fallback. Desktop thumbnails use a 16:10 aspect ratio and reflow alongside course text on mobile. These examples are included in the component checkpoint.
+
+Lint, type checking, and RTL audit pass. Production build still fails on the existing Turbopack worker-port permission restriction after an escalated retry. Firefox accessibility output confirmed the updated page content, but subsequent Computer Use actions were denied; screenshot, mobile, and keyboard validation remain pending.
+
+### Component checkpoint before interaction refinements
+
+The owner authorized a checkpoint of the selected system, wordmark accent, expanded discovery components, card artwork, discounted-price treatment, and Bash launcher before applying the Firefox review improvements. Desktop and 393px Firefox review exercised search, filters, sorting, pagination, comparison, dialogs, accordions, and state specimens. Observed issues include inner-input focus rings, top-right dialog placement, separate search/selection demos, focus loss after chip removal, and narrow mobile description columns. These refinements are pending at this checkpoint; phase 1 remains incomplete.

@@ -7,7 +7,7 @@ A Persian RTL course discovery and comparison product. Project initialization is
 ## Current frontend
 
 - `/`: a responsive Persian welcome page with an original graduation-cap brand concept, a teal-and-ivory palette, and an introduction to the product.
-- `/design-system`: an interactive design review lab with three proposed systems (سنجش, رویش, جهش), each with three switchable palettes. Preview search, free-course filtering, comparison selection, buttons, badges, typography, and semantic color tokens. All courses, providers, and prices are explicitly fictional samples. The owner selected سنجش / لاجورد / نشان شما; this checkpoint retains all exploration options before the page is simplified.
+- `/design-system`: the selected سنجش design with the لاجورد palette and supplied ring-and-cap logo. Preview sample search, free-course filtering, comparison, buttons, badges, typography, color tokens, and logo sizes. Alternative selectors have been removed. All course, provider, and price data is fictional.
 - The welcome page is introductory. Design-lab search and comparison only demonstrate component states with fictional samples; product pages, scraping, and live AI are not implemented yet.
 
 ## Local development
@@ -22,6 +22,8 @@ bun run dev
 ```
 
 Open `http://localhost:3000`. Stop the server with Ctrl+C.
+
+Alternatively, run `./run.sh` (or `bash run.sh`). The script checks for Bun, installs dependencies with the frozen lockfile if Next.js is missing, and starts the development server. Open `/design-system` at the Local URL shown in the terminal. You can choose a port with `./run.sh --port 3001`. The script also works when invoked by its full path from another directory.
 
 Validation and production commands:
 
@@ -54,14 +56,30 @@ Future API, worker, UI, and core packages will be introduced when their phases r
 
 Read `AGENTS.md` and `Plan.md` before making changes. Never commit without user confirmation. After confirmation, update all affected documentation before committing. The initial planning commit does not authorize commits of subsequent frontend work.
 
-## Design review
+## Design system
 
-Open `http://localhost:3000/design-system` after starting development. Choose a direction, then choose one of its three palettes. Each direction uses different heading weights, spacing, geometry, and card treatments while retaining locally bundled Vazirmatn. Try search, the free filter, and selecting at least two courses for a sample comparison. Palette selection is kept per direction during the current page session. Reloading resets the preview.
+Open `http://localhost:3000/design-system` after starting development. The page uses the selected سنجش design, لاجورد palette (`#304CB2` primary), and the supplied ring-and-cap mark. It has no design, palette, or logo selector. Try sample search, the free filter, and selecting at least two courses for comparison. Download the selected logo as SVG with the approved palette colors; small-size and reversed specimens remain available.
 
-The proposals remain in phase 1. They are foundation previews, not complete production design systems; overlays, further form components, comprehensive accessibility review, and extraction into a shared UI package follow selection of a direction. Lint, type checking, and the RTL detector pass for the preview. The local route returns HTTP 200. Visual browser and mobile validation could not run because no browser surface was available. The production build still encounters the Turbopack port-permission error after an escalated retry.
+The exploration checkpoint is commit `f56b49f`, preserving all three directions, nine palettes, and ten logos. The selected-system component checkpoint includes the page simplification and its documentation. Exploration logo assets remain in `apps/web/public/logos` and their reusable renderer in `src/components/logo-prototypes.tsx`; the page only uses the supplied mark. The original root `logo.svg` is no longer present.
 
-The design lab also includes ten SVG logo options. The first five are: جوانه (cap and sprout), کتاب (cap and book), هم‌سنج (paired course cards), مسیر (learning path), and دال (Persian monogram). A selection stays active across direction and palette changes during the session. It updates the preview header, hero mark, and dedicated specimens for 24/32/48-pixel widths and reversed color. Download the selected mark as SVG in the active primary color; standalone teal-based versions are in `apps/web/public/logos`. These downloads contain the mark, without a font-dependent wordmark. The reusable renderer and export helper live in `apps/web/src/components/logo-prototypes.tsx`. The supplied mark (نشان شما) has been selected for continued development.
+Phase 1 continues: overlays, additional forms and components, shared UI extraction, and comprehensive accessibility review remain pending. Phase 2 has not started. The welcome page retains its initial teal treatment.
 
-Options six through ten add your uploaded `logo.svg` (نشان شما) and four related ring-and-cap explorations: مدار، پیوند، درگاه، شکوفه. Your option is initially selected. All ten follow the active palette; the uploaded mark maps its ring to primary, cap to text/ink, tassel to accent, and separation outline to white. SVG downloads retain those palette colors. The supplied SVG geometry is preserved in the reusable renderer; `public/logos/reference.svg` is the teal-themed copy. The original root `logo.svg` is no longer present in the working tree. Reversed specimens use a single white mark with background-colored separation.
+Validation for the selected showcase: lint, type checking, and RTL audit pass; the route responds with HTTP 200. Turbopack remains blocked by worker-port permissions. A Webpack fallback (`bun run --cwd apps/web build --webpack`) compiles and type-checks successfully, then fails during page-data collection with a Bun CommonJS function-wrapper error. Full browser, keyboard, and mobile review remains pending.
 
-The owner authorized a commit preserving the complete exploration state, followed by an uncommitted simplification to the selected design. Phase 1 continues with more components; the exploration checkpoint does not mark the design system complete.
+## Course discovery component showcase
+
+The selected design-system page now includes six category cards and full-width rectangular course rows, alongside the earlier compact-card variant. Category, level, free/paid, and search filters work together; sorting supports price and duration. Removable chips, three-item pagination, a comparison tray/table, and a native course-details dialog demonstrate interaction states with fictional samples.
+
+Additional examples cover paid, discounted, free, and unknown prices; source/freshness notices; a clearly labeled placeholder for AI-summary attribution; native accordions; and selectable loading, empty, and error states. Retry is a visual example with no live request. Components live in `src/components/discovery-showcase.tsx`; styling uses the selected shared semantic colors in `preview.css`. Course rows span the content area on desktop and reflow on mobile; comparison tables allow horizontal scrolling. The two card demos have independent search and selection state.
+
+This expansion is included in the component checkpoint and remains in phase 1. Lint, types, and the RTL audit pass, and the local route returns HTTP 200. Computer Use permission was unavailable for Firefox, so visual mobile, focus-restoration, and keyboard interaction checks remain pending. The production build continues to encounter the existing Turbopack worker-port permission restriction.
+
+### Card imagery preview
+
+Phase 1 now includes three illustrated categories (programming, design, data) and three sample course covers (Python, UX, automation). Reusable decorative SVG artwork lives in `apps/web/src/components/course-artwork.tsx`, uses the selected brand colors with muted secondary tones, and contains no provider claims or embedded text. Other course rows demonstrate a missing-image fallback. Desktop thumbnails use a 16:10 aspect ratio and reflow alongside course text on mobile. These examples are included in the component checkpoint.
+
+Lint, type checking, and RTL audit pass. Production build still fails on the existing Turbopack worker-port permission restriction after an escalated retry. Firefox accessibility output confirmed the updated page content, but subsequent Computer Use actions were denied; screenshot, mobile, and keyboard validation remain pending.
+
+Discounted prices use a normal-size, muted struck-through original price, with a slightly smaller bold current price underneath and a compact discount badge. This shared treatment appears in course rows, price specimens, comparison tables, and the details dialog. The price treatment is included in the component checkpoint; lint, types, and RTL checks pass. Visual review remains pending, and the build still encounters the documented worker-port restriction.
+
+Firefox review now confirms desktop rendering and a 393px responsive preview. Search/filter combinations, sorting, pagination, comparisons, accordions, and demo state controls were exercised; dialog Escape and trigger focus restoration worked. Known issues before refinement: search focus rings target the inner input, dialogs sit at the top-right, card demos have separate search/selection state, removed chips lose page focus, and mobile descriptions wrap beside thumbnails. Full screen-reader and all-breakpoint review remain pending. The owner authorized committing this state before the review improvements, which will stay uncommitted.
