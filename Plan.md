@@ -311,3 +311,14 @@ Lint, type checking, and RTL audit pass. Production build still fails on the exi
 ### Component checkpoint before interaction refinements
 
 The owner authorized a checkpoint of the selected system, wordmark accent, expanded discovery components, card artwork, discounted-price treatment, and Bash launcher before applying the Firefox review improvements. Desktop and 393px Firefox review exercised search, filters, sorting, pagination, comparison, dialogs, accordions, and state specimens. Observed issues include inner-input focus rings, top-right dialog placement, separate search/selection demos, focus loss after chip removal, and narrow mobile description columns. These refinements are pending at this checkpoint; phase 1 remains incomplete.
+
+### Firefox review refinements — approved commit
+
+- Created authorized checkpoint `0d9f509` before changes. The owner subsequently authorized committing the refinements and current project state.
+- Added whole-field search focus, centered scrollable dialogs, shared hero/list search, named removable selections, filtered compact select-all, chip focus restoration, and comparison heading focus/scroll.
+- Added artwork for all six categories, full-width mobile descriptions, and tighter discounted-price spacing. Compact cards remain a clearly labeled independent demo.
+- Verified interactions in Firefox desktop and 393px responsive mode, including dialog Escape, selection removal, comparison heading focus, chip focus restoration, and mobile layout. Lint, type checking, and RTL audit pass. Full screen-reader and all-breakpoint checks remain pending. Phase 1 remains active.
+
+Final refinement validation: lint, types, and the RTL audit of the design-system/components directories pass. The wider source audit reports 20 existing warnings in the unchanged welcome-page CSS. Production build still fails when Turbopack binds its worker port, including an escalated retry.
+
+Project-local frontend-design and rtl-design skills are included with their supplied license/attribution and audit references so future contributors can use the same guidance.

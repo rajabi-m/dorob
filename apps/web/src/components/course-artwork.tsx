@@ -1,4 +1,4 @@
-type ArtworkSubject = "code" | "design" | "data" | "workflow";
+type ArtworkSubject = "code" | "design" | "data" | "workflow" | "business" | "language";
 
 /** Decorative sample artwork; titles and course facts remain in accessible text. */
 export function CourseArtwork({ subject, variant = "category" }: { subject: ArtworkSubject; variant?: "category" | "course" }) {
@@ -32,6 +32,19 @@ export function CourseArtwork({ subject, variant = "category" }: { subject: Artw
         <path d="M94 90L143 64L182 48L231 55" stroke="var(--art-secondary)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx="143" cy="64" r="5" fill="var(--art-secondary)" /><circle cx="231" cy="55" r="5" fill="var(--art-secondary)" />
         <circle cx="259" cy="157" r="23" fill="var(--ds-primary)" /><path d="M250 157H268M259 148V166" stroke="white" strokeWidth="3" strokeLinecap="round" />
+      </>}
+      {subject === "business" && <>
+        <rect x="55" y="53" width="209" height="122" rx="10" fill="white" stroke="var(--art-line)" strokeWidth="2" />
+        <rect x="74" y="112" width="28" height="43" rx="4" fill="var(--art-secondary)" /><rect x="117" y="90" width="28" height="65" rx="4" fill="var(--ds-primary)" /><rect x="160" y="73" width="28" height="82" rx="4" fill="var(--ds-accent)" />
+        <path d="M78 86L125 63L167 45L219 33M203 31L220 32L216 49" stroke="var(--ds-ink)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="251" cy="137" r="26" fill="var(--art-secondary)" /><path d="M242 138L249 145L262 130" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      </>}
+      {subject === "language" && <>
+        <rect x="41" y="42" width="155" height="85" rx="15" fill="var(--ds-primary)" /><path d="M71 122V145L99 122" fill="var(--ds-primary)" />
+        <path d="M64 66H157M64 84H175M64 102H132" stroke="white" strokeWidth="5" strokeLinecap="round" />
+        <rect x="144" y="92" width="132" height="70" rx="14" fill="white" stroke="var(--art-line)" strokeWidth="2" /><path d="M248 158V180L227 158" fill="white" stroke="var(--art-line)" strokeWidth="2" strokeLinejoin="round" />
+        <circle cx="177" cy="127" r="5" fill="var(--art-secondary)" /><circle cx="210" cy="127" r="5" fill="var(--art-secondary)" /><circle cx="243" cy="127" r="5" fill="var(--art-secondary)" />
+        <circle cx="265" cy="43" r="16" fill="var(--ds-accent)" />
       </>}
       {subject === "workflow" && <>
         <path d="M79 101H150V57H238M150 101V150H238" stroke="var(--art-secondary)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />

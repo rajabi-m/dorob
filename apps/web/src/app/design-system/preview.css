@@ -129,3 +129,32 @@
 .discovery-price-discounted > strong { display: block; font-size: 16px; font-weight: 750; color: var(--ds-ink); }
 .discovery-price-discounted .ds-badge { font-size: 10px; padding: 3px 7px; }
 .discovery-comparison .discovery-price-discounted del { font-size: 16px; }
+
+/* Interaction refinements from the Firefox review. */
+.ds-search:focus-within,.discovery-search:focus-within { outline: 2px solid var(--ds-primary); outline-offset: 2px; }
+.ds-search input:focus-visible,.discovery-search input:focus-visible { outline: none; }
+.discovery-dialog { margin: auto; overflow-y: auto; overscroll-behavior: contain; }
+.discovery-course { row-gap: 0; }
+.discovery-course-visual { grid-column: 1; grid-row: 1 / 4; }
+.discovery-course-content { grid-column: 2; grid-row: 1; align-self: end; }
+.discovery-course-description { grid-column: 2; grid-row: 2; font-size: 12px; line-height: 1.9; color: var(--ds-muted); max-inline-size: 65ch; }
+.discovery-course > .discovery-course-metadata { grid-column: 2; grid-row: 3; align-self: start; margin-block-start: 12px; }
+.discovery-course-actions { grid-column: 3; grid-row: 1 / 4; }
+.discovery-selected-courses { display: flex; flex-wrap: wrap; gap: 8px; flex-basis: 100%; padding: 0; margin: 0; list-style: none; }
+.discovery-selected-courses li { display: flex; align-items: center; gap: 8px; min-inline-size: 0; max-inline-size: 100%; padding-inline: 12px 4px; padding-block: 3px; border: 1px solid var(--ds-border); border-radius: 6px; background: white; font-size: 11px; }
+.discovery-selected-courses li > span { overflow-wrap: anywhere; }
+.discovery-selected-courses button { display: grid; place-items: center; flex-shrink: 0; min-inline-size: 36px; min-block-size: 36px; border: 0; background: transparent; color: var(--ds-primary); }
+.ds-comparison-bar { flex-wrap: wrap; gap: 12px; }
+.discovery-comparison h4,.ds-comparison h3 { scroll-margin-block-start: 24px; }
+.discovery-price-discounted > div { margin-block-end: 3px; }
+.discovery-artwork-business { --art-surface: #f6f0e6; --art-wash: #ece0c9; --art-line: #d3c29e; --art-secondary: #a79564; }
+.discovery-artwork-language { --art-surface: #efecf6; --art-wash: #e0d9ef; --art-line: #c2b4d7; --art-secondary: #9b83b5; }
+@media(max-width:700px) {
+  .discovery-course { row-gap: 12px; }
+  .discovery-course-visual { grid-row: 1; }
+  .discovery-course-content { align-self: start; }
+  .discovery-course-description { grid-column: 1 / -1; grid-row: 2; max-inline-size: none; font-size: 12px; }
+  .discovery-course > .discovery-course-metadata { grid-column: 1 / -1; grid-row: 3; margin-block-start: 0; }
+  .discovery-course-actions { grid-column: 1 / -1; grid-row: 4; }
+  .discovery-dialog { max-block-size: calc(100dvh - 32px); }
+}
