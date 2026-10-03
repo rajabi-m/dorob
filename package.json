@@ -7,7 +7,13 @@
     "dev": "bun run --cwd apps/web dev",
     "build": "bun run --cwd apps/web build",
     "start": "bun run --cwd apps/web start",
-    "lint": "bun run --cwd apps/web lint",
-    "typecheck": "bun run --cwd apps/web typecheck"
+    "lint": "bun run --cwd apps/web lint && bun run --cwd apps/utils lint",
+    "typecheck": "bun run --cwd apps/web typecheck && bun run typecheck:utils",
+    "typecheck:utils": "bun run --cwd apps/utils typecheck",
+    "test:utils": "bun test apps/utils/tests",
+    "scrape:maktabkhooneh": "bun run apps/utils/scrape-maktabkhooneh.ts",
+    "scrape:toplearn": "bun run apps/utils/scrape-toplearn.ts",
+    "scrape:sabzlearn": "bun run apps/utils/scrape-sabzlearn.ts",
+    "scrape:roocket": "bun run apps/utils/scrape-roocket.ts"
   }
 }

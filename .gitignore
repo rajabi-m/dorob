@@ -40,3 +40,4 @@ Thumbs.db
 .netlify/
 tmp/
 temp/
+apps/utils/output/

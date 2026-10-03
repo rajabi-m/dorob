@@ -322,3 +322,28 @@ The owner authorized a checkpoint of the selected system, wordmark accent, expan
 Final refinement validation: lint, types, and the RTL audit of the design-system/components directories pass. The wider source audit reports 20 existing warnings in the unchanged welcome-page CSS. Production build still fails when Turbopack binds its worker port, including an escalated retry.
 
 Project-local frontend-design and rtl-design skills are included with their supplied license/attribution and audit references so future contributors can use the same guidance.
+
+## Additional MVP adapter groundwork — October 2, 2026
+
+The owner authorized parallel agents to add at least three reusable standalone adapters based on the Maktabkhooneh utility, explicitly requiring the golden contract and excluding Quera. Three agents implemented TopLearn, Sabzlearn, and Roocket in `apps/utils`; the [shared plan](docs/provider-adapter-plan.md) records instructions, ownership and selection. Faradars was considered for subject breadth but deferred after robots and public detail-page assessment; Roocket supplies useful programming comparison coverage instead. This extends utility groundwork without starting live frontend integration or the broader phase-3 backend.
+
+All new adapters return the complete version-1 record with nullable unknowns, explicit price evidence, original currency, ordered syllabi, field provenance, parser version, successful-check timestamp, deterministic fact hash, selected raw evidence, and `derived: null`. Shared transport provides robots checks, same-host HTTPS redirects, sequential delays, retries/Retry-After, bounded responses, and cancellation. The export CLI validates records/checkpoints, saves atomically, reports partial failures, and tracks requested URL aliases separately for resume. Root scripts and package exports support CLI use or a future server-side TypeScript backend. Existing Maktabkhooneh records remain their earlier format and require later contract alignment; frontend samples were untouched.
+
+Live samples: TopLearn discovered 1,242 advertised course URLs and parsed three detail pages; Sabzlearn discovered 89 and fetched two details, with a third retained live page also parsed. Roocket's observed catalog contains 106 URLs; two public course pages were fetched with normal TLS via public DNS resolution and parsed. Local Roocket DNS fails, so ordinary network end-to-end collection is not claimed; discovery uses retained-response tests. No complete detail catalog was collected. TopLearn's IRR/toman conflict and Roocket's unverified currency glyph deliberately leave paid normalized amounts null until resolved; original source observations are retained. Broader template sampling and ongoing operational suitability remain follow-up work.
+
+Validation: all 39 utility tests, workspace lint/type checking, CLI help and whitespace checks pass. Production compilation/type checking succeed; page-data collection still encounters the existing Bun CommonJS runtime bug. No dependencies, system runtime changes, commits, branches, or pushes were introduced by this work.
+
+### Maktabkhooneh golden-contract alignment — October 2, 2026
+
+The owner requested bringing the existing adapter into the same golden structure. Parser version 2.0.0 now uses the shared ProviderCourse factory/validator/hash; the CLI uses the shared export implementation. New IDs use the stable provider course ID, old slug identifiers and effort labels remain raw, and offers/source/image/lesson fields follow the contract. All nullable fields and derived:null are included. Ambiguous zero amounts do not imply free access; missing lists remain null; rating counts do not use review totals. This supersedes the earlier note that Maktabkhooneh still needs output alignment.
+
+Old-format checkpoints are deliberately rejected without overwriting them; re-export without --resume, preferably to a new path. Frontend fixtures and existing generated exports are untouched. The existing Nuxt decoder and course collection behavior are retained. Tests cover complete shape, source facts, string IDs, unknown/free-price semantics, signed cover hashes, failure handling and safe legacy-checkpoint rejection. No commit was requested.
+
+Final alignment validation: all 40 utility tests (including 11 Maktabkhooneh tests), workspace lint/type checking, CLI help and whitespace checks pass. No fresh live collection was performed for this shape-only update; validation uses the retained public-page fixture and injected transport cases. Production compilation/types pass; page-data collection still fails with the existing Bun CommonJS runtime error.
+
+
+## Utility checkpoint — October 3, 2026
+
+The owner authorized committing `apps/utils`, its four provider adapters, shared golden contract and export CLI, retained fixtures and tests, workspace scripts/lockfile, ignored output directory, and utility documentation. The frontend changes and experimental Next.js build configuration remain outside this commit. This is standalone ingestion groundwork authorized as an exception to the phase order; API, database, scheduling, frontend integration, and live AI remain deferred.
+
+Validation: workspace lint and type checking, all 40 offline utility tests, and all four CLI help commands pass. Generated exports remain ignored. The current working-tree frontend compiles and type-checks, but production page-data collection fails with the documented Bun CommonJS runtime error. The utility package has no production build step; TypeScript checks its source exports. No new live collection or full-catalog run is part of this checkpoint.

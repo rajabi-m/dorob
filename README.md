@@ -8,7 +8,29 @@ A Persian RTL course discovery and comparison product. Project initialization is
 
 - `/`: a responsive Persian welcome page with an original graduation-cap brand concept, a teal-and-ivory palette, and an introduction to the product.
 - `/design-system`: the selected سنجش design with the لاجورد palette and supplied ring-and-cap logo. Preview sample search, free-course filtering, comparison, buttons, badges, typography, color tokens, and logo sizes. Alternative selectors have been removed. All course, provider, and price data is fictional.
-- The welcome page is introductory. Design-lab search and comparison only demonstrate component states with fictional samples; product pages, scraping, and live AI are not implemented yet.
+- The welcome page is introductory. Design-lab search and comparison only demonstrate component states with fictional samples; product pages, scheduled ingestion, and live AI are not implemented yet. Standalone scraper utilities are described below.
+
+## Standalone provider utilities
+
+### Maktabkhooneh scraper utility
+
+The owner-requested `apps/utils` workspace package provides reusable public-page collection and a JSON-export CLI. Run `bun run scrape:maktabkhooneh --limit 2` from the root; output defaults to the Git-ignored `apps/utils/output/maktabkhooneh.json`. See [utility usage and limitations](apps/utils/README.md) for full-catalog collection, resume, backend methods, and tests. This utility does not replace the mock frontend or add scheduled ingestion.
+
+### Additional MVP provider adapters
+
+Standalone adapters for **TopLearn, Sabzlearn, and Roocket** now live in `apps/utils`, with package exports for a future server-side backend. All three return the complete [golden course contract](docs/course-data-format.md), preserve source evidence and unknown values, and share safe request handling and atomic resumable JSON exports. Run `bun run scrape:toplearn --limit 2`, `bun run scrape:sabzlearn --limit 2`, or `bun run scrape:roocket --limit 2`; each supports `--help`, explicit course URLs, and `--all --resume`. Outputs remain ignored under `apps/utils/output`. Maktabkhooneh parser version 2.0.0 now returns the same golden structure. Its old exports/checkpoints must be freshly exported without --resume; they are not automatically migrated.
+
+See the [provider selection and implementation plan](docs/provider-adapter-plan.md) and [utility documentation](apps/utils/README.md). Quera was excluded at the owner's request; Faradars was deferred after public-page/access assessment. TopLearn and Sabzlearn passed actual adapter discovery/detail smoke checks. Roocket's public pages were retrieved and parsed successfully using publicly resolved DNS with TLS verification, but normal local DNS still fails; its catalog discovery is covered by retained public-response tests. TopLearn's conflicting IRR/toman evidence and Roocket's unverified graphic currency keep paid normalized prices null. No full catalog details were scraped, no system changes were made, and no frontend/backend integration or scheduled refresh was enabled. The utility workspace adds development tooling recorded in `bun.lock`.
+
+Final validation (October 3, 2026): workspace lint and type checking, all **40 utility tests**, CLI help commands, and whitespace checks pass. Production compilation and its TypeScript step pass, but page-data collection still fails on the separately documented Bun CommonJS runtime bug. The owner authorized a utility-only commit on October 3, 2026; frontend changes and the experimental build configuration are excluded.
+
+Utility validation commands:
+
+```sh
+bun run --cwd apps/utils lint
+bun run typecheck:utils
+bun run test:utils
+```
 
 ## Local development
 
@@ -42,6 +64,7 @@ Run `build` before `start`. No environment variables, database, API keys, or rem
 apps/web/
   src/app/                 App Router pages, metadata, global tokens and styles
   src/components/          Shared frontend components
+apps/utils/                Server-side provider adapters and JSON-export CLIs
 AGENTS.md                  Contributor instructions and commit policy
 Plan.md                    Product decisions, phases, and progress
 ```

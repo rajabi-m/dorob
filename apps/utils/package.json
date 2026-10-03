@@ -1,0 +1,24 @@
+{
+  "name": "@dorob/utils",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./maktabkhooneh": "./scrapers/maktabkhooneh.ts",
+    "./toplearn": "./scrapers/toplearn.ts",
+    "./sabzlearn": "./scrapers/sabzlearn.ts",
+    "./roocket": "./scrapers/roocket.ts",
+    "./course": "./scrapers/course.ts"
+  },
+  "scripts": {
+    "test": "bun test tests",
+    "lint": "bun --bun eslint .",
+    "typecheck": "bun --bun tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.3",
+    "eslint": "9.39.1",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.0"
+  }
+}

@@ -1,0 +1,13 @@
+User-Agent: *
+Allow: /
+Disallow: /*?*utm_
+Disallow: /*?*source=
+Disallow: /cart/
+Disallow: /thanks-for-the-purchase/
+Disallow: /camps/thanks-for-the-purchase/
+Disallow: /private-class/thanks/
+Disallow: /discuss/create/
+
+Sitemap: https://roocket.ir/sitemap
+Sitemap: https://roocket.ir/sitemap-article/
+Sitemap: https://roocket.ir/sitemap-video/
