@@ -13,12 +13,12 @@ const configSchema = z.object({
   WORKER_CONCURRENCY: positive.max(8).default(1),
   PROVIDER_REQUEST_SPACING_MS: positive.min(1500).max(60000).default(1500),
   PROVIDER_CONCURRENCY: z.coerce.number().int().min(1).max(1).default(1),
-  JEV_CONCURRENCY: positive.max(8).default(1),
+  JEV_CONCURRENCY: positive.max(1).default(1),
   GENERATIVE_CONCURRENCY: z.coerce.number().int().min(1).max(1).default(1),
   SCHEDULES_ENABLED: bool.default(false),
   LIVE_MODEL_CALLS_ENABLED: bool.default(false),
   OPENROUTER_API_KEY: optionalText,
-  JEV_MODEL_ID: z.string().min(1).default("typesafe/jev-1.13"),
+  JEV_MODEL_ID: optionalText,
   GENERATIVE_MODEL_ID: optionalText,
   EMBEDDING_MODEL_ID: optionalText,
   EMBEDDING_DIMENSIONS: z.preprocess(value => value === "" ? undefined : value, positive.max(16000).optional()),
@@ -35,7 +35,7 @@ export function readConfig(env: Record<string, string | undefined> = process.env
   const config = result.data;
   if (config.BACKEND_OPERATOR_TOKEN && config.BACKEND_OPERATOR_TOKEN.length < 32) throw new Error("BACKEND_OPERATOR_TOKEN must be at least 32 characters");
   if (config.SCHEDULES_ENABLED) throw new Error("Schedules are not implemented; keep SCHEDULES_ENABLED=false");
-  if (config.LIVE_MODEL_CALLS_ENABLED) throw new Error("Live model calls are not implemented; keep LIVE_MODEL_CALLS_ENABLED=false");
+  if (config.LIVE_MODEL_CALLS_ENABLED && (!config.OPENROUTER_API_KEY || !config.MODEL_RUN_BUDGET_USD || !config.JEV_MODEL_ID && !config.EMBEDDING_MODEL_ID)) throw new Error("Live calls require credentials, explicit model selection and budget");
   if (Boolean(config.EMBEDDING_MODEL_ID) !== Boolean(config.EMBEDDING_DIMENSIONS)) throw new Error("Configure EMBEDDING_MODEL_ID and EMBEDDING_DIMENSIONS together");
   return config;
 }

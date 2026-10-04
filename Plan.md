@@ -4,7 +4,7 @@ Created: September 30, 2026
 
 Current checks and build limitations are maintained in [validation](docs/validation.md).
 
-Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 milestone 1 is implemented and locally validated: a separate Bun backend in `apps/backend`, worker in `apps/worker`, PostgreSQL/Drizzle/pgvector persistence, and an offline factual-group workflow. Milestone 2 bounded manual Maktabkhooneh/Roocket ingestion and revision invalidation are complete and locally validated. Frontend integration and AI remain pending.
+Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 milestone 1 is implemented and locally validated: a separate Bun backend in `apps/backend`, worker in `apps/worker`, PostgreSQL/Drizzle/pgvector persistence, and an offline factual-group workflow. Milestone 2 bounded manual Maktabkhooneh/Roocket ingestion and revision invalidation are complete and locally validated. Milestone 3 placement/retrieval is complete and locally validated with offline model transports; live model availability/quality and frontend integration remain pending.
 
 ## Product vision
 
@@ -185,7 +185,7 @@ The execution milestones are maintained in the [backend milestone status](docs/b
 
 1. Foundation and offline workflow — implemented and locally validated.
 2. Bounded ingestion and revision handling — complete and locally validated.
-3. Jev placement and hybrid retrieval — pending.
+3. Jev placement and hybrid retrieval — complete and locally validated with offline transports; live availability/quality remains untested.
 4. Group discovery, assessment and publication — pending.
 5. Frontend integration and opt-in refresh — pending.
 

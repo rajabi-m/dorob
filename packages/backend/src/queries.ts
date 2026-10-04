@@ -30,10 +30,10 @@ export async function readGroup(db: Database, slug: string, draft = false): Prom
     const [snapshot] = await tx.select().from(snapshots).where(eq(snapshots.id, snapshotId));
     if (!snapshot) return null;
     const [run] = await tx.select().from(runs).where(eq(runs.id, snapshot.runId));
-    const current = await tx.select({ course: courses, approvedRevisionId: memberships.approvedRevisionId, revision: revisions })
+    const current = await tx.select({ course: courses, approvedRevisionId: memberships.approvedRevisionId, approvedDefinitionRevision: memberships.approvedDefinitionRevision, revision: revisions })
       .from(memberships).innerJoin(courses, eq(courses.id, memberships.courseId))
       .innerJoin(revisions, eq(revisions.id, courses.currentRevisionId)).where(eq(memberships.groupId, group.id));
-    const eligible = current.filter(({ course, approvedRevisionId, revision }) => course.currentRevisionId === approvedRevisionId && revision.facts.availability !== "unavailable");
+    const eligible = current.filter(({ course, approvedRevisionId, approvedDefinitionRevision, revision }) => approvedDefinitionRevision === group.definitionRevision && course.currentRevisionId === approvedRevisionId && revision.facts.availability !== "unavailable");
     if (!draft && eligible.length < 2) return null; // Stable HTTP 404; no comparative recommendation below minimum.
     const stale = run.input.definitionRevision !== group.definitionRevision || current.length !== run.input.members.length ||
       run.input.members.some(member => !current.some(({ course, approvedRevisionId }) => course.id === member.courseId && course.currentRevisionId === member.revisionId && approvedRevisionId === member.revisionId));

@@ -1,3 +1,4 @@
+import { placementOutbox, coursePlacements } from "@dorob/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import type { Database, Transaction } from "@dorob/db";
 import { courses, revisions, providers, observations, memberships, groups, runs, invalidations } from "@dorob/db/schema";
@@ -44,6 +45,11 @@ async function saveCourse(tx: Transaction, course: ProviderCourse) {
       }
     }
     await tx.update(courses).set({ currentRevisionId: revision.id, lastSuccessfulCheck: observedAt, sourceUrl: course.sourceUrl }).where(eq(courses.id, course.id));
+    if (existing.currentRevisionId !== revision.id) {
+      await tx.insert(placementOutbox).values({ revisionId: revision.id, courseId: course.id }).onConflictDoNothing();
+      await tx.insert(coursePlacements).values({ courseId: course.id, revisionId: revision.id, status: "unmatched" })
+        .onConflictDoUpdate({ target: coursePlacements.courseId, set: { revisionId: revision.id, taxonomyVersion: null, status: "unmatched" } });
+    }
   }
   return { courseId: course.id, revisionId: revision.id };
 }

@@ -1,19 +1,19 @@
 import { and, eq, sql } from "drizzle-orm";
 import { groupDefinitionSchema, type GroupDefinition } from "@dorob/core";
 import type { Database, Transaction } from "@dorob/db";
-import { groups, memberships, courses, revisions, runs, snapshots } from "@dorob/db/schema";
+import { groups, memberships, courses, revisions, runs, snapshots, coursePlacements } from "@dorob/db/schema";
 import { digest } from "./hashing.ts";
 import { BUILD_GROUP, enqueue, type Queue } from "./queue.ts";
 
 export async function loadInputs(tx: Transaction, groupId: string) {
   const [group] = await tx.select().from(groups).where(eq(groups.id, groupId)).for("update");
   if (!group) throw new Error("Group not found");
-  const members = await tx.select({ course: courses, approvedRevisionId: memberships.approvedRevisionId })
+  const members = await tx.select({ course: courses, approvedRevisionId: memberships.approvedRevisionId, approvedDefinitionRevision: memberships.approvedDefinitionRevision })
     .from(memberships).innerJoin(courses, eq(courses.id, memberships.courseId))
     .where(eq(memberships.groupId, group.id)).orderBy(courses.id).for("share", { of: courses });
   const input = { definitionRevision: group.definitionRevision,
     members: members.map(({ course, approvedRevisionId }) => ({ courseId: course.id, revisionId: approvedRevisionId })) };
-  const current = members.every(({ course, approvedRevisionId }) => course.currentRevisionId === approvedRevisionId);
+  const current = members.every(({ course, approvedRevisionId, approvedDefinitionRevision }) => course.currentRevisionId === approvedRevisionId && approvedDefinitionRevision === group.definitionRevision);
   const facts = [];
   for (const member of members) {
     const [revision] = await tx.select().from(revisions).where(and(eq(revisions.id, member.approvedRevisionId), eq(revisions.courseId, member.course.id)));
@@ -39,8 +39,10 @@ export async function createDraftGroup(db: Database, boss: Queue, definitionInpu
     for (const courseId of [...courseIds].sort()) {
       const [course] = await tx.select().from(courses).where(eq(courses.id, courseId)).for("share");
       if (!course?.currentRevisionId) throw new Error(`No imported current revision for ${courseId}`);
-      await tx.insert(memberships).values({ groupId: group.id, courseId, approvedRevisionId: course.currentRevisionId })
-        .onConflictDoUpdate({ target: [memberships.groupId, memberships.courseId], set: { approvedRevisionId: course.currentRevisionId } });
+      await tx.insert(memberships).values({ groupId: group.id, courseId, approvedRevisionId: course.currentRevisionId, approvedDefinitionRevision: group.definitionRevision })
+        .onConflictDoUpdate({ target: [memberships.groupId, memberships.courseId], set: { approvedRevisionId: course.currentRevisionId, approvedDefinitionRevision: group.definitionRevision } });
+      await tx.insert(coursePlacements).values({ courseId, revisionId: course.currentRevisionId, status: "matched" })
+        .onConflictDoUpdate({ target: coursePlacements.courseId, set: { revisionId: course.currentRevisionId, status: "matched" } });
     }
     const { input, inputDigest, eligible } = await loadInputs(tx, group.id);
     if (!eligible) throw new Error("Group needs at least two available or explicitly unknown alternatives");

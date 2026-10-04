@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, uuid, text, timestamp, integer, jsonb, uniqueIndex, check, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, jsonb, uniqueIndex, check, pgEnum, customType } from "drizzle-orm/pg-core";
 import type { ProviderCourse } from "@dorob/utils/course";
 import type { GroupSnapshot } from "@dorob/core";
 
@@ -50,6 +50,7 @@ export const memberships = pgTable("group_memberships", {
   groupId: uuid("group_id").notNull().references(() => groups.id),
   courseId: text("course_id").notNull().references(() => courses.id),
   approvedRevisionId: uuid("approved_revision_id").notNull().references(() => revisions.id),
+  approvedDefinitionRevision: integer("approved_definition_revision").notNull().default(1),
   method: text("method").notNull().default("operator"),
 }, table => [uniqueIndex("group_course_membership").on(table.groupId, table.courseId)]);
 export const runs = pgTable("workflow_runs", {
@@ -135,3 +136,63 @@ export const invalidations = pgTable("group_invalidations", {
   state: text("state").notNull().default("pending"),
   jobId: uuid("job_id"),
 }, t => [uniqueIndex("group_revision_invalidation").on(t.groupId, t.courseId, t.revisionId)]);
+
+export const taxonomies = pgTable("placement_taxonomies", {
+  version: text("version").primaryKey(), data: jsonb("data").notNull(), digest: text("digest").notNull(),
+  reviewedBy: text("reviewed_by"), reviewedAt: time("reviewed_at"),
+});
+export const modelBudgets = pgTable("model_budgets", {
+  id: uuid("id").defaultRandom().primaryKey(), mode: text("mode").notNull(), maxCalls: integer("max_calls").notNull(),
+  usedCalls: integer("used_calls").notNull().default(0), maxMicros: integer("max_micros").notNull(),
+  reservedMicros: integer("reserved_micros").notNull().default(0), perCallMicros: integer("per_call_micros").notNull(),
+  state: text("state").notNull().default("open"), createdAt: time("created_at").defaultNow().notNull(),
+}, t => [check("model_budget_bounds", sql`${t.maxCalls} between 1 and 100 and ${t.usedCalls} between 0 and ${t.maxCalls} and ${t.maxMicros} between 1 and 100000000 and ${t.perCallMicros} between 1 and ${t.maxMicros} and ${t.reservedMicros} >= 0`),
+  check("model_budget_mode", sql`${t.mode} in ('offline', 'live')`), check("model_budget_state", sql`${t.state} in ('open','cancelled','overrun')`)]);
+export const placementRequests = pgTable("placement_requests", {
+  id: uuid("id").defaultRandom().primaryKey(), requestHash: text("request_hash").notNull().unique(),
+  budgetId: uuid("budget_id").notNull().references(() => modelBudgets.id), courseId: text("course_id").references(() => courses.id),
+  revisionId: uuid("revision_id").references(() => revisions.id), groupId: uuid("group_id").references(() => groups.id),
+  definitionRevision: integer("definition_revision"), taxonomyVersion: text("taxonomy_version").notNull().references(() => taxonomies.version),
+  kind: text("kind").notNull(), input: jsonb("input").notNull(), result: jsonb("result"),
+  state: text("state").notNull().default("queued"), attempts: integer("attempts").notNull().default(0),
+  activeAttemptId: uuid("active_attempt_id"), jobId: uuid("job_id"), createdAt: time("created_at").defaultNow().notNull(),
+}, t => [check("placement_attempt_bound", sql`${t.attempts} between 0 and 3`), check("placement_kind", sql`${t.kind} in ('classify','evaluate','embed')`),
+  check("placement_state", sql`${t.state} in ('queued','running','completed','failed','cancelled','stale')`)]);
+export const modelAttempts = pgTable("model_attempts", {
+  id: uuid("id").defaultRandom().primaryKey(), requestId: uuid("request_id").notNull().references(() => placementRequests.id),
+  budgetId: uuid("budget_id").notNull().references(() => modelBudgets.id), state: text("state").notNull(),
+  reservedMicros: integer("reserved_micros").notNull(), usage: jsonb("usage"), response: jsonb("response"), servedModel: text("served_model"),
+  startedAt: time("started_at").defaultNow().notNull(), finishedAt: time("finished_at"),
+});
+export const placementReviews = pgTable("placement_reviews", {
+  id: uuid("id").defaultRandom().primaryKey(), requestId: uuid("request_id").notNull().unique().references(() => placementRequests.id),
+  outcome: text("outcome").notNull(), state: text("state").notNull().default("pending"), operator: text("operator"), note: text("note"),
+});
+export const placementOutbox = pgTable("placement_outbox", {
+  revisionId: uuid("revision_id").primaryKey().references(() => revisions.id), courseId: text("course_id").notNull().references(() => courses.id),
+  state: text("state").notNull().default("needs-configuration"), requestId: uuid("request_id").references(() => placementRequests.id),
+});
+
+const vector = customType<{ data: string }>({ dataType: () => "vector" });
+export const retrievalDocuments = pgTable("retrieval_documents", {
+  id: text("id").primaryKey(), kind: text("kind").notNull(), entityId: text("entity_id").notNull(), revision: text("revision").notNull(),
+  taxonomyVersion: text("taxonomy_version").notNull().references(() => taxonomies.version), bundleVersion: text("bundle_version").notNull(),
+  originalText: text("original_text").notNull(), lexicalText: text("lexical_text").notNull(), textHash: text("text_hash").notNull(),
+});
+export const retrievalVectors = pgTable("retrieval_vectors", {
+  id: uuid("id").defaultRandom().primaryKey(), documentId: text("document_id").notNull().references(() => retrievalDocuments.id),
+  model: text("model").notNull(), dimensions: integer("dimensions").notNull(), bundleVersion: text("bundle_version").notNull(), embedding: vector("embedding").notNull(),
+}, t => [uniqueIndex("retrieval_vector_identity").on(t.documentId, t.model, t.dimensions, t.bundleVersion),
+  check("retrieval_dimensions", sql`${t.dimensions} between 1 and 16000 and vector_dims(${t.embedding}) = ${t.dimensions}`)]);
+
+export const placementSettings = pgTable("placement_settings", {
+  id: integer("id").primaryKey().default(1), activeTaxonomy: text("active_taxonomy").notNull().references(() => taxonomies.version),
+}, t => [check("placement_settings_singleton", sql`${t.id} = 1`)]);
+
+export const modelAdmission = pgTable("model_admission", {
+  id: integer("id").primaryKey().default(1), token: uuid("token"), busyUntil: time("busy_until").defaultNow().notNull(),
+}, t => [check("model_admission_singleton", sql`${t.id} = 1`)]);
+export const coursePlacements = pgTable("course_placements", {
+  courseId: text("course_id").primaryKey().references(() => courses.id), revisionId: uuid("revision_id").notNull().references(() => revisions.id),
+  taxonomyVersion: text("taxonomy_version").references(() => taxonomies.version), status: text("status").notNull().default("unmatched"),
+}, t => [check("course_placement_status", sql`${t.status} in ('unmatched','needs-review','matched')`)]);

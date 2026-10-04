@@ -1,3 +1,6 @@
+import { reviewTaxonomy, activateTaxonomy, createBudget, requestPlacement, inspectPlacement, resumePlacement, reviewPlacement } from "@dorob/backend/placement";
+import { provisionalTaxonomy, BUNDLE_VERSION } from "@dorob/backend/placement-contracts";
+import { indexDocuments, retrieveCandidates } from "@dorob/backend/retrieval";
 import { createDatabase } from "@dorob/db";
 import { createCourse } from "@dorob/utils/course";
 import { createQueue } from "@dorob/backend/queue";
@@ -79,6 +82,7 @@ try {
   await run(["docker", "stop", "--timeout", "35", worker]);
   // Two independent real worker containers use mounted fixture transports, while
   // the unmodified backend container queues operator requests via its actual CLI.
+  await connection.client`create table fixture_model_calls (id uuid primary key default gen_random_uuid(), worker text not null, kind text not null, started_at timestamptz not null, finished_at timestamptz)`;
   await connection.client`create table fixture_requests (worker text not null, url text not null, started_at timestamptz not null)`;
   for (const number of [1, 2]) {
     const fixtureWorker = `dorob-fixture-worker-${number}-${suffix}`;
@@ -89,6 +93,67 @@ try {
       "dorob-worker:local", "bun", "apps/backend/tests/container-fixture-worker.ts"]);
     names.push(fixtureWorker);
   }
+  // Actual API CLI queues synthetic placement work; two independent worker images process it.
+  await run(["docker", "exec", api, "bun", "apps/backend/src/cli.ts", "taxonomy-seed", "provisional"]);
+  await reviewTaxonomy(connection.db, provisionalTaxonomy.version, "container-test-reviewer");
+  await activateTaxonomy(connection.db, provisionalTaxonomy.version);
+  const budget = await createBudget(connection.db, { mode: "offline", maxCalls: 10, maxUsd: 1, perCallUsd: 0.1 });
+  const placementCourse = createCourse("container-test", "3", "نمونه مدل آفلاین پایتون", "https://example.invalid/model3");
+  placementCourse.description = "شواهد ساختگی Python"; placementCourse.prerequisites = "پیش‌نیاز ساختگی"; placementCourse.learningOutcomes = ["خروجی ساختگی"]; placementCourse.availability = "available";
+  await importSavedExport(connection.db, { schemaVersion: 2, providerId: "container-test", courses: [placementCourse] });
+  const placementJSON = JSON.stringify({ kind: "classify", budgetId: budget.id, courseId: placementCourse.id, taxonomyVersion: provisionalTaxonomy.version, model: "offline-jev-fixture-v1" });
+  await run(["docker", "exec", api, "bun", "-e", `await Bun.write('/tmp/placement.json', ${JSON.stringify(placementJSON)})`]);
+  await run(["docker", "exec", api, "bun", "apps/backend/src/cli.ts", "placement", "/tmp/placement.json"]);
+  const [classification] = await connection.client`select id from placement_requests where course_id = ${placementCourse.id} and kind = 'classify'`;
+  await waitUntil(async () => (await inspectPlacement(connection.db, classification.id)).request?.state === "completed", "container classification");
+  await run(["docker", "exec", api, "bun", "apps/backend/src/cli.ts", "placement", "/tmp/placement.json"]);
+  const [classificationCalls] = await connection.client`select count(*)::int as count from model_attempts where request_id = ${classification.id}`;
+  if (classificationCalls.count !== 1) throw new Error("Container duplicate placement charged twice");
+  const [firstModelCall] = await connection.client`select worker from fixture_model_calls where kind = 'decision' order by started_at limit 1`;
+  const firstModelWorker = `dorob-fixture-worker-${firstModelCall.worker}-${suffix}`;
+  await run(["docker", "stop", "--timeout", "35", firstModelWorker]); // Require the other host to evaluate.
+  const [groupIdentity] = await connection.client`select id from comparison_groups where slug = 'container-python'`;
+  const evaluation = await requestPlacement(connection.db, boss, { kind: "evaluate", budgetId: budget.id, courseId: placementCourse.id, groupId: groupIdentity.id, taxonomyVersion: provisionalTaxonomy.version, model: "offline-jev-fixture-v1" });
+  await waitUntil(async () => (await inspectPlacement(connection.db, evaluation.requestId)).request?.state === "completed", "container membership evaluation");
+  await run(["docker", "start", firstModelWorker]);
+  const [beforeApproval] = await connection.client`select count(*)::int as count from group_memberships where group_id = ${groupIdentity.id}`;
+  if (beforeApproval.count !== 2) throw new Error("Model self-approved membership");
+  await reviewPlacement(connection.db, boss, { requestId: evaluation.requestId, action: "approve", operator: "container-test-reviewer", note: "Synthetic offline acceptance review" });
+  await waitUntil(async () => (await readGroup(connection.db, "container-python", true))?.courses.length === 3, "approval downstream workflow");
+  const docs = await indexDocuments(connection.db, provisionalTaxonomy.version, [placementCourse.id], [groupIdentity.id]);
+  for (const documentId of docs) {
+    const embedding = await requestPlacement(connection.db, boss, { kind: "embed", documentId, budgetId: budget.id, taxonomyVersion: provisionalTaxonomy.version, model: "offline-vector-v1", dimensions: 2 });
+    await waitUntil(async () => (await inspectPlacement(connection.db, embedding.requestId)).request?.state === "completed", "container embedding");
+  }
+  const [queryDoc] = await connection.client`select id from retrieval_documents where entity_id = ${placementCourse.id}`;
+  const candidates = await retrieveCandidates(connection.db, { documentId: queryDoc.id, kind: "group", limit: 5, embedding: { model: "offline-vector-v1", dimensions: 2, bundleVersion: BUNDLE_VERSION } });
+  if (candidates.candidates[0]?.id !== groupIdentity.id) throw new Error("Container hybrid retrieval failed");
+  // Kill the selected model worker after PostgreSQL reservation, then restart and resume.
+  placementCourse.description = "MODEL_CRASH_TEST شواهد ساختگی"; placementCourse.source.checkedAt = new Date(Date.now() + 2000).toISOString();
+  await importSavedExport(connection.db, { schemaVersion: 2, providerId: "container-test", courses: [placementCourse] });
+  const crashRequest = await requestPlacement(connection.db, boss, { kind: "classify", budgetId: budget.id, courseId: placementCourse.id, taxonomyVersion: provisionalTaxonomy.version, model: "offline-jev-fixture-v1" });
+  let modelWorker = "";
+  await waitUntil(async () => {
+    const rows = await connection.client`select worker from fixture_model_calls where kind = 'decision' and finished_at is null order by started_at desc limit 1`;
+    if (!rows[0]) return false; modelWorker = `dorob-fixture-worker-${rows[0].worker}-${suffix}`; return true;
+  }, "active model call before host loss");
+  await run(["docker", "kill", modelWorker]);
+  const [modelLease] = await connection.client`select busy_until from model_admission`;
+  if (new Date(modelLease.busy_until).getTime() < Date.now() + 40000) throw new Error("Lost model host did not retain admission reservation");
+  await run(["docker", "start", modelWorker]);
+  await resumePlacement(connection.db, boss, crashRequest.requestId);
+  // A queue delivery during the reservation must spend no additional budget. Resume
+  // after safe admission becomes available, without resetting attempts or reservations.
+  await waitUntil(async () => Date.now() > new Date(modelLease.busy_until).getTime(), "model loss reservation expiry");
+  await resumePlacement(connection.db, boss, crashRequest.requestId);
+  await waitUntil(async () => (await inspectPlacement(connection.db, crashRequest.requestId)).request?.state === "completed", "model durable resume");
+  const modelHistory = await inspectPlacement(connection.db, crashRequest.requestId);
+  if (modelHistory.attempts.length !== 2 || modelHistory.attempts[0].state !== "unknown") throw new Error("Model interrupted history/budgets lost");
+  const modelCalls = await connection.client`select * from fixture_model_calls where finished_at is not null order by started_at`;
+  if (new Set(modelCalls.map(c => c.worker)).size !== 2) throw new Error("Both independent worker hosts must execute model transports");
+  for (let i = 1; i < modelCalls.length; i++) if (new Date(modelCalls[i].started_at) < new Date(modelCalls[i - 1].finished_at)) throw new Error("Model concurrency violated across containers");
+  console.log("PASS: offline Decisions/embedding transports in actual worker containers, operator approval, hybrid retrieval, response reuse and kill/resume with retained model admission");
+  if (!process.argv.includes("--placement-only")) {
   const boundedRequest = JSON.stringify({ providerId: "roocket", urls: [roocketUrl] });
   await run(["docker", "exec", api, "bun", "-e", `await Bun.write('/tmp/collection.json', ${JSON.stringify(boundedRequest)})`]);
   await run(["docker", "exec", api, "bun", "apps/backend/src/cli.ts", "collect", "/tmp/collection.json"]);
@@ -131,6 +196,7 @@ try {
   const counts = await connection.client`select count(*)::int as count from courses where provider_id in ('roocket', 'maktabkhooneh')`;
   if (counts[0].count !== 2) throw new Error("Repeated container ingestion duplicated source courses");
   console.log("PASS: actual operator CLI and two independent worker containers ingest both adapters offline, preserve partial outcomes, coordinate provider requests and survive restart");
+  }
   console.log("PASS: separate API/worker images, explicit migrations, durable job, publication, HTTP boundary and worker restart");
 } finally {
   await boss.stop();

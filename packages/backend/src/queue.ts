@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import type { Transaction } from "@dorob/db";
 import type { Config } from "./config.ts";
 
+export const PLACEMENT = "placement-v1";
 export const COLLECT = "provider-collect-v1";
 export const RECONCILE = "group-reconcile-v1";
 export const BUILD_GROUP = "group-build-v1";
@@ -17,8 +18,8 @@ export function createQueue(config: Pick<Config, "DATABASE_URL" | "PGBOSS_SCHEMA
 export type Queue = ReturnType<typeof createQueue>;
 
 export async function setupQueues(boss: Queue) {
-  for (const name of [BUILD_GROUP, FINALIZE_GROUP, COLLECT, RECONCILE]) {
-    await boss.createQueue(name, { retryLimit: 2, retryDelay: 5, retryBackoff: true, expireInSeconds: name === COLLECT ? 900 : 120, deleteAfterSeconds: 604800 });
+  for (const name of [BUILD_GROUP, FINALIZE_GROUP, COLLECT, RECONCILE, PLACEMENT]) {
+    await boss.createQueue(name, { retryLimit: name === PLACEMENT ? 0 : 2, retryDelay: 5, retryBackoff: true, expireInSeconds: name === COLLECT ? 900 : 120, deleteAfterSeconds: 604800 });
   }
 }
 export async function enqueue(boss: Queue, tx: Transaction, name: string, payload: object) {
