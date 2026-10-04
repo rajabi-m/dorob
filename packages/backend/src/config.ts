@@ -35,7 +35,7 @@ export function readConfig(env: Record<string, string | undefined> = process.env
   const config = result.data;
   if (config.BACKEND_OPERATOR_TOKEN && config.BACKEND_OPERATOR_TOKEN.length < 32) throw new Error("BACKEND_OPERATOR_TOKEN must be at least 32 characters");
   if (config.SCHEDULES_ENABLED) throw new Error("Schedules are not implemented; keep SCHEDULES_ENABLED=false");
-  if (config.LIVE_MODEL_CALLS_ENABLED && (!config.OPENROUTER_API_KEY || !config.MODEL_RUN_BUDGET_USD || !config.JEV_MODEL_ID && !config.EMBEDDING_MODEL_ID)) throw new Error("Live calls require credentials, explicit model selection and budget");
+  if (config.LIVE_MODEL_CALLS_ENABLED && (!config.OPENROUTER_API_KEY || !config.MODEL_RUN_BUDGET_USD || !config.JEV_MODEL_ID && !config.EMBEDDING_MODEL_ID && !config.GENERATIVE_MODEL_ID)) throw new Error("Live calls require credentials, explicit model selection and budget");
   if (Boolean(config.EMBEDDING_MODEL_ID) !== Boolean(config.EMBEDDING_DIMENSIONS)) throw new Error("Configure EMBEDDING_MODEL_ID and EMBEDDING_DIMENSIONS together");
   return config;
 }

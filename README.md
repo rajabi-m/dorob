@@ -2,11 +2,13 @@
 
 نام فارسی پروژه «دورُب» است؛ ترکیبی از نام‌های «دوره» و «ترب».
 
-A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 milestones 1 and 2 are complete and locally validated; milestone 3 placement/retrieval is complete and locally validated with offline model transports; frontend and production integration remain pending.
+A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 milestones 1 and 2 are complete and locally validated; milestone 3 placement/retrieval is complete and locally validated with offline model transports; milestone 4 discovery/assessment/publication is complete and locally validated with offline transports; frontend and production integration remain pending.
 
 Start with the [documentation hub](docs/index.md), [project plan](Plan.md), and [contributor instructions](AGENTS.md).
 
-The Bun backend is in `apps/backend` and the independent pg-boss worker is in `apps/worker`, with separate Docker images sharing PostgreSQL/Drizzle/pgvector. Saved-export imports and manually published factual groups are implemented. Start with [backend setup and operations](docs/backend-operations.md); the [backend handoff](docs/backend.md) records the remaining pipeline. Bounded manual Maktabkhooneh/Roocket jobs are available; Jev Decisions/embedding clients, PostgreSQL hybrid retrieval and operator placement review are implemented; live model calls and schedules remain disabled by default. Development is local first; cloud hosting remains open.
+The next backend milestone is frontend integration and opt-in refresh: published group discovery/category search, reviewed comparisons, source/freshness and unavailable states. Offline fixture mode remains useful; live calls and scheduled refresh require separate bounded configuration and authorization. See the [milestone handoff](docs/backend.md) and [validation boundaries](docs/validation.md).
+
+The Bun backend is in `apps/backend` and the independent pg-boss worker is in `apps/worker`, with separate Docker images sharing PostgreSQL/Drizzle/pgvector. Saved-export imports and manually published factual groups are implemented. Start with [backend setup and operations](docs/backend-operations.md); the [backend handoff](docs/backend.md) records the pipeline. [Discovery and assessment operations](docs/group-discovery-assessment.md) covers retained proposals, Persian draft corrections, evidence review and publication. Bounded manual Maktabkhooneh/Roocket jobs are available; Jev Decisions/embedding clients, PostgreSQL hybrid retrieval and operator placement review are implemented; live model calls and schedules remain disabled by default. Development is local first; cloud hosting remains open.
 
 ## Current experience
 
@@ -54,7 +56,7 @@ bun run worker
 
 The API listens on `http://127.0.0.1:4000`, with `/health/live`, `/health/ready`, and `GET /v1/groups/:slug`. Public reads require an explicitly published group; private draft reads require the configured operator token. Use `bun run backend:cli --help` for bounded collection/resume, import, group, inspection and publication commands. `.env.example` documents server secrets and explicit model/budget settings; real environment files are ignored and excluded from Docker images.
 
-`bun run test:backend` runs offline tests. `bun run test:backend:integration` runs an isolated ephemeral PostgreSQL/pgvector container and verifies imports, revisions, transactional queue handoff, retry/restart, stale inputs and publication gates. After building the two Docker images, `bun run test:backend:containers` checks separate services, both provider adapters and synthetic decision/embedding transports in two independent workers, shared request limits, operator approval, hybrid retrieval and abrupt kill/resume. `bun run build:backend` builds both Bun entrypoints; root lint/typecheck include the new workspaces. `bun run db:generate` generates reviewed Drizzle migrations.
+`bun run test:backend` runs offline tests. `bun run test:backend:integration` runs an isolated ephemeral PostgreSQL/pgvector container and verifies imports, revisions, transactional queue handoff, retry/restart, stale inputs and publication gates. After building the two Docker images, `bun run test:backend:containers` checks separate services, both provider adapters and synthetic decision/embedding/generative transports in two independent workers, shared request limits, operator approval, hybrid retrieval and abrupt kill/resume. `bun run build:backend` builds both Bun entrypoints; root lint/typecheck include the new workspaces. `bun run db:generate` generates reviewed Drizzle migrations.
 
 `docker compose up -d --build backend worker` runs separate containers after explicit migration/queue initialization. The same images can run on separate cloud servers with a shared `DATABASE_URL`. Set dashboard authentication before `bun run dashboard:queue`. See [operations](docs/backend-operations.md) for examples, Docker build targets, private dashboard setup, recovery and current limits.
 
@@ -70,9 +72,26 @@ bun run backend:cli resume COLLECTION_UUID
 
 A maximum or explicit URL list is required (up to 100). Inspection accounts for each selected URL, partial failure and interruptions. Resume skips accepted results and preserves the three-attempt budget. Requests coordinate across hosts through PostgreSQL (one request, at least 1500 ms spacing); access denial pauses the entire provider until explicit operator review/unpause. Changed evidence retains published history and requires membership reapproval. See [operations](docs/backend-operations.md#bounded-manual-ingestion) for recovery, limits and approval procedures.
 
-Bounded, resumable ingestion now uses Maktabkhooneh and Roocket, with durable URL/attempt history, provider-wide PostgreSQL request coordination and conservative revision invalidation. Milestone 3 adds versioned provisional taxonomy, Jev Decisions/embedding contracts, lexical/exact-vector candidate retrieval, durable unmatched/review states and PostgreSQL call budgets. Evidence-backed assessment and frontend integration/opt-in refresh follow. See the [five backend milestones and current status](docs/backend.md#implementation-order-and-acceptance). Cloud release preparation includes database TLS/connectivity, backups/restore, private operator access, monitoring and the existing frontend build blocker.
+Bounded, resumable ingestion now uses Maktabkhooneh and Roocket, with durable URL/attempt history, provider-wide PostgreSQL request coordination and conservative revision invalidation. Milestone 3 adds versioned provisional taxonomy, Jev Decisions/embedding contracts, lexical/exact-vector candidate retrieval, durable unmatched/review states and PostgreSQL call budgets. Milestone 4 implements bounded discovery, retained definition corrections, evidence-backed unranked assessments and explicit review/publication. Frontend integration/opt-in refresh follow. See the [five backend milestones and current status](docs/backend.md#implementation-order-and-acceptance). Cloud release preparation includes database TLS/connectivity, backups/restore, private operator access, monitoring and the existing frontend build blocker.
 
 Placement commands start with `taxonomy-seed`, explicit `taxonomy-review`/`taxonomy-activate`, and `model-budget`. Use `placement` for classification, embedding or group evaluation; `retrieval-index` and `candidates` for bounded retrieval; `placement-inspect`, `placement-resume`, `placement-cancel` and `placement-review` for review/recovery. `fit` never approves membership itself, and publication is still separate. See the [complete placement workflow and JSON examples](docs/placement.md). Bundled taxonomy and fixtures are provisional/test data, not production human review. No live Jev or embedding request has been performed; no paid embedding model is selected.
+
+## Group discovery, assessment and review
+
+After indexing retained courses and creating an explicit bounded budget, use `discovery` to select retrieved unmatched peers and `proposal` to inspect every candidate. `definition` queues structured Persian draft generation; `definition-edit` appends corrections; `definition-review` explicitly approves the definition and selected current memberships. `assessment` creates a durable request for every approved candidate, and `analysis` displays pending/partial/failed outcomes. `assessment-review` approves qualified output; `publish-reviewed` records separate publication approval. Ranking and badges stay disabled.
+
+```sh
+bun run backend:cli discovery /absolute/path/discovery.json
+bun run backend:cli proposal PROPOSAL_UUID
+bun run backend:cli definition /absolute/path/definition-request.json
+bun run backend:cli definition-review /absolute/path/definition-review.json
+bun run backend:cli assessment /absolute/path/assessment-request.json
+bun run backend:cli analysis ANALYSIS_UUID
+bun run backend:cli assessment-review /absolute/path/assessment-review.json
+bun run backend:cli publish-reviewed /absolute/path/publication-review.json
+```
+
+See [JSON contracts, corrections and recovery](docs/group-discovery-assessment.md). Existing `placement-inspect/resume/cancel` commands also handle discovery/generation/assessment requests within original shared PostgreSQL budgets. Missing live models/credentials do not block offline tests or factual workflows. Production workers have no synthetic fixture mode. No live model call or educational-quality evaluation was performed; taxonomy/model selection, Persian quality calibration and semantic claim review remain human responsibilities. Frontend source and the lockfile are unchanged.
 
 ## Standalone data utilities
 

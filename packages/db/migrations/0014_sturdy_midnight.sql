@@ -1,0 +1,2 @@
+ALTER TABLE "comparison_groups" ADD COLUMN "discovery_key" text;--> statement-breakpoint
+ALTER TABLE "comparison_groups" ADD CONSTRAINT "comparison_groups_discovery_key_unique" UNIQUE("discovery_key");

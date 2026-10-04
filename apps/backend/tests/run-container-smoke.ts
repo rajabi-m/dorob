@@ -1,3 +1,4 @@
+import { inspectProposal, inspectAnalysis } from "@dorob/backend/group-ai";
 import { reviewTaxonomy, activateTaxonomy, createBudget, requestPlacement, inspectPlacement, resumePlacement, reviewPlacement } from "@dorob/backend/placement";
 import { provisionalTaxonomy, BUNDLE_VERSION } from "@dorob/backend/placement-contracts";
 import { indexDocuments, retrieveCandidates } from "@dorob/backend/retrieval";
@@ -153,6 +154,78 @@ try {
   if (new Set(modelCalls.map(c => c.worker)).size !== 2) throw new Error("Both independent worker hosts must execute model transports");
   for (let i = 1; i < modelCalls.length; i++) if (new Date(modelCalls[i].started_at) < new Date(modelCalls[i - 1].finished_at)) throw new Error("Model concurrency violated across containers");
   console.log("PASS: offline Decisions/embedding transports in actual worker containers, operator approval, hybrid retrieval, response reuse and kill/resume with retained model admission");
+  // Milestone 4: the backend CLI queues requests; mounted transports run only in independent workers.
+  async function operator(command: string, data: unknown) {
+    const json = JSON.stringify(data);
+    await run(["docker", "exec", api, "bun", "-e", `await Bun.write('/tmp/group-ai.json', ${JSON.stringify(json)})`]);
+    await run(["docker", "exec", api, "bun", "apps/backend/src/cli.ts", command, "/tmp/group-ai.json"]);
+  }
+  async function finishRequests(ids: string[]) {
+    for (const id of ids) await waitUntil(async () => {
+      const inspected = await inspectPlacement(connection.db, id);
+      if (inspected.request?.state === "completed") return true;
+      if (["failed", "cancelled", "stale"].includes(inspected.request!.state)) throw new Error("Unexpected fixture outcome");
+      const [job] = await connection.client`select state from pgboss.job where id = ${inspected.request!.jobId}`;
+      if (inspected.request!.state === "queued" && job?.state === "completed") await resumePlacement(connection.db, boss, id);
+      return false;
+    }, "bounded group model request");
+  }
+  const groupBudget = await createBudget(connection.db, { mode: "offline", maxCalls: 30, maxUsd: 3, perCallUsd: 0.1 });
+  const groupSamples = ["4", "5", "6"].map(id => {
+    const c = createCourse("container-test", id, "پایتون آزمایشی", `https://example.invalid/group-${id}`);
+    c.description = id === "4" ? "GENERATION_CRASH_TEST شواهد ساختگی Python" : "شواهد ساختگی Python";
+    c.prerequisites = "پیش‌نیاز ساختگی"; c.learningOutcomes = ["خروجی ساختگی"]; c.availability = "available";
+    c.raw = { privateAuthor: "PRIVATE_GROUP_AUTHOR" }; return c;
+  });
+  await importSavedExport(connection.db, { schemaVersion: 2, providerId: "container-test", courses: groupSamples });
+  const groupDocs = await indexDocuments(connection.db, provisionalTaxonomy.version, groupSamples.map(c => c.id), []);
+  await operator("discovery", { documentId: groupDocs[0], candidateIds: groupSamples.slice(1).map(c => c.id), limit: 10,
+    budgetId: groupBudget.id, model: "offline-jev-fixture-v1" });
+  const [proposal] = await connection.client`select id from discovery_proposals`;
+  await operator("discovery", { documentId: groupDocs[1], candidateIds: [groupSamples[2].id, groupSamples[0].id], limit: 10,
+    budgetId: groupBudget.id, model: "offline-jev-fixture-v1" });
+  const [proposalCount] = await connection.client`select count(*)::int as count from discovery_proposals`;
+  if (proposalCount.count !== 1) throw new Error("Equivalent container discoveries duplicated proposals");
+  await finishRequests((await inspectProposal(connection.db, proposal.id)).requests.map(r => r.id));
+  await operator("definition", { proposalId: proposal.id, budgetId: groupBudget.id, model: "offline-generative-v1", maxOutput: 2000 });
+  const [definitionRequest] = await connection.client`select id from placement_requests where kind = 'definition'`;
+  let generationWorker = "";
+  await waitUntil(async () => {
+    const [call] = await connection.client`select worker from fixture_model_calls where kind = 'generative' and finished_at is null order by started_at desc limit 1`;
+    if (!call) return false; generationWorker = `dorob-fixture-worker-${call.worker}-${suffix}`; return true;
+  }, "active generative request before worker loss");
+  await run(["docker", "kill", generationWorker]);
+  const [generationLease] = await connection.client`select busy_until from model_admission`;
+  if (new Date(generationLease.busy_until).getTime() < Date.now() + 40000) throw new Error("Generative reservation lost after host failure");
+  await run(["docker", "start", generationWorker]);
+  console.log("Generative worker killed mid-call; retained PostgreSQL admission delays bounded resume");
+  await waitUntil(async () => Date.now() > new Date(generationLease.busy_until).getTime(), "generative host-loss cooldown");
+  await run(["docker", "exec", api, "bun", "apps/backend/src/cli.ts", "placement-resume", definitionRequest.id]);
+  await finishRequests([definitionRequest.id]);
+  const generationHistory = await inspectPlacement(connection.db, definitionRequest.id);
+  if (generationHistory.attempts.length !== 2 || generationHistory.attempts[0].state !== "unknown" || generationHistory.attempts[1].servedModel !== "offline-generative-served-v1") throw new Error("Generative restart history/served identity failed");
+  const definition = (await inspectProposal(connection.db, proposal.id)).definitions[0];
+  await operator("definition-review", { definitionId: definition.id, action: "approve", slug: "container-group-ai",
+    courseIds: groupSamples.map(c => c.id), operator: "container-reviewer", note: "Synthetic comparability and definition review" });
+  const [aiGroup] = await connection.client`select id from comparison_groups where slug = 'container-group-ai'`;
+  await waitUntil(async () => Boolean(await readGroup(connection.db, "container-group-ai", true)), "factual fallback snapshot");
+  // Force the second host to serve assessments, proving model admission spans actual containers.
+  const [definitionHost] = await connection.client`select worker from fixture_model_calls where kind = 'generative' and finished_at is not null order by started_at desc limit 1`;
+  const definitionHostName = `dorob-fixture-worker-${definitionHost.worker}-${suffix}`;
+  await run(["docker", "stop", "--timeout", "35", definitionHostName]);
+  await operator("assessment", { groupId: aiGroup.id, definitionId: definition.id, budgetId: groupBudget.id, model: "offline-generative-v1", maxOutput: 2000 });
+  const [analysis] = await connection.client`select id from group_analysis where group_id = ${aiGroup.id}`;
+  await finishRequests((await inspectAnalysis(connection.db, analysis.id)).candidates.map(c => c.request!.id));
+  await run(["docker", "start", definitionHostName]);
+  await operator("assessment-review", { analysisId: analysis.id, action: "approve", operator: "container-reviewer", note: "Synthetic evidence and full candidate review" });
+  await operator("publish-reviewed", { slug: "container-group-ai", operator: "container-publisher", note: "Synthetic publication approval" });
+  const aiResponse = await fetch("http://127.0.0.1:55434/v1/groups/container-group-ai"); const aiText = await aiResponse.text();
+  const aiData = JSON.parse(aiText);
+  if (!aiResponse.ok || aiData.analysis.candidates.length !== 3 || aiData.analysis.ranking !== "disabled" || aiData.analysis.badges.length || aiText.includes("PRIVATE_GROUP_AUTHOR")) throw new Error("Assessment publication DTO boundary failed");
+  const genCalls = await connection.client`select * from fixture_model_calls where kind = 'generative' and finished_at is not null order by started_at`;
+  if (new Set(genCalls.map(c => c.worker)).size !== 2) throw new Error("Generative transports did not execute on both hosts");
+  for (let i = 1; i < genCalls.length; i++) if (new Date(genCalls[i].started_at) < new Date(genCalls[i - 1].finished_at)) throw new Error("Generative cross-container admission overlap");
+  console.log("PASS: actual API CLI discovery coalescing, structured definition, generative kill/restart/resume on two hosts, approved assessment/publication and unranked HTTP output");
   if (!process.argv.includes("--placement-only")) {
   const boundedRequest = JSON.stringify({ providerId: "roocket", urls: [roocketUrl] });
   await run(["docker", "exec", api, "bun", "-e", `await Bun.write('/tmp/collection.json', ${JSON.stringify(boundedRequest)})`]);

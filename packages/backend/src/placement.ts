@@ -1,10 +1,11 @@
+import { aiCurrent, validateAiGeneration, acceptAi, type AiInput } from "./group-ai.ts";
 import { z } from "zod";
 import { and, eq, sql } from "drizzle-orm";
 import { createDatabase, type Database, type Transaction } from "@dorob/db";
-import { courses, revisions, groups, memberships, runs, taxonomies, modelBudgets, modelAttempts, placementRequests, placementReviews, placementOutbox, retrievalDocuments, placementSettings, modelAdmission, coursePlacements, snapshots } from "@dorob/db/schema";
+import { courses, revisions, groups, memberships, runs, taxonomies, modelBudgets, modelAttempts, placementRequests, placementReviews, placementOutbox, retrievalDocuments, placementSettings, modelAdmission, coursePlacements, snapshots, groupAnalysis, discoveryProposals } from "@dorob/db/schema";
 import { digest } from "./hashing.ts";
 import { classificationRequest, membershipRequest, membershipOutcome, evidenceBundle, taxonomySchema, QUESTION_VERSION, POLICY_VERSION, BUNDLE_VERSION, type DecisionRequest, validateDecision, aliasText } from "./placement-contracts.ts";
-import { validateEmbedding, type DecisionClient, type EmbeddingClient } from "./model-clients.ts";
+import { validateGeneration, validateEmbedding, type DecisionClient, type EmbeddingClient, type GenerativeClient } from "./model-clients.ts";
 import { loadTaxonomy, saveVector } from "./retrieval.ts";
 import { BUILD_GROUP, PLACEMENT, enqueue, type Queue } from "./queue.ts";
 import { loadInputs } from "./groups.ts";
@@ -38,7 +39,7 @@ export const placementInputSchema = z.strictObject({ kind: z.enum(["classify", "
   dimensions: z.number().int().min(1).max(16000).optional() });
 type StoredInput = { questionVersion: string; policyVersion: string; bundleVersion: string; taxonomyDigest: string;
   model: string; mode: "live" | "offline"; request?: DecisionRequest; coverage?: ReturnType<typeof evidenceBundle>["coverage"];
-  documentId?: string; dimensions?: number; text?: string };
+  documentId?: string; dimensions?: number; text?: string; generation?: AiInput["generation"]; ai?: AiInput["ai"] };
 export async function requestPlacement(db: Database, boss: Queue, input: unknown) {
   const data = placementInputSchema.parse(input);
   return db.transaction(async tx => {
@@ -96,7 +97,7 @@ async function current(tx: Transaction, row: typeof placementRequests.$inferSele
   const [settings] = await tx.select().from(placementSettings).where(eq(placementSettings.id, 1)).for("share");
   if (settings && settings.activeTaxonomy !== row.taxonomyVersion) return false;
   const input = row.input as StoredInput;
-  return input.taxonomyDigest === taxonomy.digest && input.questionVersion === QUESTION_VERSION && input.policyVersion === POLICY_VERSION && input.bundleVersion === BUNDLE_VERSION;
+  return await aiCurrent(tx, row) && input.taxonomyDigest === taxonomy.digest && input.questionVersion === QUESTION_VERSION && input.policyVersion === POLICY_VERSION && input.bundleVersion === BUNDLE_VERSION;
 }
 export async function inspectPlacement(db: Database, requestId: string) {
   z.uuid().parse(requestId);
@@ -123,7 +124,7 @@ export async function cancelPlacement(db: Database, requestId: string) {
   await db.update(placementRequests).set({ state: "cancelled" }).where(and(eq(placementRequests.id, requestId), sql`${placementRequests.state} in ('queued','running','failed')`));
 }
 export async function processPlacement(connection: ReturnType<typeof createDatabase>, boss: Queue, requestId: string,
-  clients: { decision?: DecisionClient; embedding?: EmbeddingClient; liveDecision?: DecisionClient; liveEmbedding?: EmbeddingClient; liveEnabled?: boolean; liveMaxUsd?: number; maxOutput?: number; signal?: AbortSignal; timeoutMs?: number } = {}) {
+  clients: { decision?: DecisionClient; embedding?: EmbeddingClient; liveDecision?: DecisionClient; liveEmbedding?: EmbeddingClient; liveEnabled?: boolean; liveMaxUsd?: number; generative?: GenerativeClient; liveGenerative?: GenerativeClient; maxOutput?: number; signal?: AbortSignal; timeoutMs?: number } = {}) {
   z.uuid().parse(requestId);
   // Dedicated session locks survive wall-clock expiry. Request lock fences redelivery;
   // a global slot lock coordinates all Jev/embedding calls across workers and hosts.
@@ -139,8 +140,9 @@ export async function processPlacement(connection: ReturnType<typeof createDatab
     const [availableCache] = await connection.db.select().from(modelAttempts).where(and(eq(modelAttempts.requestId, row.id), eq(modelAttempts.state, "succeeded"), sql`${modelAttempts.id} = ${row.activeAttemptId}`)).limit(1);
     if (!availableCache?.response && input.mode === "live" && (!clients.liveEnabled || !clients.liveMaxUsd)) throw new Error("Live authorization required");
     const decision = input.mode === "live" ? clients.liveDecision : clients.decision;
+    const generative = input.mode === "live" ? clients.liveGenerative : clients.generative;
     const embedding = input.mode === "live" ? clients.liveEmbedding : clients.embedding;
-    if (!availableCache?.response && !(row.kind === "embed" ? embedding : decision)) return;
+    if (!availableCache?.response && !(row.kind === "embed" ? embedding : input.generation ? generative : decision)) return;
     const [slot] = await session`select pg_try_advisory_lock(704604, 0) as locked`;
     if (!slot.locked) return; // Durable queued work remains resumable; no budget spent.
     slotLocked = true;
@@ -163,7 +165,10 @@ export async function processPlacement(connection: ReturnType<typeof createDatab
       if (budget.state !== "open" || budget.usedCalls >= budget.maxCalls || budget.reservedMicros + budget.perCallMicros > budget.maxMicros || row.attempts >= 3 ||
         input.mode === "live" && budget.maxMicros > clients.liveMaxUsd! * 1e6) {
         await tx.update(placementRequests).set({ state: "failed" }).where(eq(placementRequests.id, row.id));
-        await tx.insert(placementReviews).values({ requestId: row.id, outcome: "operational-failure" }).onConflictDoNothing(); return;
+        await tx.insert(placementReviews).values({ requestId: row.id, outcome: "operational-failure" }).onConflictDoNothing();
+        if (input.ai?.analysisId) await tx.update(groupAnalysis).set({ state: "partial" }).where(eq(groupAnalysis.id, input.ai.analysisId));
+        if (input.ai?.proposalId) await tx.update(discoveryProposals).set({ state: "partial" }).where(eq(discoveryProposals.id, input.ai.proposalId));
+        return;
       }
       await tx.update(modelBudgets).set({ usedCalls: budget.usedCalls + 1, reservedMicros: budget.reservedMicros + budget.perCallMicros }).where(eq(modelBudgets.id, budget.id));
       const [attempt] = await tx.insert(modelAttempts).values({ requestId: row.id, budgetId: budget.id, state: "running", reservedMicros: budget.perCallMicros }).returning(); attemptId = attempt.id;
@@ -176,19 +181,37 @@ export async function processPlacement(connection: ReturnType<typeof createDatab
     let classification: { topicId: string | null; level: string } | undefined;
     const abort = new Promise<never>((_, reject) => signal.addEventListener("abort", () => reject(new Error("Call cancelled; outcome unknown")), { once: true }));
     void abort.catch(() => {}); // Cached responses perform no call/race; still handle later cancellation.
+    async function retainRaw(raw: unknown) {
+      // Retain reported usage/cost before schema or domain validation, including rejected output.
+      const envelope = z.object({ model: z.string().min(1).max(200).optional(), usage: z.object({ cost: z.number().finite().nonnegative().optional(),
+        input_tokens: z.number().int().nonnegative().optional(), output_tokens: z.number().int().nonnegative().optional(),
+        prompt_tokens: z.number().int().nonnegative().optional(), completion_tokens: z.number().int().nonnegative().optional() }).optional() }).safeParse(raw);
+      await connection.db.transaction(async tx => {
+        const [budget] = await tx.select().from(modelBudgets).where(eq(modelBudgets.id, row.budgetId)).for("update");
+        const [attempt] = await tx.select().from(modelAttempts).where(eq(modelAttempts.id, attemptId!)).for("update");
+        const extra = Math.max(0, Math.ceil((envelope.success ? envelope.data.usage?.cost ?? 0 : 0) * 1e6) - attempt.reservedMicros);
+        await tx.update(modelAttempts).set({ response: raw, ...(envelope.success ? { usage: envelope.data.usage, servedModel: envelope.data.model } : {}), reservedMicros: attempt.reservedMicros + extra }).where(eq(modelAttempts.id, attemptId!));
+        await tx.update(modelBudgets).set({ reservedMicros: budget.reservedMicros + extra, state: budget.reservedMicros + extra > budget.maxMicros ? "overrun" : budget.state }).where(eq(modelBudgets.id, budget.id));
+      });
+    }
     let response: unknown; let served: string | undefined; let usage: { cost?: number } | undefined; let outcome: string; let vector: number[] | undefined;
     try {
       if (signal.aborted) throw new Error("Cancelled");
-      if (row.kind === "embed") {
+      if (input.generation) {
+        const raw = cachedResponse ?? await Promise.race([generative!(input.generation, signal), abort]);
+        await retainRaw(raw);
+        const parsed = validateGeneration(raw, Math.min(input.generation.max_tokens, clients.maxOutput ?? 2000));
+        response = { ...parsed, data: validateAiGeneration(row, parsed.data) }; served = parsed.model; usage = parsed.usage; outcome = "waiting-review";
+      } else if (row.kind === "embed") {
         const identity = { model: input.model, dimensions: input.dimensions!, bundleVersion: input.bundleVersion };
         const raw = cachedResponse ?? await Promise.race([embedding!(input.text!, identity, signal), abort]);
-        await connection.db.update(modelAttempts).set({ response: raw }).where(eq(modelAttempts.id, attemptId!));
+        await retainRaw(raw);
         const parsed = validateEmbedding(raw, identity); response = parsed; served = parsed.model; usage = parsed.usage; vector = parsed.vector; outcome = "embedded";
       } else {
         const raw = cachedResponse ?? await Promise.race([decision!(input.request!, signal), abort]);
-        await connection.db.update(modelAttempts).set({ response: raw }).where(eq(modelAttempts.id, attemptId!));
+        await retainRaw(raw);
         const parsed = validateDecision(raw, input.request!, clients.maxOutput ?? 2000); response = parsed; served = parsed.model; usage = parsed.usage;
-        if (row.kind === "evaluate") outcome = membershipOutcome(parsed, input.coverage!, Boolean(input.request!.questions.level));
+        if (row.kind === "evaluate" || row.kind === "discover") outcome = membershipOutcome(parsed, input.coverage!, Boolean(input.request!.questions.level));
         else {
           const topic = parsed.answers.topic;
           const level = parsed.answers.level;
@@ -214,12 +237,13 @@ export async function processPlacement(connection: ReturnType<typeof createDatab
       if (!mayAccept) return; // Retain usage, but a replaced attempt cannot accept domain results.
       await connection.db.transaction(async tx => {
         const [latest] = await tx.select().from(placementRequests).where(eq(placementRequests.id, row.id)).for("update");
-        if (latest.activeAttemptId !== attemptId) return;
+        if (latest.activeAttemptId !== attemptId || ["stale", "completed"].includes(latest.state)) return;
         const valid = await current(tx, latest);
         const state = latest.state === "cancelled" ? "cancelled" : valid ? "completed" : "stale";
         await tx.update(placementRequests).set({ state, result: { response, outcome, classification: classification ?? null, coverage: input.coverage ?? null } }).where(eq(placementRequests.id, row.id));
         if (state === "completed") {
-          if (vector) await saveVector(tx, input.documentId!, { model: input.model, dimensions: input.dimensions!, bundleVersion: input.bundleVersion }, vector);
+          if (input.ai) await acceptAi(tx, row, input.generation ? (response as { data: unknown }).data : response);
+          else if (vector) await saveVector(tx, input.documentId!, { model: input.model, dimensions: input.dimensions!, bundleVersion: input.bundleVersion }, vector);
           else {
             // Unmatched means no approved current group, not proof that a new group is needed.
             const [accepted] = await tx.select({ courseId: memberships.courseId }).from(memberships).innerJoin(groups, eq(groups.id, memberships.groupId)).where(and(eq(memberships.courseId, row.courseId!), eq(memberships.approvedRevisionId, row.revisionId!), eq(memberships.approvedDefinitionRevision, groups.definitionRevision))).limit(1);
@@ -236,6 +260,8 @@ export async function processPlacement(connection: ReturnType<typeof createDatab
       await connection.db.transaction(async tx => {
         await tx.update(modelAttempts).set({ state: signal.aborted ? "cancelled-unknown" : "unknown", finishedAt: new Date() }).where(and(eq(modelAttempts.id, attemptId!), eq(modelAttempts.state, "running")));
         const changed = await tx.update(placementRequests).set({ state: "failed" }).where(and(eq(placementRequests.id, row.id), eq(placementRequests.state, "running"), eq(placementRequests.activeAttemptId, attemptId!))).returning();
+        if (changed.length && input.ai?.proposalId) await tx.update(discoveryProposals).set({ state: "partial" }).where(eq(discoveryProposals.id, input.ai.proposalId));
+        if (changed.length && input.ai?.analysisId) await tx.update(groupAnalysis).set({ state: "partial" }).where(eq(groupAnalysis.id, input.ai.analysisId));
         if (changed.length) await tx.insert(placementReviews).values({ requestId: row.id, outcome: "operational-failure" }).onConflictDoNothing();
       });
     } finally {
@@ -253,7 +279,7 @@ export async function reviewPlacement(db: Database, boss: Queue, input: { reques
   z.strictObject({ requestId: z.uuid(), action: z.enum(["approve", "reject"]), operator: z.string().min(1).max(100), note: z.string().min(1).max(2000) }).parse(input);
   return db.transaction(async tx => {
     const [row] = await tx.select().from(placementRequests).where(eq(placementRequests.id, input.requestId)).for("update");
-    if (!row || row.state !== "completed" || row.kind === "embed" || !await current(tx, row)) throw new Error("Current completed decision required");
+    if (!row || row.state !== "completed" || !["classify", "evaluate"].includes(row.kind) || !await current(tx, row)) throw new Error("Current completed decision required");
     const [review] = await tx.select().from(placementReviews).where(eq(placementReviews.requestId, row.id)).for("update");
     if (!review || review.state !== "pending") throw new Error("Review already resolved");
     const taxonomy = await loadTaxonomy(tx, row.taxonomyVersion);

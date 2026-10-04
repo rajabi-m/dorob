@@ -36,7 +36,24 @@ export type GroupSnapshot = {
   targetLevel: z.infer<typeof levelSchema> | null;
   criteria: string;
   courses: PublicCourse[];
-  analysis: null;
+  analysis: null | {
+    analysisId: string; policyVersion: string; promptVersion: string; taxonomyVersion: string; definitionId: string;
+    priceComparisons: { leftCourseId: string; leftOfferId: string; rightCourseId: string; rightOfferId: string;
+      difference: number; unit: "toman"; horizon: string; qualificationFa: string }[];
+    priceAccess: { courseId: string; offers: { id: string; label: string | null; originalAmount: number | null; type: string; status: string; amount: number | null; unit: "toman";
+      sourcePrice: { amount: number | null; originalAmount: number | null; unit: "toman" | "rial" | "unknown"; label: string | null };
+      billingPeriod: "monthly" | "yearly" | "other" | null; horizon: string; accessDescription: string | null;
+      certificateIncluded: boolean | null; comparableKey: string | null }[] | null }[];
+    ranking: "disabled"; badges: never[];
+    candidates: { courseId: string; revisionId: string; status: string; assessment: {
+      courseId: string; revisionId: string; status: "assessed" | "insufficient-evidence" | "needs-review";
+      coverage: { rubricId: string; status: "advertised" | "not-listed" | "unknown"; evidenceIds: string[] }[];
+      claims: { textFa: string; dimension: string; basis: "provider-fact" | "ai-inference"; kind: "coverage" | "tradeoff";
+        evidenceIds: string[]; quotes: { evidenceId: string; quote: string }[] }[];
+      evidenceLimitationsFa: string[];
+    } | null }[];
+    limitationsFa: string[];
+  };
 };
 export type PublicGroup = GroupSnapshot & { slug: string; generatedAt: string; stale: boolean };
 

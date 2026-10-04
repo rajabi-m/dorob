@@ -4,7 +4,7 @@ Created: September 30, 2026
 
 Current checks and build limitations are maintained in [validation](docs/validation.md).
 
-Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 milestone 1 is implemented and locally validated: a separate Bun backend in `apps/backend`, worker in `apps/worker`, PostgreSQL/Drizzle/pgvector persistence, and an offline factual-group workflow. Milestone 2 bounded manual Maktabkhooneh/Roocket ingestion and revision invalidation are complete and locally validated. Milestone 3 placement/retrieval is complete and locally validated with offline model transports; live model availability/quality and frontend integration remain pending.
+Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 milestone 1 is implemented and locally validated: a separate Bun backend in `apps/backend`, worker in `apps/worker`, PostgreSQL/Drizzle/pgvector persistence, and an offline factual-group workflow. Milestone 2 bounded manual Maktabkhooneh/Roocket ingestion and revision invalidation are complete and locally validated. Milestone 3 placement/retrieval is complete and locally validated with offline model transports. Milestone 4 discovery/assessment/publication is complete and locally validated with offline transports; live model availability/quality and frontend integration remain pending.
 
 ## Product vision
 
@@ -186,7 +186,7 @@ The execution milestones are maintained in the [backend milestone status](docs/b
 1. Foundation and offline workflow — implemented and locally validated.
 2. Bounded ingestion and revision handling — complete and locally validated.
 3. Jev placement and hybrid retrieval — complete and locally validated with offline transports; live availability/quality remains untested.
-4. Group discovery, assessment and publication — pending.
+4. Group discovery, assessment and publication — complete and locally validated with offline transports.
 5. Frontend integration and opt-in refresh — pending.
 
 Cloud release also requires shared database connectivity/TLS, backups/restore, protected operator access, monitoring and a successful frontend production build. Local foundation checks do not satisfy the full phase 3 completion criteria below.
@@ -268,3 +268,11 @@ Cloud release also requires shared database connectivity/TLS, backups/restore, p
 ## Phase 2 closure — October 4, 2026
 
 The owner requested committing all current work, updating and merging related documentation, creating a documentation hub, and calling this the end of stage 2 for now. This closes the accepted milestone without starting phase 3. Related frontend, snapshot, and provider-adapter documents are consolidated; [docs/index.md](docs/index.md) is the navigation hub. Dated checkpoint notes are preserved in [project history](docs/project-history.md). See [validation](docs/validation.md) for current check results and limitations.
+
+## Milestone 4 implementation decisions
+
+[Discovery and assessment operations](docs/group-discovery-assessment.md) defines the implemented commands and review boundaries. Discovery uses bounded selected unmatched peers and the existing lexical/dense retrieval and Jev ledger. PostgreSQL identities coalesce equivalent proposals and normalized definitions. Definition corrections append retained history and require explicit current membership approval. Generative assessments bind exact revisions/rubrics and preserve every candidate through partial failures; deterministic schema/reference/excerpt validation precedes human semantic claim review. Feedback is excluded from this first curated evidence bundle. Price differences are code-calculated for compatible offer types/currencies/horizons; rankings and badges remain disabled. No default generative/embedding model, live call, feedback quality evaluation, frontend integration, schedule, branch or deployment is added. The owner authorized committing this milestone on October 5, 2026.
+
+### Next handoff: milestone 5
+
+Connect published group discovery/category search and comparisons to the existing Persian frontend through explicit public DTOs. Preserve a clearly labeled fixture mode for offline development, reconcile the three-course homepage Python group with the eight-course prototype, and expose missing/stale/partial evidence honestly. Refresh remains opt-in and bounded through the existing PostgreSQL-coordinated pipeline; schedules require bounded acceptance and explicit quality review before enablement. This handoff does not authorize live model/provider calls, production deployment or future commits.

@@ -40,7 +40,7 @@ export function educationalText(facts: ProviderCourse) {
     ...(facts.technologies ?? []).map(t => t.name), ...(facts.syllabus ?? []).flatMap(c => [c.title, c.description,
       ...(c.lessons ?? []).flatMap(l => [l.title, l.description])])].filter(x => x != null).join("\n");
 }
-export type Bundle = ReturnType<typeof evidenceBundle>;
+export type Bundle = Omit<ReturnType<typeof evidenceBundle>, "evidence"> & { evidence: { id: string; path: string; value: unknown; sourceUrl: string; locator: string }[] };
 export type Question = { type: "choice"; instructions: string; criteria: Record<string, string> } | { type: "noul"; instructions: string };
 export type DecisionRequest = { model: string; state: unknown; questions: Record<string, Question> };
 export const probability = z.number().finite().min(0).max(1);

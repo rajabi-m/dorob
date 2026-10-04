@@ -1,6 +1,6 @@
 # Dorob documentation
 
-Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 milestones 1–3 are complete and locally validated; milestone 3 uses offline model transports. Live model availability/quality, generative assessment and frontend integration remain pending. This hub links every maintained project document; dated history is separate from current status.
+Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 milestones 1–3 are complete and locally validated; milestone 3 uses offline model transports. Milestone 4 discovery/assessment is complete and locally validated with offline transports. Live model availability/quality and frontend integration remain pending. This hub links every maintained project document; dated history is separate from current status.
 
 ## Start here
 
@@ -19,6 +19,7 @@ Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 m
 
 - [Backend operations](backend-operations.md): implemented setup, import/group/publication commands, separate Docker services, tests and recovery.
 - [Placement and hybrid retrieval](placement.md): versioned provisional taxonomy, Decisions/embedding contracts, bounded budgets, operator review, recovery and live-validation limits.
+- [Group discovery and assessment](group-discovery-assessment.md): retained proposals/definitions, evidence contracts, corrections, partial outcomes, review/publication, budgets and recovery.
 - [Backend implementation handoff](backend.md): selected stack, comparison-first scope, persistence/workflow contracts, local milestones, and acceptance checks.
 - [Backend flow diagram](backend-flow.html): browser-rendered Mermaid proposal with zoom controls and embedded source; requires internet access.
 - [Utility README](../apps/utils/README.md): adapter/export commands, backend imports, and local dashboard setup.

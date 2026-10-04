@@ -2,7 +2,7 @@
 
 Draft specification — October 3, 2026. Requested for the Python group-page design and the eventual analyzer behind its course cards.
 
-This document defines the information Dorob should collect, the context supplied to the analyzer, and the results needed by the group page. It is a proposed phase-3 assessment contract, not an implemented model or live integration. The current `/groups/python-beginner` page uses explicitly fictional, hardcoded examples.
+This document defines the information Dorob should collect, the context supplied to the analyzer, and the results needed by the group page. Most ranking/badge/feedback fields below remain proposals. Milestone 4 implements the narrower [unranked evidence/review contract](group-discovery-assessment.md), with no live integration or quality evaluation. The current `/groups/python-beginner` page uses explicitly fictional, hardcoded examples.
 
 The [course data format](course-data-format.md) defines the owner-authorized version-2 adapter migration, including anonymous feedback, syllabus coverage, and educational evidence. This broader assessment specification also lists deferred optional fields; it does not promise that providers publish every field. Source-labeled reviews and unverified course comments are distinct: comment items must be filtered for experiential feedback before contributing to review themes, and must never be treated as verified enrollment.
 
@@ -220,6 +220,10 @@ Before displaying a result, validate:
 
 Use a human-reviewed evaluation set across multiple providers before choosing production weights or badge thresholds. Include complete/partial syllabi, missing reviews, conflicting currencies, subscriptions, conditional discounts, introductory/advanced scope overlap, developing courses, biased feedback samples, equal scores, and source text containing hostile instructions. Review factual grounding, audience fit, useful tradeoffs, ranking consistency, abstention, and Persian clarity.
 
-Implementation order: collect/validate the additional evidence → define topic rubrics and policies → implement curated requests and structured assessment validation → compute group ranking/badges → connect the page to facts and results → evaluate with human review. No new collection, schema migration, backend, or AI call is authorized by this documentation task.
+Original proposed implementation order: collect/validate the additional evidence → define topic rubrics and policies → implement curated requests and structured assessment validation → compute group ranking/badges → connect the page to facts and results → evaluate with human review. No new collection, schema migration, backend, or AI call is authorized by this documentation task.
 
 Related documents: [standard course contract](course-data-format.md), [provider snapshot limitations](provider-snapshots.md#snapshot-fields-and-source-assets), [scraping proposal](scrape-spec.md), and [project plan](../Plan.md).
+
+## Milestone 4 implemented subset
+
+The operational contract is [group discovery and assessment](group-discovery-assessment.md). Structured Persian definitions and per-candidate rubric coverage/tradeoff claims use immutable revision-bound evidence and exact excerpts. Every candidate retains a terminal/pending outcome, including operational failure; partial comparison publication requires explicit qualified operator review. Deterministic schema/reference/excerpt validation is followed by human semantic review; there is no separate model reviewer or proof of teaching quality. Feedback/review themes are excluded from generation v1. Rankings, scores, badges and the weights/thresholds proposed above remain disabled and unapproved. Code supplies compatible price differences with original currency and offer/horizon caveats. Provider facts, derived output and editorial approval/history stay separate. No live model availability/Persian quality/calibration claim is made.

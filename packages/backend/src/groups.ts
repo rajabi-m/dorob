@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { groupDefinitionSchema, type GroupDefinition } from "@dorob/core";
 import type { Database, Transaction } from "@dorob/db";
-import { groups, memberships, courses, revisions, runs, snapshots, coursePlacements } from "@dorob/db/schema";
+import { groups, memberships, courses, revisions, runs, snapshots, coursePlacements, groupReviews } from "@dorob/db/schema";
 import { digest } from "./hashing.ts";
 import { BUILD_GROUP, enqueue, type Queue } from "./queue.ts";
 
@@ -57,7 +57,7 @@ export async function createDraftGroup(db: Database, boss: Queue, definitionInpu
   });
 }
 
-export async function publishGroup(db: Database, slug: string) {
+export async function publishGroup(db: Database, slug: string, review?: { operator: string; note: string }) {
   return db.transaction(async tx => {
     const [identity] = await tx.select({ id: groups.id }).from(groups).where(eq(groups.slug, slug));
     if (!identity) throw new Error("Group not found");
@@ -65,7 +65,10 @@ export async function publishGroup(db: Database, slug: string) {
     if (!group.currentSnapshotId || !eligible) throw new Error("Publication requires two current, eligible alternatives and a reviewed snapshot");
     const [snapshot] = await tx.select().from(snapshots).where(eq(snapshots.id, group.currentSnapshotId));
     const [run] = await tx.select().from(runs).where(eq(runs.id, snapshot.runId));
+    if (snapshot.data.analysis && (!review?.operator.trim() || !review.note.trim())) throw new Error("Explicit recorded publication approval required");
+    if (snapshot.data.analysis && !await (await import("./group-ai.ts")).analysisCurrent(tx, snapshot.data.analysis.analysisId)) throw new Error("Reviewed current assessment required");
     if (run.state !== "succeeded" || run.inputDigest !== inputDigest) throw new Error("Cannot publish superseded or incomplete inputs");
+    if (snapshot.data.analysis) await tx.insert(groupReviews).values({ definitionId: snapshot.data.analysis.definitionId, action: "publish", operator: review!.operator, note: review!.note, data: { snapshotId: snapshot.id, analysisId: snapshot.data.analysis.analysisId } });
     await tx.update(groups).set({ state: "published", publishedSnapshotId: snapshot.id }).where(eq(groups.id, group.id));
     return { slug, snapshotId: snapshot.id };
   });

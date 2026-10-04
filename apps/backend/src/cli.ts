@@ -1,3 +1,4 @@
+import { reprocessProposal, discoverGroup, inspectProposal, requestDefinition, editDefinition, reviewDefinition, rejectProposal, requestAssessment, inspectAnalysis, reviewAssessment } from "@dorob/backend/group-ai";
 import { seedTaxonomy, reviewTaxonomy, activateTaxonomy, createBudget, requestPlacement, inspectPlacement, resumePlacement, cancelPlacement, reviewPlacement } from "@dorob/backend/placement";
 import { provisionalTaxonomy } from "@dorob/backend/placement-contracts";
 import { indexDocuments, retrieveCandidates } from "@dorob/backend/retrieval";
@@ -18,6 +19,17 @@ import { enqueueCollection, inspectCollection, resumeCollection, unpauseProvider
 const [command, argument] = process.argv.slice(2);
 if (!command || command === "--help") {
   console.log(`Usage: bun run backend:cli COMMAND [ARGUMENT]
+  publish-reviewed PATH JSON { slug, operator, note }; explicit assessment publication approval
+  discovery PATH      JSON { documentId, candidateIds, limit, embedding?, budgetId, model }
+  proposal-reprocess PATH JSON { proposalId, budgetId, model, operator, note }; changed retained inputs
+  proposal ID         Inspect every discovery candidate, retained drafts and review history
+  proposal-reject PATH JSON { proposalId, operator, note }
+  definition PATH     JSON { proposalId, budgetId, model, maxOutput }
+  definition-edit PATH JSON { definitionId, draft, operator, note }; append correction
+  definition-review PATH JSON { definitionId, action, slug?, courseIds?, operator, note }
+  assessment PATH     JSON { groupId, definitionId, budgetId, model, maxOutput }
+  analysis ID         Inspect every candidate outcome; no ranking or badges
+  assessment-review PATH JSON { analysisId, action, operator, note }
   taxonomy-seed PATH   Seed immutable provisional/test taxonomy (use "provisional" for bundled seed)
   taxonomy-review PATH JSON { version, operator }; explicit human review record
   taxonomy-activate VERSION Activate reviewed version; older work becomes stale
@@ -47,18 +59,29 @@ Group JSON: { "definition": { "slug", "title", "topic", "targetLevel": null, "cr
 Database credentials authorize these local operator commands. No public write endpoints exist.`);
   process.exit(0);
 }
-if (!["queue-setup", "import", "group", "inspect", "publish", "collect", "collection", "resume", "provider-unpause", "taxonomy-seed", "taxonomy-review", "taxonomy-activate", "model-budget", "model-budget-inspect", "model-budget-cancel", "placement-status", "placement", "placement-inspect", "placement-resume", "placement-cancel", "placement-review", "placement-pending", "retrieval-index", "candidates"].includes(command)) throw new Error("Unknown command; use --help");
+if (!["queue-setup", "import", "group", "inspect", "publish", "collect", "collection", "resume", "provider-unpause", "taxonomy-seed", "taxonomy-review", "taxonomy-activate", "model-budget", "model-budget-inspect", "model-budget-cancel", "placement-status", "placement", "placement-inspect", "placement-resume", "placement-cancel", "placement-review", "placement-pending", "retrieval-index", "candidates", "discovery", "proposal", "proposal-reject", "definition", "definition-edit", "definition-review", "assessment", "analysis", "assessment-review", "publish-reviewed", "proposal-reprocess"].includes(command)) throw new Error("Unknown command; use --help");
 if (command !== "queue-setup" && command !== "placement-pending" && !argument) throw new Error("Command requires an argument");
 const config = readConfig();
 const connection = createDatabase(config.DATABASE_URL, config.DATABASE_POOL_SIZE);
 let boss: ReturnType<typeof createQueue> | undefined;
 try {
-  if (command === "queue-setup" || command === "group" || command === "collect" || command === "resume" || ["placement", "placement-resume", "placement-review"].includes(command)) {
+  if (command === "queue-setup" || command === "group" || command === "collect" || command === "resume" || ["placement", "placement-resume", "placement-review", "discovery", "definition", "definition-review", "assessment", "proposal-reprocess"].includes(command)) {
     boss = createQueue(config, command === "queue-setup");
     await boss.start();
   }
   const json = async () => JSON.parse(await readFile(argument, "utf8"));
   switch (command) {
+    case "publish-reviewed": { const v = z.strictObject({ slug: z.string().min(1), operator: z.string().min(1).max(100), note: z.string().min(1).max(2000) }).parse(await json()); console.log(await publishGroup(connection.db, v.slug, v)); break; }
+    case "proposal-reprocess": console.log(await reprocessProposal(connection.db, boss!, await json())); break;
+    case "discovery": console.log(await discoverGroup(connection.db, boss!, await json())); break;
+    case "proposal": console.log(JSON.stringify(await inspectProposal(connection.db, argument), null, 2)); break;
+    case "proposal-reject": await rejectProposal(connection.db, await json()); break;
+    case "definition": console.log(await requestDefinition(connection.db, boss!, await json())); break;
+    case "definition-edit": console.log(await editDefinition(connection.db, await json())); break;
+    case "definition-review": console.log(await reviewDefinition(connection.db, boss!, await json())); break;
+    case "assessment": console.log(await requestAssessment(connection.db, boss!, await json())); break;
+    case "analysis": console.log(JSON.stringify(await inspectAnalysis(connection.db, argument), null, 2)); break;
+    case "assessment-review": await reviewAssessment(connection.db, await json()); break;
     case "taxonomy-seed": console.log(await seedTaxonomy(connection.db, argument === "provisional" ? provisionalTaxonomy : await json())); break;
     case "taxonomy-review": { const v = z.strictObject({ version: z.string(), operator: z.string() }).parse(await json()); await reviewTaxonomy(connection.db, v.version, v.operator); break; }
     case "taxonomy-activate": await activateTaxonomy(connection.db, argument); break;

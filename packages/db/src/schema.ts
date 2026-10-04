@@ -37,6 +37,7 @@ export const observations = pgTable("course_observations", {
 export const groups = pgTable("comparison_groups", {
   id: uuid("id").defaultRandom().primaryKey(),
   slug: text("slug").notNull().unique(),
+  discoveryKey: text("discovery_key").unique(),
   title: text("title").notNull(),
   topic: text("topic").notNull(),
   targetLevel: text("target_level", { enum: ["beginner", "intermediate", "advanced", "multi-level"] }),
@@ -156,7 +157,7 @@ export const placementRequests = pgTable("placement_requests", {
   kind: text("kind").notNull(), input: jsonb("input").notNull(), result: jsonb("result"),
   state: text("state").notNull().default("queued"), attempts: integer("attempts").notNull().default(0),
   activeAttemptId: uuid("active_attempt_id"), jobId: uuid("job_id"), createdAt: time("created_at").defaultNow().notNull(),
-}, t => [check("placement_attempt_bound", sql`${t.attempts} between 0 and 3`), check("placement_kind", sql`${t.kind} in ('classify','evaluate','embed')`),
+}, t => [check("placement_attempt_bound", sql`${t.attempts} between 0 and 3`), check("placement_kind", sql`${t.kind} in ('classify','evaluate','embed','discover','definition','assess')`),
   check("placement_state", sql`${t.state} in ('queued','running','completed','failed','cancelled','stale')`)]);
 export const modelAttempts = pgTable("model_attempts", {
   id: uuid("id").defaultRandom().primaryKey(), requestId: uuid("request_id").notNull().references(() => placementRequests.id),
@@ -196,3 +197,31 @@ export const coursePlacements = pgTable("course_placements", {
   courseId: text("course_id").primaryKey().references(() => courses.id), revisionId: uuid("revision_id").notNull().references(() => revisions.id),
   taxonomyVersion: text("taxonomy_version").references(() => taxonomies.version), status: text("status").notNull().default("unmatched"),
 }, t => [check("course_placement_status", sql`${t.status} in ('unmatched','needs-review','matched')`)]);
+
+// Milestone 4 uses the existing placement request/model ledger and queue.
+export const discoveryProposals = pgTable("discovery_proposals", {
+  id: uuid("id").defaultRandom().primaryKey(), equivalentKey: text("equivalent_key").notNull().unique(),
+  taxonomyVersion: text("taxonomy_version").notNull().references(() => taxonomies.version),
+  input: jsonb("input").notNull(), groupId: uuid("group_id").references(() => groups.id),
+  state: text("state").notNull().default("waiting-review"), createdAt: time("created_at").defaultNow().notNull(),
+});
+export const groupDefinitions = pgTable("group_definition_history", {
+  id: uuid("id").defaultRandom().primaryKey(), proposalId: uuid("proposal_id").notNull().references(() => discoveryProposals.id),
+  groupId: uuid("group_id").references(() => groups.id), requestId: uuid("request_id").references(() => placementRequests.id),
+  parentId: uuid("parent_id"), data: jsonb("data").notNull(), binding: jsonb("binding").notNull(),
+  state: text("state").notNull().default("draft"), createdAt: time("created_at").defaultNow().notNull(),
+}, t => [uniqueIndex("definition_model_request").on(t.requestId)]);
+export const groupReviews = pgTable("group_review_history", {
+  id: uuid("id").defaultRandom().primaryKey(), proposalId: uuid("proposal_id").references(() => discoveryProposals.id),
+  definitionId: uuid("definition_id").references(() => groupDefinitions.id), requestId: uuid("request_id").references(() => placementRequests.id),
+  action: text("action").notNull(), operator: text("operator").notNull(), note: text("note").notNull(),
+  data: jsonb("data"), createdAt: time("created_at").defaultNow().notNull(),
+});
+export const groupAnalysis = pgTable("group_analysis", {
+  id: uuid("id").defaultRandom().primaryKey(), groupId: uuid("group_id").notNull().references(() => groups.id),
+  inputHash: text("input_hash").notNull().unique(), input: jsonb("input").notNull(),
+  state: text("state").notNull().default("waiting-review"), createdAt: time("created_at").defaultNow().notNull(),
+});
+export const groupAiSettings = pgTable("group_ai_settings", {
+  id: integer("id").primaryKey().default(1), policyVersion: text("policy_version").notNull(),
+}, t => [check("group_ai_singleton", sql`${t.id} = 1`)]);

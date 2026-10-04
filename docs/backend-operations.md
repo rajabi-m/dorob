@@ -2,7 +2,7 @@
 
 October 4, 2026. The backend lives in `apps/backend`, with the independently running Bun worker in `apps/worker`. This owner-requested boundary supersedes the earlier Next.js-only backend proposal. Both deploy as separate images from `infra/Dockerfile`; neither starts the other. They coordinate only through PostgreSQL and pg-boss, so they can run on different cloud hosts. The Next.js frontend still reads its existing dated fixtures; frontend integration is a later milestone.
 
-Milestones 1 and 2 are complete and locally validated. Model workflows and frontend integration follow later.
+Milestones 1–3 are locally validated; milestone 4 discovery/assessment/publication is complete and locally validated with offline transports. Frontend integration follows later.
 
 Implemented scope: validated saved version-2 imports, immutable evidence revisions, successful/failed observations, manually approved group membership, durable deterministic factual snapshots, operator publication, read-only HTTP queries, and private draft inspection. Bounded manual Maktabkhooneh/Roocket ingestion is available. Versioned Jev placement, embeddings and hybrid retrieval are implemented for bounded manual operations. Live model calls default to disabled; schedules, ranking and frontend integration remain deferred.
 
@@ -65,7 +65,7 @@ bun run backend:cli publish python-manual
 curl http://127.0.0.1:4000/v1/groups/python-manual
 ```
 
-Submitting the identical group again coalesces the same revision-bound workflow. Resubmitting the definition with the same member set after importing newer evidence explicitly reapproves those source revisions and creates a new workflow. Editing the group definition/member set is deferred; conflicting use of a slug is rejected. Retries are capped at two with backoff. Use the protected queue dashboard to inspect/retry a failed or exhausted job; recreating an identical group does not silently reset its workflow. No HTTP write endpoints are exposed.
+Submitting the identical group again coalesces the same revision-bound workflow. Resubmitting the definition with the same member set after importing newer evidence explicitly reapproves those source revisions and creates a new workflow. The legacy manual `group` command rejects conflicting definitions/member sets. Milestone 4 discovered groups support retained corrections and explicit membership reapproval through `definition-edit`/`definition-review`; see [assessment operations](group-discovery-assessment.md). Retries are capped at two with backoff. Use the protected queue dashboard to inspect/retry a failed or exhausted job; recreating an identical group does not silently reset its workflow. No HTTP write endpoints are exposed.
 
 ## Bounded manual ingestion
 
@@ -115,7 +115,7 @@ Saved imports and worker collection use one validated transactional persistence 
 
 A changed current revision clears affected factual draft pointers, supersedes unfinished group runs and inserts a unique `(group, course, revision)` invalidation request in the same transaction. Published snapshots/history remain retained. Workers drain this transactional outbox every second: pg-boss reconciliation insertion and its retained job ID commit together using Drizzle's transaction adapter. Concurrent dispatchers use row locks/skip-locked selection. Reconciliation coalesces duplicate requests, records `waiting-review`, `approved` or `superseded`, and never promotes a snapshot or membership. Thus queue outages cannot lose invalidation, and obsolete jobs cannot promote old inputs.
 
-Use a PostgreSQL client to inspect `group_invalidations` for pending domain review; the private queue dashboard shows reconciliation job delivery and IDs. Re-submit the original group JSON with `backend:cli group PATH` after reviewing current evidence. This explicitly reapproves current memberships and enqueues the existing deterministic build/finalize workflow. Publication remains a separate `publish` action. The two-current-eligible-alternatives gate applies throughout; a changed/unapproved or unavailable member may hide public output while preserving published history. Jev placement and retrieval now have bounded review workflows; educational assessment and frontend unavailable states remain later milestones.
+Use a PostgreSQL client to inspect `group_invalidations` for pending domain review; the private queue dashboard shows reconciliation job delivery and IDs. Re-submit the original group JSON with `backend:cli group PATH` after reviewing current evidence. This explicitly reapproves current memberships and enqueues the existing deterministic build/finalize workflow. Publication remains a separate `publish` action. The two-current-eligible-alternatives gate applies throughout; a changed/unapproved or unavailable member may hide public output while preserving published history. Jev placement and retrieval now have bounded review workflows; educational assessment now uses the [milestone 4 review workflow](group-discovery-assessment.md); frontend unavailable states remain later work.
 
 ## HTTP contracts
 
@@ -126,7 +126,7 @@ Use a PostgreSQL client to inspect `group_invalidations` for pending domain revi
 | `GET /v1/groups/:slug` | Manually published factual group only; 404 for absent, draft, withdrawn or below-minimum eligible groups. |
 | `GET /internal/groups/:slug` | Latest completed draft with `Authorization: Bearer BACKEND_OPERATOR_TOKEN`; denied when token is unset. |
 
-Responses use `Cache-Control: no-store`. Public DTOs expose curated course facts, source URLs, freshness, unknown values, coverage labels, `kind: "source-facts"`, and `analysis: null`. Raw evidence, adapter field paths, uncurated warnings, model payloads and secrets are excluded. Source facts still require the frontend to render plain text safely. Only same-origin/server-to-server HTTP access is configured; cross-origin browser integration and discovery/search contracts belong to the frontend integration milestone.
+Responses use `Cache-Control: no-store`. Public DTOs expose curated course facts, source URLs, freshness, unknown values, coverage labels, `kind: "source-facts"`, and `analysis: null` or explicitly approved unranked analysis with every candidate and limitations. Stale analysis is removed independently of current facts. Raw evidence, adapter field paths, uncurated warnings, model payloads and secrets are excluded. Source facts still require the frontend to render plain text safely. Only same-origin/server-to-server HTTP access is configured; cross-origin browser integration and discovery/search contracts belong to the frontend integration milestone.
 
 ## Reliability and retained evidence
 
@@ -189,3 +189,7 @@ The command order is: migrate/setup queues → seed/review/activate taxonomy →
 No model/retrieval score self-approves membership or publication. Unknown evidence is uncertainty, not beginner/no-fit. Membership approval binds the course and group definition revisions. Pending review/unmatched records consume no active queue job. Manual resume is the only model retry authority (three attempts per request; no pg-boss model retries). A persisted 60-second host-loss reservation protects the single call slot; timeout is 30 seconds, with payload/response/output-validation bounds. Calls reserve a conservative operator-supplied USD allowance and count in PostgreSQL; a remote provider can still report a higher actual charge or an unknown outcome. Live availability, production cost estimates and Persian quality remain untested; the seeded taxonomy has no production human-review claim.
 
 Milestone 3 local offline acceptance is complete. The full `test:backend:containers --dashboard` suite passes existing provider recovery and new model workflows; `--dashboard --placement-only` passed again against final audited images. Live validation and production taxonomy/quality calibration are not included in this completion.
+
+## Discovery and assessment operations
+
+See [milestone 4 commands and contracts](group-discovery-assessment.md) for `discovery`, `proposal`, `definition`, `definition-edit/review`, `assessment`, `analysis`, `assessment-review`, `publish-reviewed`, rejection and safe reprocessing. These extend the existing placement queue/model ledger and recovery commands; no visitor request calls a model. Generative work shares the same PostgreSQL slot and budgets as Jev/embeddings. No configured model is selected by default; `GENERATIVE_MODEL_ID`, explicit live enablement/credentials and bounded live budgets are required before authorized live work. Offline transports are test injections only. Factual group workflows remain available when generation fails.

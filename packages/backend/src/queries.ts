@@ -37,8 +37,9 @@ export async function readGroup(db: Database, slug: string, draft = false): Prom
     if (!draft && eligible.length < 2) return null; // Stable HTTP 404; no comparative recommendation below minimum.
     const stale = run.input.definitionRevision !== group.definitionRevision || current.length !== run.input.members.length ||
       run.input.members.some(member => !current.some(({ course, approvedRevisionId }) => course.id === member.courseId && course.currentRevisionId === member.revisionId && approvedRevisionId === member.revisionId));
+    const analysisValid = !snapshot.data.analysis || (!stale && await (await import("./group-ai.ts")).analysisCurrent(tx, snapshot.data.analysis.analysisId, true));
     // Offers and freshness are read from current facts, independent of retained analysis.
-    return { ...snapshot.data, slug: group.slug, generatedAt: snapshot.generatedAt.toISOString(), stale,
+    return { ...snapshot.data, analysis: analysisValid ? snapshot.data.analysis : null, slug: group.slug, generatedAt: snapshot.generatedAt.toISOString(), stale: stale || !analysisValid,
       courses: current.map(({ course, revision }) => toPublicCourse(course, revision)) };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }

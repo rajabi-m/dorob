@@ -1,5 +1,5 @@
 import { processPlacement } from "@dorob/backend/placement";
-import { liveClients, type DecisionClient, type EmbeddingClient } from "@dorob/backend/model-clients";
+import { liveClients, type DecisionClient, type GenerativeClient, type EmbeddingClient } from "@dorob/backend/model-clients";
 import { createDatabase } from "@dorob/db";
 import { jobSchema, type GroupJob } from "@dorob/core";
 import { readConfig } from "@dorob/backend/config";
@@ -8,7 +8,7 @@ import { buildGroup, finalizeGroup, recordAttempt } from "@dorob/backend/workflo
 
 import { processCollection, collectionJob, dispatchInvalidations, reconcileInvalidation, type CollectionJob } from "@dorob/backend/ingestion";
 
-export async function startWorker(overrides: { fetch?: typeof fetch; delayMs?: number; decision?: DecisionClient; embedding?: EmbeddingClient } = {}) {
+export async function startWorker(overrides: { fetch?: typeof fetch; delayMs?: number; decision?: DecisionClient; embedding?: EmbeddingClient; generative?: GenerativeClient } = {}) {
   const config = readConfig();
   const connection = createDatabase(config.DATABASE_URL, config.DATABASE_POOL_SIZE);
   const boss = createQueue(config, false, true);
@@ -33,6 +33,7 @@ export async function startWorker(overrides: { fetch?: typeof fetch; delayMs?: n
     const live = liveClients(config);
     await boss.work<{ requestId: string }>(PLACEMENT, options, async jobs => {
       for (const job of jobs) await processPlacement(connection, boss, job.data.requestId, {
+        generative: overrides.generative, liveGenerative: config.LIVE_MODEL_CALLS_ENABLED ? live.generative : undefined,
         decision: overrides.decision, liveDecision: config.LIVE_MODEL_CALLS_ENABLED ? live.decision : undefined,
         embedding: overrides.embedding, liveEmbedding: config.LIVE_MODEL_CALLS_ENABLED ? live.embedding : undefined,
         liveEnabled: config.LIVE_MODEL_CALLS_ENABLED, liveMaxUsd: config.MODEL_RUN_BUDGET_USD,
