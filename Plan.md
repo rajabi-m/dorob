@@ -4,7 +4,7 @@ Created: September 30, 2026
 
 Current checks and build limitations are maintained in [validation](docs/validation.md).
 
-Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 has not started.
+Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 architecture is agreed and ready for local implementation; production backend code and integration have not started.
 
 ## Product vision
 
@@ -37,6 +37,9 @@ The Persian project name is «دورُب», combining «دوره» and «ترب�
 | Backend | JavaScript ecosystem, colocated with the frontend and able to share core code |
 | Phase order | Design system → frontend with mock data → backend and integration |
 | AI scope | Grouping and comparison, without a personal agent |
+| Decision model | Jev for course classification and existing-group membership; the owner reports successful Persian testing. Versions, thresholds, and remaining AI models are pending. |
+| MVP backend stack | Bun/TypeScript, server-side Next.js, PostgreSQL, Drizzle ORM/Kit, pgvector, and a separate pg-boss worker with its dashboard. No separate API app. |
+| Model access and hosting | Jev and generative LLMs through OpenRouter. Local first; later hosting such as Hamravesh remains a candidate. |
 
 ## Proposed technical defaults
 
@@ -44,10 +47,10 @@ These defaults make the implementation plan concrete. They are proposals, not ad
 
 - Use TypeScript across frontend, backend, and shared packages. It runs in the JavaScript ecosystem and supports shared typed contracts.
 - Use Next.js App Router for the web application and Tailwind CSS for styling, with semantic CSS custom properties as the source of design tokens.
-- Use a Bun workspace so the web app, future Node.js API, ingestion worker, and shared packages live in one repository. Bun replaces the originally proposed pnpm default for the initial implementation because it is available locally and the machine's Homebrew Node binary cannot start. The backend remains in the JavaScript/TypeScript ecosystem; its runtime decision is deferred to phase 3.
+- Use the existing Bun workspace for Next.js, the Bun ingestion/AI worker, utilities, and shared packages. Phase 3 selects Bun for application/worker execution; resolve compatibility issues explicitly instead of silently switching runtimes.
 - Build the design-system showcase at `/design-system` in the web app. A separate Storybook setup is not required initially.
 - Keep reusable UI in `packages/ui` and public domain types and validation schemas in `packages/core`.
-- Select the Node.js API framework, database, background-job tools, and AI provider during phase 3 planning. PostgreSQL is a candidate, not a committed dependency.
+- Phase 3 stack choices are confirmed above. Implement the local foundation described in [backend handoff](docs/backend.md), with compatible versions selected and recorded during setup. The separate operational dashboard may use its documented Node runtime without changing the application runtime.
 - Start with a light theme. Use semantic tokens so another theme can be added later without redesigning components.
 
 Proposed eventual structure:
@@ -55,11 +58,13 @@ Proposed eventual structure:
 ```text
 apps/
   web/                 Next.js frontend and component showcase
-  api/                 Node.js backend, introduced in phase 3
-  worker/              Provider ingestion and AI jobs, introduced in phase 3
+  worker/              Bun provider ingestion and AI jobs, introduced in phase 3
+  utils/               Existing provider adapters and local data tools
 packages/
   ui/                  Design tokens and reusable components
   core/                Shared domain types and validation schemas
+  db/                  Server-only Drizzle schema and migrations
+  backend/             Server-only queue/model clients and shared services
 Plan.md
 ```
 
@@ -169,13 +174,15 @@ Suggested first filters are provider, free/paid, price, and level. Add others on
 
 ## Phase 3 — Backend, ingestion, AI, and integration
 
+Product direction agreed October 4, 2026: focus the initial release on comparing similar courses. Categories and internal search lead to published comparison groups with at least two meaningful alternatives; unmatched courses may remain internal. Topic is required, level is optional, and unknown level is distinct from explicitly multi-level coverage. This narrows the earlier general course-search scope. See [backend handoff](docs/backend.md) for the selected stack, workflow contracts, local implementation milestones, and remaining policy questions. Architecture is ready for implementation; no production integration is active.
+
 ### Objective
 
 Replace mock data with traceable provider data and connect the existing frontend to a JavaScript/TypeScript backend.
 
 ### Step 1: Architecture and contracts
 
-- Confirm API framework, database, hosting location, AI provider, and operational budget.
+- Implement the selected Next.js/Bun/PostgreSQL/Drizzle/pgvector/pg-boss local foundation without a separate API app. Jev and generative models use OpenRouter; specify versions, question contracts, decision policies, and live-call budgets before enabling automation.
 - Implement the shared contracts established during phase 2 and validate API boundaries.
 - Model providers, source courses, topics, level groups, offers, syllabus content, source timestamps, and derived comparisons.
 - Separate source facts from normalized values and AI-generated output.
@@ -201,10 +208,10 @@ Replace mock data with traceable provider data and connect the existing frontend
 - Route uncertain group assignments for review and support manual corrections.
 - Evaluate grouping and comparison quality against a small human-reviewed set before expanding coverage.
 
-### Step 4: API and frontend integration
+### Step 4: Next.js backend and frontend integration
 
-- Implement search, group browsing, course details, filters, sorting, pagination, and comparison endpoints for the agreed scope.
-- Replace the mock data service with API-backed access.
+- Implement server-side group discovery/search, category browsing, group comparisons, and supporting course details in Next.js; agree query contracts and any internal handlers needed for interactions.
+- Replace the mock data service with database-backed server access through explicit public DTOs.
 - Show source links, freshness indicators, missing data, and partial-failure states.
 - Cache expensive comparisons and regenerate them when relevant source content changes.
 - Keep ingestion and AI jobs outside the user request path.
@@ -236,12 +243,12 @@ Replace mock data with traceable provider data and connect the existing frontend
 | Accounts, favorites, alerts, and reviews | Future scope review; not assumed for the initial release |
 | Providers after Maktabkhooneh | Before additional phase 3 adapters |
 | Subscription and access-plan treatment | Phase 3 source-data review |
-| API framework, database, hosting, and budget | Start of phase 3 |
-| AI provider, evaluation criteria, and review workflow | Before live AI integration |
+| Backend stack and hosting | Stack selected; local first. Later hosting and operating budget remain open. |
+| Remaining AI models, evaluation criteria, and review workflow | Before live AI integration; Jev selected for classification and existing-group membership |
 
 ## Next steps and remaining work
 
-- Agree phase 3 architecture, database, hosting, refresh operations, and AI evaluation before implementation. No production backend, scheduled scraping, or live AI is active.
+- Start phase 3 milestone 1 from [backend handoff](docs/backend.md): local database/migrations, durable worker, dashboard, offline import, and a server query vertical slice. Remaining model IDs, refresh operations, and quality policies can follow; no production backend, scheduled scraping, or live AI is active yet.
 - Retain the four standalone version-2 adapters and local read-only data dashboard as owner-authorized groundwork outside the normal phase order. Frontend fixtures remain separate from current scraper exports.
 - Resolve the production build runtime blocker and finish screen-reader, keyboard, and mobile review. Previously reviewed layouts/interactions are recorded in the frontend documentation and history.
 - Reconcile the homepage's three-course beginner Python group with the eight-course broad Python prototype, extract its page-local components when scope is agreed, and decide whether dedicated results/detail/comparison routes are needed.

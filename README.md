@@ -2,9 +2,11 @@
 
 نام فارسی پروژه «دورُب» است؛ ترکیبی از نام‌های «دوره» و «ترب».
 
-A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 architecture and production integration remain pending.
+A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 architecture is ready for local implementation; production integration remains pending.
 
 Start with the [documentation hub](docs/index.md), [project plan](Plan.md), and [contributor instructions](AGENTS.md).
+
+The [backend implementation handoff](docs/backend.md) specifies Bun/TypeScript, server-side Next.js, PostgreSQL with Drizzle and pgvector, a separate pg-boss worker/dashboard, and Jev/LLM access through OpenRouter. No separate API app is planned for the MVP. These are selected future components, not installed services or new setup commands. Development is local first; later deployment such as Hamravesh remains open.
 
 ## Current experience
 
@@ -69,7 +71,7 @@ Plan.md         Current decisions, phase status, and remaining scope
 AGENTS.md       Contributor instructions and commit policy
 ```
 
-The frontend uses Next.js, React, TypeScript, Tailwind CSS, and Lucide icons. Shared tokens live in `apps/web/src/app/globals.css`; components use shared styles and CSS modules. Future API, worker, UI, and core packages will be introduced when needed. Keep scraper/server code and secrets out of browser-safe contracts.
+The frontend uses Next.js, React, TypeScript, Tailwind CSS, and Lucide icons. Shared tokens live in `apps/web/src/app/globals.css`; components use shared styles and CSS modules. Worker, database, backend-service, UI, and core packages will be introduced when needed under the backend handoff. Keep scraper/server code and secrets out of browser-safe contracts.
 
 ## Contributing
 
