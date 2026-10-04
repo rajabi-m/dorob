@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791129900683,
+      "tag": "0000_black_white_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791130111611,
+      "tag": "0001_evidence_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791130606532,
+      "tag": "0002_damp_true_believers",
+      "breakpoints": true
+    }
+  ]
+}

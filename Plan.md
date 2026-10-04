@@ -4,7 +4,7 @@ Created: September 30, 2026
 
 Current checks and build limitations are maintained in [validation](docs/validation.md).
 
-Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 architecture is agreed and ready for local implementation; production backend code and integration have not started.
+Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 milestone 1 is implemented and locally validated: a separate Bun backend in `apps/backend`, worker in `apps/worker`, PostgreSQL/Drizzle/pgvector persistence, and an offline factual-group workflow. Frontend integration and live ingestion/AI remain pending.
 
 ## Product vision
 
@@ -38,7 +38,7 @@ The Persian project name is «دورُب», combining «دوره» and «ترب�
 | Phase order | Design system → frontend with mock data → backend and integration |
 | AI scope | Grouping and comparison, without a personal agent |
 | Decision model | Jev for course classification and existing-group membership; the owner reports successful Persian testing. Versions, thresholds, and remaining AI models are pending. |
-| MVP backend stack | Bun/TypeScript, server-side Next.js, PostgreSQL, Drizzle ORM/Kit, pgvector, and a separate pg-boss worker with its dashboard. No separate API app. |
+| MVP backend stack | Bun/TypeScript backend in `apps/backend` and independent worker in `apps/worker`, deployed as separate Docker containers sharing PostgreSQL, Drizzle ORM/Kit, pgvector, and pg-boss with its private dashboard. Owner changed the earlier Next.js-only backend boundary on October 4. |
 | Model access and hosting | Jev and generative LLMs through OpenRouter. Local first; later hosting such as Hamravesh remains a candidate. |
 
 ## Proposed technical defaults
@@ -58,7 +58,8 @@ Proposed eventual structure:
 ```text
 apps/
   web/                 Next.js frontend and component showcase
-  worker/              Bun provider ingestion and AI jobs, introduced in phase 3
+  backend/             Bun HTTP backend and operator CLI
+  worker/              Independent Bun pg-boss worker
   utils/               Existing provider adapters and local data tools
 packages/
   ui/                  Design tokens and reusable components
@@ -174,15 +175,25 @@ Suggested first filters are provider, free/paid, price, and level. Add others on
 
 ## Phase 3 — Backend, ingestion, AI, and integration
 
-Product direction agreed October 4, 2026: focus the initial release on comparing similar courses. Categories and internal search lead to published comparison groups with at least two meaningful alternatives; unmatched courses may remain internal. Topic is required, level is optional, and unknown level is distinct from explicitly multi-level coverage. This narrows the earlier general course-search scope. See [backend handoff](docs/backend.md) for the selected stack, workflow contracts, local implementation milestones, and remaining policy questions. Architecture is ready for implementation; no production integration is active.
+Product direction agreed October 4, 2026: focus the initial release on comparing similar courses. Categories and internal search lead to published comparison groups with at least two meaningful alternatives; unmatched courses may remain internal. Topic is required, level is optional, and unknown level is distinct from explicitly multi-level coverage. This narrows the earlier general course-search scope. See [backend handoff](docs/backend.md) for the selected stack, workflow contracts, local implementation milestones, and remaining policy questions. The offline foundation is implemented; see [backend operations](docs/backend-operations.md) for commands and boundaries. No production integration is active.
 
 ### Objective
 
 Replace mock data with traceable provider data and connect the existing frontend to a JavaScript/TypeScript backend.
 
+The execution milestones are maintained in the [backend milestone status](docs/backend.md#implementation-order-and-acceptance):
+
+1. Foundation and offline workflow — implemented and locally validated.
+2. Bounded ingestion and revision handling — next; not started.
+3. Jev placement and hybrid retrieval — pending.
+4. Group discovery, assessment and publication — pending.
+5. Frontend integration and opt-in refresh — pending.
+
+Cloud release also requires shared database connectivity/TLS, backups/restore, protected operator access, monitoring and a successful frontend production build. Local foundation checks do not satisfy the full phase 3 completion criteria below.
+
 ### Step 1: Architecture and contracts
 
-- Implement the selected Next.js/Bun/PostgreSQL/Drizzle/pgvector/pg-boss local foundation without a separate API app. Jev and generative models use OpenRouter; specify versions, question contracts, decision policies, and live-call budgets before enabling automation.
+- Implement the selected Bun/PostgreSQL/Drizzle/pgvector/pg-boss foundation with the owner-requested separate `apps/backend` and `apps/worker` containers. Jev and generative models use OpenRouter; specify versions, question contracts, decision policies, and live-call budgets before enabling automation.
 - Implement the shared contracts established during phase 2 and validate API boundaries.
 - Model providers, source courses, topics, level groups, offers, syllabus content, source timestamps, and derived comparisons.
 - Separate source facts from normalized values and AI-generated output.
@@ -208,9 +219,9 @@ Replace mock data with traceable provider data and connect the existing frontend
 - Route uncertain group assignments for review and support manual corrections.
 - Evaluate grouping and comparison quality against a small human-reviewed set before expanding coverage.
 
-### Step 4: Next.js backend and frontend integration
+### Step 4: Backend and frontend integration
 
-- Implement server-side group discovery/search, category browsing, group comparisons, and supporting course details in Next.js; agree query contracts and any internal handlers needed for interactions.
+- Implement group discovery/search, category browsing, group comparisons, and supporting course details in `apps/backend`; connect Next.js through explicit browser-safe DTOs and agree query contracts.
 - Replace the mock data service with database-backed server access through explicit public DTOs.
 - Show source links, freshness indicators, missing data, and partial-failure states.
 - Cache expensive comparisons and regenerate them when relevant source content changes.
@@ -248,7 +259,7 @@ Replace mock data with traceable provider data and connect the existing frontend
 
 ## Next steps and remaining work
 
-- Start phase 3 milestone 1 from [backend handoff](docs/backend.md): local database/migrations, durable worker, dashboard, offline import, and a server query vertical slice. Remaining model IDs, refresh operations, and quality policies can follow; no production backend, scheduled scraping, or live AI is active yet.
+- The phase 3 offline foundation described in [backend operations](docs/backend-operations.md) passes database and separate-container workflow checks. Next: bounded ingestion/revision handling. The foundation adds saved-export imports, immutable revisions, manual memberships/publication and deterministic factual jobs. Remaining model IDs, refresh operations, quality policies and frontend integration follow; scheduled scraping/live AI remain disabled.
 - Retain the four standalone version-2 adapters and local read-only data dashboard as owner-authorized groundwork outside the normal phase order. Frontend fixtures remain separate from current scraper exports.
 - Resolve the production build runtime blocker and finish screen-reader, keyboard, and mobile review. Previously reviewed layouts/interactions are recorded in the frontend documentation and history.
 - Reconcile the homepage's three-course beginner Python group with the eight-course broad Python prototype, extract its page-local components when scope is agreed, and decide whether dedicated results/detail/comparison routes are needed.

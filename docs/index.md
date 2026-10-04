@@ -1,6 +1,6 @@
 # Dorob documentation
 
-Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 architecture is ready for local implementation; backend code/integration remain pending. This hub links every maintained project document; dated history is separate from current status.
+Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 milestone 1 is implemented and locally validated; live ingestion/AI and frontend integration remain pending. This hub links every maintained project document; dated history is separate from current status.
 
 ## Start here
 
@@ -17,6 +17,7 @@ Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 a
 
 ## Data and future integration
 
+- [Backend operations](backend-operations.md): implemented setup, import/group/publication commands, separate Docker services, tests and recovery.
 - [Backend implementation handoff](backend.md): selected stack, comparison-first scope, persistence/workflow contracts, local milestones, and acceptance checks.
 - [Backend flow diagram](backend-flow.html): browser-rendered Mermaid proposal with zoom controls and embedded source; requires internet access.
 - [Utility README](../apps/utils/README.md): adapter/export commands, backend imports, and local dashboard setup.

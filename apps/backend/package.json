@@ -1,0 +1,18 @@
+{
+  "name": "@dorob/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --target bun --outdir dist --packages external"
+  },
+  "dependencies": {
+    "@dorob/backend": "workspace:*",
+    "@dorob/core": "workspace:*",
+    "@dorob/db": "workspace:*",
+    "zod": "4.6.5",
+    "drizzle-orm": "0.45.3",
+    "@dorob/utils": "workspace:*"
+  }
+}

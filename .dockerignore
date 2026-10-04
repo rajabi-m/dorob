@@ -1,0 +1,17 @@
+.git
+**/node_modules
+**/.next
+**/dist
+**/*.tsbuildinfo
+.env
+.env.*
+!.env.example
+**/*.pem
+**/*.key
+apps/utils/output
+.agents
+.codex
+.aws
+coverage
+tmp
+temp

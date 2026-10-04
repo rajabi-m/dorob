@@ -1,6 +1,6 @@
 # Backend architecture and implementation handoff
 
-Updated October 4, 2026. The owner has selected the MVP stack and requested an implementation-ready handoff. Phase 3 planning is ready for implementation; backend code has not yet been introduced. This documentation task does not itself start services, scrape providers, call models, or deploy anything.
+Updated October 4, 2026. Phase 3 milestone 1 now has an offline implementation: Bun HTTP service and operator CLI in `apps/backend`, separate Bun worker in `apps/worker`, database migrations, saved-export imports and deterministic factual groups. The owner requested separate backend/worker Docker containers, superseding the earlier Next.js-only backend boundary. See [backend operations](backend-operations.md) for actual commands/limits and [validation](validation.md) for measured results. Live scraping, AI and frontend integration are not active.
 
 Open the [backend flow diagram](backend-flow.html) in a browser for the proposed pipeline, including unmatched-course retrieval, review, assessment, publication, and updates. The HTML contains the Mermaid source for humans and AI to inspect; rendering requires internet access to load pinned Mermaid 11.17.2 from jsDelivr. The flow is a proposal, not an implemented architecture.
 
@@ -9,7 +9,7 @@ Open the [backend flow diagram](backend-flow.html) in a browser for the proposed
 | Area | Selected decision |
 | --- | --- |
 | Language/runtime | TypeScript and Bun; preserve the existing Bun workspace and lockfile. |
-| Visitor-facing backend | Server-side code inside the existing Next.js App Router app. No `apps/api`, separate API framework, or public API product for the MVP. |
+| Visitor-facing backend | Separate Bun HTTP service in `apps/backend`, owner-requested October 4; Next.js remains the frontend. |
 | Database | PostgreSQL. |
 | Queries/migrations | Drizzle ORM and Drizzle Kit; commit reviewed SQL migrations. |
 | Background work | pg-boss with a separate Bun worker process. |
@@ -23,14 +23,14 @@ Selected choices above are owner decisions. The implementation defaults below ma
 
 ## Runtime boundaries and workspace
 
-Next.js serves published database-backed content. Server Components can call server-side query services directly; add Route Handlers or Server Actions only when an interaction needs them. “No API for now” means no separate API application; it does not prohibit internal Next.js request handlers. Do not send scraping or model work through a visitor's request.
+The Bun HTTP backend serves stored, manually published group facts. Next.js will consume explicit public DTOs in a later integration milestone; it currently still uses saved fixtures. Do not send scraping or model work through a visitor's request.
 
-The worker consumes pg-boss jobs, calls adapters/OpenRouter, and saves results. Initially one worker process can handle all job types. The database, worker, web app, and dashboard can run on the same local machine. They are separate processes with independent start/stop lifecycles; Next.js must not start an embedded worker during a page request or development reload.
+The worker currently consumes deterministic pg-boss jobs and saves factual snapshots; adapters/OpenRouter workflows follow later. Backend and worker are separate images and processes with independent lifecycles, capable of running on different cloud hosts sharing PostgreSQL. No process embeds or launches a worker during a visitor request.
 
 Target structure, creating packages only as each milestone needs them:
 
 ```text
-apps/web/src/server/   Next.js query services and server-only application code
+apps/backend/         Bun HTTP service, operator CLI, backend tests
 apps/worker/           Bun job handlers, scheduling, and operator commands
 apps/utils/            Existing provider adapters and export utilities
 packages/core/        Browser-safe domain DTOs and boundary validation
@@ -180,7 +180,7 @@ Add an ignored local environment file and a committed `.env.example` containing 
 
 Provide a pinned local PostgreSQL/pgvector setup with persistent storage, using Docker Compose when Docker is available; document an existing PostgreSQL alternative. Do not install/start a system service without applicable authorization. Migrations initialize pgvector and application tables; pg-boss owns its own schema/migrations. Match the dashboard release to that schema. Its documented runtime currently requires Node.js 22.12+; use a separate local container/runtime if needed while keeping the application/worker on Bun. Verify compatibility before selecting exact versions; do not assume dashboard Bun support from pg-boss's Bun support.
 
-Introduce root Bun commands for database startup/migrations, worker startup, import/manual jobs, review/publication, dashboard, and backend tests. Name and document the actual implemented commands in README; they do not exist yet. Web and worker startup must not perform destructive resets or automatically migrate schema. Begin with schedules disabled; refresh frequencies from [scrape-spec.md](scrape-spec.md) remain proposals.
+Root Bun commands for database startup/migrations, worker startup, offline import/manual groups, inspection/publication, dashboard, and tests now exist; see [operations](backend-operations.md) and README. Later ingestion/model review commands remain to be added. Web and worker startup must not perform destructive resets or automatically migrate schema. Begin with schedules disabled; refresh frequencies from [scrape-spec.md](scrape-spec.md) remain proposals.
 
 Use the pg-boss dashboard to inspect queues, payloads, failures, and schedules. Include `workflowRunId`, `courseId`, and `groupId` where applicable for filtering. Persist model usage/cost and complete run/attempt history in application records, since queue views are not a full domain audit trail. Protect operator actions; no unauthenticated public review/publication endpoint. The existing read-only data dashboard is a separate utility and remains usable.
 
@@ -188,13 +188,25 @@ Hamravesh deployment is future work. Keep processes configurable and portable, b
 
 ## Implementation order and acceptance
 
-The next implementation agent should start with milestone 1 and complete it before expanding into live ingestion or model automation. This handoff defines the architecture; implementation agents should make routine schema/file choices within it and keep documentation current. Do not commit, create branches, or deploy without the owner's authorization.
+Milestone 1 is implemented and validated locally with offline tests, real PostgreSQL tests, and separate API/worker/dashboard containers. Milestone 2 is next. This handoff defines the architecture; implementation agents should make routine schema/file choices within it and keep documentation current. Do not commit, create branches, or deploy without the owner's authorization.
 
-1. **Local foundation and vertical slice.** Add server-only packages, PostgreSQL/pgvector setup, Drizzle migrations, Bun worker/pg-boss integration, compatible dashboard, configuration validation, and a version-2 saved-export importer. Import two suitable saved courses into a manually defined draft group, enqueue a deterministic job, persist its result, and read it through a Next.js server service. Keep existing fixtures available through an explicit development data-mode boundary. Demonstrate retry/restart safety and an atomic result-to-next-job handoff without external requests.
+1. **Local foundation and vertical slice.** Add server-only packages, PostgreSQL/pgvector setup, Drizzle migrations, Bun worker/pg-boss integration, compatible dashboard, configuration validation, and a version-2 saved-export importer. Import two suitable saved courses into a manually defined draft group, enqueue a deterministic job, persist its result, and read it through the Bun backend query service/HTTP boundary. The owner requested a separate backend after the original handoff; frontend fixtures remain available and the frontend data-mode switch belongs to its integration milestone. Demonstrate retry/restart safety and an atomic result-to-next-job handoff without external requests.
 2. **Bounded ingestion and revision handling.** Wrap the existing Maktabkhooneh adapter in resumable manual jobs; add a second existing provider for cross-provider validation. Preserve access rules, unknowns, and original currency evidence. Add change detection and downstream invalidation; do not run full-catalog collection by default.
 3. **Jev placement and hybrid retrieval.** Seed a small reviewed taxonomy, implement OpenRouter decision/embedding clients and candidate retrieval, persist decisions with evidence coverage, and provide operator review commands. Test no-fit separately from uncertain and missing evidence.
 4. **Group discovery, assessment, and publication.** Generate draft groups and structured evidence-backed comparisons, account for every candidate, enforce publication gates, and support manual correction/reprocessing. Keep ranking/badge policies disabled until reviewed; factual comparisons and qualified fit explanations can work without an overall winner.
 5. **Frontend integration and opt-in refresh.** Connect group/category discovery and group details to published records; reconcile existing Python prototype membership against the agreed criteria. Retain attribution, Persian/RTL display, unknowns, and stale states. Enable schedules only after bounded runs and quality review; dedicated course routes and a broad frontend redesign are not prerequisites.
+
+Current milestone status:
+
+| Milestone | Status | Next deliverable |
+| --- | --- | --- |
+| 1. Foundation and offline workflow | Implemented and locally validated | Saved version-2 imports, immutable evidence, manual groups/publication, factual HTTP reads, separate Docker services and retry/rollback checks are available. |
+| 2. Bounded ingestion and revision handling | Next; not started | Durable, resumable Maktabkhooneh jobs plus a second provider, provider-wide limits, change detection and downstream invalidation. |
+| 3. Jev placement and hybrid retrieval | Pending | Reviewed taxonomy, OpenRouter decision/embedding clients, candidate retrieval, evidence-bound decisions and operator review. |
+| 4. Group discovery, assessment and publication | Pending | Reviewed new groups, structured evidence-backed comparisons, claim validation, correction/reprocessing and publication gates. The current factual publication CLI is groundwork for this richer workflow. |
+| 5. Frontend integration and opt-in refresh | Pending | Database-backed category/search/group journeys, attribution/freshness/unavailable states and quality-reviewed refresh schedules. |
+
+Cloud release preparation remains separate from local milestone acceptance: configure shared PostgreSQL connectivity/TLS, backups and restore, least-privilege roles, private operator access, centralized logs and worker monitoring; resolve the frontend build blocker. Backend and workers remain independent containers on the selected cloud hosts. No cloud release is claimed.
 
 Required acceptance checks, scaled to each milestone:
 
@@ -206,11 +218,11 @@ Required acceptance checks, scaled to each milestone:
 - Run `bun run lint`, `bun run typecheck`, existing utility tests, meaningful new backend/database integration tests, and `bun run build` sequentially where required. Add meaningful retry, rollback, revision, and publication tests rather than tests that simply mirror functions.
 - The current production build limitation is documented in [validation](validation.md). Attempt the check and report/reproduce blockers; do not claim a complete build until it passes. UI integration also requires Persian, keyboard-focus, mixed-direction, and mobile checks under the applicable skills.
 
-Update README, Plan, validation, and this handoff to reflect actual deliverables and commands as work lands. No database/worker setup or live-call success is claimed by this document.
+Keep README, Plan, validation, and this handoff aligned with deliverables. The offline PostgreSQL and separate-container workflow have now been tested; no live model or ingestion success is claimed.
 
 ## Existing groundwork and constraints
 
-- The repository uses a Bun workspace with a Next.js/TypeScript frontend. Bun is now selected for backend application/worker execution in the same workspace; the new packages and services remain to be implemented.
+- The repository uses a Bun workspace with a Next.js/TypeScript frontend. Bun is now selected for backend application/worker execution in the same workspace; the offline foundation packages and services are now implemented.
 - Four standalone adapters exist for Maktabkhooneh, TopLearn, Sabzlearn, and Roocket. They export the implemented [version-2 course format](course-data-format.md). Their existence does not select all four as launch providers or establish production readiness.
 - The local data dashboard reads saved exports. No production API, database, scheduled refresh, or live AI is connected to the frontend.
 - Frontend snapshots and current scraper exports have different contracts. Integration requires an explicit mapping and shared browser-safe contracts; scraper code, raw evidence, and secrets must stay server-side.
@@ -223,7 +235,7 @@ Update README, Plan, validation, and this handoff to reflect actual deliverables
 | Launch coverage | Which initial groups and providers offer enough comparable courses and evidence? Maktabkhooneh remains the planned first provider; cross-provider validation is required before calling the core experience complete. |
 | Domain model | Finalize fields and constraints within the persistence model above; do not reopen the selected database or lifecycle defaults. |
 | Group eligibility | Define group-specific comparability criteria and name the operator who reviews uncertain membership; the initial below-minimum publication policy is specified above. |
-| Server contracts | Define Next.js query DTOs and any internal handlers; Bun and the Next.js backend are selected. |
+| Server contracts | The initial Bun HTTP group-read DTO is implemented; category/search and frontend integration contracts follow. |
 | Storage and discovery | PostgreSQL, Drizzle, and pgvector are selected. Finalize schema details, evidence retention, embedding model/dimensions, and retrieval evaluation. |
 | Ingestion operations | Which access methods, refresh intervals, rate limits, retries, and failure recovery rules? |
 | AI and evaluation | Jev is selected for classification and existing-group membership. Which version, question contracts, decision thresholds, and review routing? Which embedding and generative models, cost limits, and evaluation process for the remaining roles? |

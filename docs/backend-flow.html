@@ -23,7 +23,7 @@
 <body>
   <header>
     <h1>Dorob backend flow</h1>
-    <p>Implementation direction · Next.js + Bun worker · PostgreSQL / Drizzle / pgvector · pg-boss workflows · Jev and LLMs through OpenRouter.</p>
+    <p>Implementation direction · Bun backend + separate Bun worker · PostgreSQL / Drizzle / pgvector · pg-boss workflows · Jev and LLMs through OpenRouter.</p>
     <p>Local first. Exact model IDs and automation policies remain configurable. See backend.md for the implementation handoff.</p>
     <nav aria-label="Diagram controls">
       <button id="out" aria-label="Zoom out">−</button>
@@ -61,7 +61,7 @@
       P --> Q{"Ready to publish?"}
       Q -->|Yes| S["Save versioned comparison"]
       Q -->|No| T["Hold for correction or more evidence"]
-      S --> U["Next.js server reads PostgreSQL → group page"]
+      S --> U["Bun backend reads PostgreSQL → Next.js group page"]
       U --> V["Visitor compares → provider website"]
       C -.-> W["Detect affected memberships and comparisons"]
       W -.->|Classification or membership changed| D

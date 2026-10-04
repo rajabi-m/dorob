@@ -1,0 +1,16 @@
+{
+  "name": "@dorob/backend",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@dorob/core": "workspace:*",
+    "@dorob/db": "workspace:*",
+    "@dorob/utils": "workspace:*",
+    "pg-boss": "12.35.0",
+    "zod": "4.6.5",
+    "drizzle-orm": "0.45.3"
+  }
+}

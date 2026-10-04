@@ -1,0 +1,14 @@
+{
+  "name": "@dorob/worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --target bun --outdir dist --packages external"
+  },
+  "dependencies": {
+    "@dorob/backend": "workspace:*",
+    "@dorob/db": "workspace:*",
+    "@dorob/core": "workspace:*"
+  }
+}

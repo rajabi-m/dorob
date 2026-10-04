@@ -1,0 +1,63 @@
+name: dorob
+services:
+  db:
+    image: pgvector/pgvector:0.8.1-pg17
+    environment:
+      POSTGRES_DB: dorob
+      POSTGRES_USER: dorob
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dorob -d dorob"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+  backend:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile
+      target: backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://dorob:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/dorob
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 4000
+    ports: ["127.0.0.1:4000:4000"]
+    depends_on:
+      db: { condition: service_healthy }
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bun", "-e", "if (!(await fetch('http://127.0.0.1:4000/health/ready')).ok) process.exit(1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  worker:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile
+      target: worker
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://dorob:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/dorob
+    depends_on:
+      db: { condition: service_healthy }
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 40s
+  dashboard:
+    profiles: [ops]
+    build: { context: infra/dashboard }
+    environment:
+      DATABASE_URL: postgres://dorob:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/dorob
+      PGBOSS_SCHEMA: ${PGBOSS_SCHEMA:-pgboss}
+      PORT: 3000
+      PGBOSS_DASHBOARD_AUTH_USERNAME: ${PGBOSS_DASHBOARD_AUTH_USERNAME:-operator}
+      PGBOSS_DASHBOARD_AUTH_PASSWORD: ${PGBOSS_DASHBOARD_AUTH_PASSWORD:-}
+    ports: ["127.0.0.1:4001:3000"]
+    depends_on:
+      db: { condition: service_healthy }
+volumes:
+  postgres-data:
