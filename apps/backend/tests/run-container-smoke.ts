@@ -6,6 +6,9 @@ import { createDraftGroup, publishGroup } from "@dorob/backend/groups";
 import { readGroup } from "@dorob/backend/queries";
 
 // Test-only credentials/database/ports. Images must be built before this command.
+import { enqueueCollection, inspectCollection } from "@dorob/backend/ingestion";
+import { roocketUrl } from "./provider-fixtures.ts";
+
 const hostUrl = "postgres://dorob_test:offline-test-only@127.0.0.1:55433/dorob_test";
 const containerUrl = "postgres://dorob_test:offline-test-only@db:5432/dorob_test";
 const compose = ["docker", "compose", "--progress", "quiet", "-f", "infra/compose.test.yaml"];
@@ -19,10 +22,10 @@ async function run(command: string[]) {
   if (await child.exited !== 0) throw new Error(`Container smoke command failed: ${command[0]}`);
 }
 async function waitUntil(check: () => Promise<boolean>, label: string) {
-  const until = Date.now() + 30000;
+  const until = Date.now() + 120000;
   while (Date.now() < until) {
     if (await check().catch(() => false)) return;
-    await Bun.sleep(200);
+    await Bun.sleep(20);
   }
   throw new Error(`Timeout waiting for ${label}`);
 }
@@ -73,6 +76,61 @@ try {
     topic: "Python", targetLevel: null, criteria: "داده ساختگی برای آزمایش کانتینر" }, samples.map(course => course.id));
   await waitUntil(async () => (await readGroup(connection.db, "container-python", true))?.stale === false,
     "new workflow after worker restart");
+  await run(["docker", "stop", "--timeout", "35", worker]);
+  // Two independent real worker containers use mounted fixture transports, while
+  // the unmodified backend container queues operator requests via its actual CLI.
+  await connection.client`create table fixture_requests (worker text not null, url text not null, started_at timestamptz not null)`;
+  for (const number of [1, 2]) {
+    const fixtureWorker = `dorob-fixture-worker-${number}-${suffix}`;
+    await run(["docker", "run", "-d", "--name", fixtureWorker, "--network", network, ...env,
+      "--env", `FIXTURE_WORKER_ID=${number}`,
+      "-v", `${process.cwd()}/apps/backend/tests:/app/apps/backend/tests:ro`,
+      "-v", `${process.cwd()}/apps/utils/tests/fixtures:/app/apps/utils/tests/fixtures:ro`,
+      "dorob-worker:local", "bun", "apps/backend/tests/container-fixture-worker.ts"]);
+    names.push(fixtureWorker);
+  }
+  const boundedRequest = JSON.stringify({ providerId: "roocket", urls: [roocketUrl] });
+  await run(["docker", "exec", api, "bun", "-e", `await Bun.write('/tmp/collection.json', ${JSON.stringify(boundedRequest)})`]);
+  await run(["docker", "exec", api, "bun", "apps/backend/src/cli.ts", "collect", "/tmp/collection.json"]);
+  const second = await enqueueCollection(connection.db, boss, { providerId: "roocket", urls: [roocketUrl] });
+  const third = await enqueueCollection(connection.db, boss, { providerId: "maktabkhooneh", maxCourses: 2 });
+  await waitUntil(async () => (await inspectCollection(connection.db, second)).state === "succeeded", "independent fixture ingestion");
+  await waitUntil(async () => (await inspectCollection(connection.db, third)).state === "partial", "fixture partial ingestion");
+  const requests = await connection.client`select * from fixture_requests where url like '%roocket.ir%' order by started_at`;
+  const workers = new Set(requests.map(row => row.worker));
+  if (workers.size !== 2) throw new Error("Both independent workers must execute provider requests");
+  for (let index = 1; index < requests.length; index++) {
+    if (new Date(requests[index].started_at).getTime() - new Date(requests[index - 1].started_at).getTime() < 1500) throw new Error("Provider-wide request spacing violated across containers");
+  }
+  await run(["docker", "restart", names[names.length - 1]]);
+  const restarted = await enqueueCollection(connection.db, boss, { providerId: "roocket", urls: [roocketUrl] });
+  await waitUntil(async () => (await inspectCollection(connection.db, restarted)).state === "succeeded", "fixture ingestion after worker restart");
+  // Abrupt host loss while a real request lease is active. Manual resume fences
+  // the lost execution; the surviving worker must wait out the persisted lease.
+  const beforeCrash = await connection.client`select count(*)::int as count from fixture_requests`;
+  const crashed = await enqueueCollection(connection.db, boss, { providerId: "roocket", urls: [roocketUrl] });
+  let crashedWorker = "";
+  await waitUntil(async () => {
+    const rows = await connection.client`select worker from fixture_requests order by started_at desc limit 1`;
+    const count = await connection.client`select count(*)::int as count from fixture_requests`;
+    if (count[0].count <= beforeCrash[0].count) return false;
+    crashedWorker = `dorob-fixture-worker-${rows[0].worker}-${suffix}`;
+    return true;
+  }, "active request before abrupt worker loss");
+  await run(["docker", "kill", crashedWorker]);
+  const [lease] = await connection.client`select busy_until from provider_limits where provider_id = 'roocket'`;
+  if (new Date(lease.busy_until).getTime() < Date.now() + 40000) throw new Error("Lost host did not retain its provider reservation");
+  await run(["docker", "start", crashedWorker]);
+  await run(["docker", "exec", api, "bun", "apps/backend/src/cli.ts", "resume", crashed]);
+  console.log("Worker killed mid-request; checking durable resume after provider lease expires");
+  await waitUntil(async () => (await inspectCollection(connection.db, crashed)).state === "succeeded", "durable resume after abrupt host loss");
+  const history = await inspectCollection(connection.db, crashed);
+  if (!history.attempts.some(attempt => attempt.state === "interrupted")) throw new Error("Interrupted attempt history was lost");
+  const revisions = await connection.client`select count(*)::int as count from course_revisions r join courses c on c.id = r.course_id where c.provider_id in ('roocket', 'maktabkhooneh')`;
+  if (revisions[0].count !== 2) throw new Error("Unchanged container observations duplicated evidence revisions");
+  const counts = await connection.client`select count(*)::int as count from courses where provider_id in ('roocket', 'maktabkhooneh')`;
+  if (counts[0].count !== 2) throw new Error("Repeated container ingestion duplicated source courses");
+  console.log("PASS: actual operator CLI and two independent worker containers ingest both adapters offline, preserve partial outcomes, coordinate provider requests and survive restart");
   console.log("PASS: separate API/worker images, explicit migrations, durable job, publication, HTTP boundary and worker restart");
 } finally {
   await boss.stop();

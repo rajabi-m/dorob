@@ -1,6 +1,6 @@
 # Dorob documentation
 
-Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 milestone 1 is implemented and locally validated; live ingestion/AI and frontend integration remain pending. This hub links every maintained project document; dated history is separate from current status.
+Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 milestones 1 and 2 are complete and locally validated. AI and frontend integration remain pending. This hub links every maintained project document; dated history is separate from current status.
 
 ## Start here
 

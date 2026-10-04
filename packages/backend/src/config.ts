@@ -11,6 +11,7 @@ const configSchema = z.object({
   BACKEND_OPERATOR_TOKEN: optionalText,
   PGBOSS_SCHEMA: z.string().regex(/^[a-z][a-z0-9_]*$/).max(50).default("pgboss"),
   WORKER_CONCURRENCY: positive.max(8).default(1),
+  PROVIDER_REQUEST_SPACING_MS: positive.min(1500).max(60000).default(1500),
   PROVIDER_CONCURRENCY: z.coerce.number().int().min(1).max(1).default(1),
   JEV_CONCURRENCY: positive.max(8).default(1),
   GENERATIVE_CONCURRENCY: z.coerce.number().int().min(1).max(1).default(1),

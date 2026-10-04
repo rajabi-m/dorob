@@ -4,7 +4,7 @@ Created: September 30, 2026
 
 Current checks and build limitations are maintained in [validation](docs/validation.md).
 
-Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 milestone 1 is implemented and locally validated: a separate Bun backend in `apps/backend`, worker in `apps/worker`, PostgreSQL/Drizzle/pgvector persistence, and an offline factual-group workflow. Frontend integration and live ingestion/AI remain pending.
+Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 milestone 1 is implemented and locally validated: a separate Bun backend in `apps/backend`, worker in `apps/worker`, PostgreSQL/Drizzle/pgvector persistence, and an offline factual-group workflow. Milestone 2 bounded manual Maktabkhooneh/Roocket ingestion and revision invalidation are complete and locally validated. Frontend integration and AI remain pending.
 
 ## Product vision
 
@@ -184,7 +184,7 @@ Replace mock data with traceable provider data and connect the existing frontend
 The execution milestones are maintained in the [backend milestone status](docs/backend.md#implementation-order-and-acceptance):
 
 1. Foundation and offline workflow — implemented and locally validated.
-2. Bounded ingestion and revision handling — next; not started.
+2. Bounded ingestion and revision handling — complete and locally validated.
 3. Jev placement and hybrid retrieval — pending.
 4. Group discovery, assessment and publication — pending.
 5. Frontend integration and opt-in refresh — pending.
@@ -259,7 +259,7 @@ Cloud release also requires shared database connectivity/TLS, backups/restore, p
 
 ## Next steps and remaining work
 
-- The phase 3 offline foundation described in [backend operations](docs/backend-operations.md) passes database and separate-container workflow checks. Next: bounded ingestion/revision handling. The foundation adds saved-export imports, immutable revisions, manual memberships/publication and deterministic factual jobs. Remaining model IDs, refresh operations, quality policies and frontend integration follow; scheduled scraping/live AI remain disabled.
+- The phase 3 offline foundation described in [backend operations](docs/backend-operations.md) passes database and separate-container workflow checks. Bounded ingestion/revision handling is complete and locally validated. The foundation adds saved-export imports, immutable revisions, manual memberships/publication and deterministic factual jobs. Remaining model IDs, refresh operations, quality policies and frontend integration follow; scheduled scraping/live AI remain disabled.
 - Retain the four standalone version-2 adapters and local read-only data dashboard as owner-authorized groundwork outside the normal phase order. Frontend fixtures remain separate from current scraper exports.
 - Resolve the production build runtime blocker and finish screen-reader, keyboard, and mobile review. Previously reviewed layouts/interactions are recorded in the frontend documentation and history.
 - Reconcile the homepage's three-course beginner Python group with the eight-course broad Python prototype, extract its page-local components when scope is agreed, and decide whether dedicated results/detail/comparison routes are needed.

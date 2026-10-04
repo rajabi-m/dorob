@@ -1,9 +1,10 @@
 import { PgBoss, fromDrizzle } from "pg-boss";
 import { sql } from "drizzle-orm";
 import type { Transaction } from "@dorob/db";
-import type { GroupJob } from "@dorob/core";
 import type { Config } from "./config.ts";
 
+export const COLLECT = "provider-collect-v1";
+export const RECONCILE = "group-reconcile-v1";
 export const BUILD_GROUP = "group-build-v1";
 export const FINALIZE_GROUP = "group-finalize-v1";
 
@@ -16,11 +17,11 @@ export function createQueue(config: Pick<Config, "DATABASE_URL" | "PGBOSS_SCHEMA
 export type Queue = ReturnType<typeof createQueue>;
 
 export async function setupQueues(boss: Queue) {
-  for (const name of [BUILD_GROUP, FINALIZE_GROUP]) {
-    await boss.createQueue(name, { retryLimit: 2, retryDelay: 5, retryBackoff: true, expireInSeconds: 120, deleteAfterSeconds: 604800 });
+  for (const name of [BUILD_GROUP, FINALIZE_GROUP, COLLECT, RECONCILE]) {
+    await boss.createQueue(name, { retryLimit: 2, retryDelay: 5, retryBackoff: true, expireInSeconds: name === COLLECT ? 900 : 120, deleteAfterSeconds: 604800 });
   }
 }
-export async function enqueue(boss: Queue, tx: Transaction, name: string, payload: GroupJob) {
+export async function enqueue(boss: Queue, tx: Transaction, name: string, payload: object) {
   const id = await boss.send(name, payload, { db: fromDrizzle(tx, sql) });
   if (!id) throw new Error("Job insertion did not return an ID");
   return id;

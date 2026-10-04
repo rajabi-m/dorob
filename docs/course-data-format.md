@@ -96,3 +96,7 @@ Fictional example; calculate the hash in code. All nullable keys shown here must
 ## Implementation checks
 
 Update shared types/validation/hashing and export compatibility, then all four adapters and their documentation. Test real/reduced public fixtures plus explicitly synthetic cases: unknown versus empty, review classification/redaction/deduplication, individual versus aggregate ratings, partial review/syllabus coverage, evidence hashes, and rejection of old checkpoints without overwriting them. Respect robots, existing bounded transport, and access-denial stops; no full-catalog run is needed for this migration. Wider sampling and human-reviewed AI evaluation remain prerequisites for production.
+
+## Backend revision policy
+
+Milestone 2 imports and bounded provider jobs share the validated persistence path. Immutable retained inputs preserve this full contract, unknowns and original currency evidence. The backend evidence digest excludes `source.checkedAt` and `source.contentHash`, and includes every other retained field. It is deliberately broader than the adapter's normalized-fact hash: changed provenance/raw/offer/availability/feedback or image URLs can require reapproval even without educational text changes. Unchanged success records freshness, failures/older success never replace current facts, and changed current evidence inserts a transactional group invalidation request. Membership reapproval and publication remain explicit operator actions. See [revision handling](backend-operations.md#revision-invalidation-and-operator-approval).

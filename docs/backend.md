@@ -1,6 +1,6 @@
 # Backend architecture and implementation handoff
 
-Updated October 4, 2026. Phase 3 milestone 1 now has an offline implementation: Bun HTTP service and operator CLI in `apps/backend`, separate Bun worker in `apps/worker`, database migrations, saved-export imports and deterministic factual groups. The owner requested separate backend/worker Docker containers, superseding the earlier Next.js-only backend boundary. See [backend operations](backend-operations.md) for actual commands/limits and [validation](validation.md) for measured results. Live scraping, AI and frontend integration are not active.
+Updated October 4, 2026. Phase 3 milestone 1 now has an offline implementation: Bun HTTP service and operator CLI in `apps/backend`, separate Bun worker in `apps/worker`, database migrations, saved-export imports and deterministic factual groups. The owner requested separate backend/worker Docker containers, superseding the earlier Next.js-only backend boundary. See [backend operations](backend-operations.md) for actual commands/limits and [validation](validation.md) for measured results. Bounded manual provider ingestion is implemented and tested offline; no new live provider collection, AI or frontend integration is claimed.
 
 Open the [backend flow diagram](backend-flow.html) in a browser for the proposed pipeline, including unmatched-course retrieval, review, assessment, publication, and updates. The HTML contains the Mermaid source for humans and AI to inspect; rendering requires internet access to load pinned Mermaid 11.17.2 from jsDelivr. The flow is a proposal, not an implemented architecture.
 
@@ -25,7 +25,7 @@ Selected choices above are owner decisions. The implementation defaults below ma
 
 The Bun HTTP backend serves stored, manually published group facts. Next.js will consume explicit public DTOs in a later integration milestone; it currently still uses saved fixtures. Do not send scraping or model work through a visitor's request.
 
-The worker currently consumes deterministic pg-boss jobs and saves factual snapshots; adapters/OpenRouter workflows follow later. Backend and worker are separate images and processes with independent lifecycles, capable of running on different cloud hosts sharing PostgreSQL. No process embeds or launches a worker during a visitor request.
+The worker currently consumes deterministic pg-boss jobs and saves factual snapshots; bounded Maktabkhooneh/Roocket ingestion is implemented; OpenRouter workflows follow later. Backend and worker are separate images and processes with independent lifecycles, capable of running on different cloud hosts sharing PostgreSQL. No process embeds or launches a worker during a visitor request.
 
 Target structure, creating packages only as each milestone needs them:
 
@@ -157,7 +157,7 @@ Reliability requirements:
 - Enforce application result uniqueness by entity/input revision and operation/policy version. Queue deduplication alone is insufficient. Assume handlers can run again after a crash and make writes idempotent.
 - Retries can repeat a chargeable model call if the response was lost. Save completed responses for reuse, distinguish unknown call outcomes, cap retries, and never promise exactly-once billing.
 - Coordinate course/group updates with database locks or conditional revision checks. Coalesce comparison requests for a group and reject superseded results at publication time. Two parallel discovery jobs must not create duplicate groups for the same candidate set.
-- Start conservatively: one ingestion job per provider and one generative call at a time, with configurable Jev concurrency. Preserve adapter delays/access-denial behavior across jobs; creating a new scraper per concurrent job must not bypass provider-wide limits.
+- Start conservatively: one ingestion request per provider across all jobs/hosts and one generative call at a time, with configurable Jev concurrency. Preserve adapter delays/access-denial behavior across jobs; creating a new scraper per concurrent job must not bypass provider-wide limits.
 - Retry temporary network/429/5xx failures with bounded backoff and `Retry-After`. Do not layer unrestricted queue retries on top of adapter retries. Invalid schemas, missing credentials, access denial, and budget pauses need explicit operator action or deferred handling, not endless retries.
 - Keep the last valid facts and published comparison when a job fails. Mark affected analysis stale on relevant changes. If fewer than two eligible alternatives remain, withdraw comparative recommendations and show an honest unavailable/update state at the stable URL.
 - Keep prices current from source records independently of retained educational analysis. Track separate evidence hashes where useful: the existing source hash also includes offers/reviews and is not by itself an educational-only digest. Reassess membership for relevant content changes; recalculate price-based output for offer changes.
@@ -180,7 +180,7 @@ Add an ignored local environment file and a committed `.env.example` containing 
 
 Provide a pinned local PostgreSQL/pgvector setup with persistent storage, using Docker Compose when Docker is available; document an existing PostgreSQL alternative. Do not install/start a system service without applicable authorization. Migrations initialize pgvector and application tables; pg-boss owns its own schema/migrations. Match the dashboard release to that schema. Its documented runtime currently requires Node.js 22.12+; use a separate local container/runtime if needed while keeping the application/worker on Bun. Verify compatibility before selecting exact versions; do not assume dashboard Bun support from pg-boss's Bun support.
 
-Root Bun commands for database startup/migrations, worker startup, offline import/manual groups, inspection/publication, dashboard, and tests now exist; see [operations](backend-operations.md) and README. Later ingestion/model review commands remain to be added. Web and worker startup must not perform destructive resets or automatically migrate schema. Begin with schedules disabled; refresh frequencies from [scrape-spec.md](scrape-spec.md) remain proposals.
+Root Bun commands for database startup/migrations, worker startup, offline import/manual groups, inspection/publication, dashboard, and tests now exist; see [operations](backend-operations.md) and README. Bounded collection/resume commands are implemented; model review commands follow later. Web and worker startup must not perform destructive resets or automatically migrate schema. Begin with schedules disabled; refresh frequencies from [scrape-spec.md](scrape-spec.md) remain proposals.
 
 Use the pg-boss dashboard to inspect queues, payloads, failures, and schedules. Include `workflowRunId`, `courseId`, and `groupId` where applicable for filtering. Persist model usage/cost and complete run/attempt history in application records, since queue views are not a full domain audit trail. Protect operator actions; no unauthenticated public review/publication endpoint. The existing read-only data dashboard is a separate utility and remains usable.
 
@@ -188,7 +188,7 @@ Hamravesh deployment is future work. Keep processes configurable and portable, b
 
 ## Implementation order and acceptance
 
-Milestone 1 is implemented and validated locally with offline tests, real PostgreSQL tests, and separate API/worker/dashboard containers. Milestone 2 is next. This handoff defines the architecture; implementation agents should make routine schema/file choices within it and keep documentation current. Do not commit, create branches, or deploy without the owner's authorization.
+Milestone 1 is implemented and validated locally with offline tests, real PostgreSQL tests, and separate API/worker/dashboard containers. Milestone 2 is complete and locally validated. This handoff defines the architecture; implementation agents should make routine schema/file choices within it and keep documentation current. Do not commit, create branches, or deploy without the owner's authorization.
 
 1. **Local foundation and vertical slice.** Add server-only packages, PostgreSQL/pgvector setup, Drizzle migrations, Bun worker/pg-boss integration, compatible dashboard, configuration validation, and a version-2 saved-export importer. Import two suitable saved courses into a manually defined draft group, enqueue a deterministic job, persist its result, and read it through the Bun backend query service/HTTP boundary. The owner requested a separate backend after the original handoff; frontend fixtures remain available and the frontend data-mode switch belongs to its integration milestone. Demonstrate retry/restart safety and an atomic result-to-next-job handoff without external requests.
 2. **Bounded ingestion and revision handling.** Wrap the existing Maktabkhooneh adapter in resumable manual jobs; add a second existing provider for cross-provider validation. Preserve access rules, unknowns, and original currency evidence. Add change detection and downstream invalidation; do not run full-catalog collection by default.
@@ -201,7 +201,7 @@ Current milestone status:
 | Milestone | Status | Next deliverable |
 | --- | --- | --- |
 | 1. Foundation and offline workflow | Implemented and locally validated | Saved version-2 imports, immutable evidence, manual groups/publication, factual HTTP reads, separate Docker services and retry/rollback checks are available. |
-| 2. Bounded ingestion and revision handling | Next; not started | Durable, resumable Maktabkhooneh jobs plus a second provider, provider-wide limits, change detection and downstream invalidation. |
+| 2. Bounded ingestion and revision handling | Complete and locally validated | Durable bounded Maktabkhooneh/Roocket collection ledger, shared PostgreSQL request leases, validated revision persistence, transactional invalidation outbox and operator reapproval. |
 | 3. Jev placement and hybrid retrieval | Pending | Reviewed taxonomy, OpenRouter decision/embedding clients, candidate retrieval, evidence-bound decisions and operator review. |
 | 4. Group discovery, assessment and publication | Pending | Reviewed new groups, structured evidence-backed comparisons, claim validation, correction/reprocessing and publication gates. The current factual publication CLI is groundwork for this richer workflow. |
 | 5. Frontend integration and opt-in refresh | Pending | Database-backed category/search/group journeys, attribution/freshness/unavailable states and quality-reviewed refresh schedules. |
@@ -218,7 +218,7 @@ Required acceptance checks, scaled to each milestone:
 - Run `bun run lint`, `bun run typecheck`, existing utility tests, meaningful new backend/database integration tests, and `bun run build` sequentially where required. Add meaningful retry, rollback, revision, and publication tests rather than tests that simply mirror functions.
 - The current production build limitation is documented in [validation](validation.md). Attempt the check and report/reproduce blockers; do not claim a complete build until it passes. UI integration also requires Persian, keyboard-focus, mixed-direction, and mobile checks under the applicable skills.
 
-Keep README, Plan, validation, and this handoff aligned with deliverables. The offline PostgreSQL and separate-container workflow have now been tested; no live model or ingestion success is claimed.
+Keep README, Plan, validation, and this handoff aligned with deliverables. The offline PostgreSQL and separate-container ingestion workflow are tested; no new live provider collection or live model success is claimed. See [operations](backend-operations.md#bounded-manual-ingestion) for the implemented bounds, coordination and conservative revision policy.
 
 ## Existing groundwork and constraints
 

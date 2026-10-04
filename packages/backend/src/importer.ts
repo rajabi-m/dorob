@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { Database, Transaction } from "@dorob/db";
-import { courses, revisions, providers, observations } from "@dorob/db/schema";
+import { courses, revisions, providers, observations, memberships, groups, runs, invalidations } from "@dorob/db/schema";
 import type { ProviderCourse } from "@dorob/utils/course";
 import { validateExport } from "./course-validation.ts";
 import { digest } from "./hashing.ts";
@@ -31,6 +31,18 @@ async function saveCourse(tx: Transaction, course: ProviderCourse) {
   }
   // Out-of-order saved exports remain evidence but cannot replace newer facts.
   if (!existing.lastSuccessfulCheck || observedAt > existing.lastSuccessfulCheck) {
+    if (existing.currentRevisionId && existing.currentRevisionId !== revision.id) {
+      // Conservative: every retained evidence revision requires operator reapproval.
+      // Includes offers/availability/provenance, not just educational text.
+      const affected = await tx.select().from(memberships).where(eq(memberships.courseId, course.id));
+      for (const member of affected.sort((a, b) => a.groupId.localeCompare(b.groupId))) {
+        await tx.update(groups).set({ currentSnapshotId: null }).where(eq(groups.id, member.groupId));
+        await tx.update(runs).set({ state: "superseded", updatedAt: new Date() })
+          .where(and(eq(runs.groupId, member.groupId), sql`${runs.state} in ('queued', 'running', 'failed')`));
+        // Transactional outbox: never lose work if the queue/client is unavailable.
+        await tx.insert(invalidations).values({ groupId: member.groupId, courseId: course.id, revisionId: revision.id }).onConflictDoNothing();
+      }
+    }
     await tx.update(courses).set({ currentRevisionId: revision.id, lastSuccessfulCheck: observedAt, sourceUrl: course.sourceUrl }).where(eq(courses.id, course.id));
   }
   return { courseId: course.id, revisionId: revision.id };
@@ -38,19 +50,22 @@ async function saveCourse(tx: Transaction, course: ProviderCourse) {
 
 export async function importSavedExport(db: Database, input: unknown) {
   const data = validateExport(input); // Validate the entire file before any writes.
-  return db.transaction(async tx => {
-    await tx.insert(providers).values({ id: data.providerId }).onConflictDoNothing();
-    const imported = [];
-    // Stable lock order permits simultaneous imports on separate cloud hosts.
-    for (const course of [...data.courses].sort((a, b) => a.id.localeCompare(b.id))) imported.push(await saveCourse(tx, course));
-    let failuresRecorded = 0;
-    for (const error of data.errors) {
-      const [course] = await tx.select().from(courses).where(and(eq(courses.providerId, data.providerId), eq(courses.sourceUrl, error.sourceUrl)));
-      if (!course) continue; // No fabricated identity for an undiscovered failed URL.
-      await tx.insert(observations).values({ courseId: course.id, checkedAt: new Date(error.attemptedAt), status: "failed",
-        error: error.message.slice(0, 2000) }).onConflictDoNothing();
-      failuresRecorded++;
-    }
-    return { imported, exportFailures: data.errors.length, failuresRecorded };
-  });
+  return db.transaction(tx => importExportTransaction(tx, data));
+}
+
+export async function importExportTransaction(tx: Transaction, input: unknown) {
+  const data = validateExport(input);
+  await tx.insert(providers).values({ id: data.providerId }).onConflictDoNothing();
+  const imported = [];
+  // Stable lock order permits simultaneous imports on separate cloud hosts.
+  for (const course of [...data.courses].sort((a, b) => a.id.localeCompare(b.id))) imported.push(await saveCourse(tx, course));
+  let failuresRecorded = 0;
+  for (const error of data.errors) {
+    const [course] = await tx.select().from(courses).where(and(eq(courses.providerId, data.providerId), eq(courses.sourceUrl, error.sourceUrl)));
+    if (!course) continue; // No fabricated identity for an undiscovered failed URL.
+    await tx.insert(observations).values({ courseId: course.id, checkedAt: new Date(error.attemptedAt), status: "failed",
+      error: error.message.slice(0, 2000) }).onConflictDoNothing();
+    failuresRecorded++;
+  }
+  return { imported, exportFailures: data.errors.length, failuresRecorded };
 }

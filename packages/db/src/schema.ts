@@ -81,3 +81,57 @@ export const snapshots = pgTable("group_snapshots", {
   data: jsonb("data").$type<GroupSnapshot>().notNull(),
   generatedAt: time("generated_at").defaultNow().notNull(),
 });
+
+// Durable operator collection ledger; queue retention never deletes this history.
+export const collections = pgTable("ingestion_collections", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  providerId: text("provider_id").notNull(),
+  generation: integer("generation").notNull().default(0),
+  maxCourses: integer("max_courses").notNull(),
+  requestedUrls: jsonb("requested_urls").$type<string[]>().notNull(),
+  discoveredUrls: jsonb("discovered_urls").$type<string[]>(),
+  state: text("state").notNull().default("queued"),
+  error: text("error"),
+  createdAt: time("created_at").defaultNow().notNull(),
+}, t => [check("collection_bounds", sql`${t.maxCourses} between 1 and 100 and ${t.generation} >= 0 and jsonb_typeof(${t.requestedUrls}) = 'array' and jsonb_array_length(${t.requestedUrls}) <= ${t.maxCourses}`),
+  check("collection_provider", sql`${t.providerId} in ('maktabkhooneh', 'roocket')`),
+  check("collection_state", sql`${t.state} in ('queued', 'running', 'succeeded', 'partial', 'failed', 'paused')`)]);
+export const selections = pgTable("ingestion_selections", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  collectionId: uuid("collection_id").notNull().references(() => collections.id),
+  sourceUrl: text("source_url").notNull(),
+  state: text("state").notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  revisionId: uuid("revision_id").references(() => revisions.id),
+  error: text("error"),
+}, t => [uniqueIndex("collection_url").on(t.collectionId, t.sourceUrl),
+  uniqueIndex("selection_collection_owner").on(t.collectionId, t.id),
+  check("selection_attempt_budget", sql`${t.attempts} between 0 and 3`),
+  check("selection_state", sql`${t.state} in ('pending', 'running', 'retryable', 'succeeded', 'access-denied', 'malformed-evidence', 'operator-required', 'exhausted')`),
+  check("selection_success", sql`(${t.state} = 'succeeded') = (${t.revisionId} is not null)`)]);
+export const ingestionAttempts = pgTable("ingestion_attempts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  collectionId: uuid("collection_id").notNull().references(() => collections.id),
+  selectionId: uuid("selection_id").references(() => selections.id),
+  state: text("state").notNull(),
+  error: text("error"),
+  startedAt: time("started_at").defaultNow().notNull(),
+  finishedAt: time("finished_at"),
+});
+export const providerLimits = pgTable("provider_limits", {
+  providerId: text("provider_id").primaryKey(),
+  token: uuid("token"),
+  busyUntil: time("busy_until").defaultNow().notNull(),
+  nextAt: time("next_at").defaultNow().notNull(),
+  delayMs: integer("delay_ms").notNull().default(1500),
+  paused: text("paused"),
+}, t => [check("provider_spacing", sql`${t.delayMs} >= 0`)]);
+
+export const invalidations = pgTable("group_invalidations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupId: uuid("group_id").notNull().references(() => groups.id),
+  courseId: text("course_id").notNull().references(() => courses.id),
+  revisionId: uuid("revision_id").notNull().references(() => revisions.id),
+  state: text("state").notNull().default("pending"),
+  jobId: uuid("job_id"),
+}, t => [uniqueIndex("group_revision_invalidation").on(t.groupId, t.courseId, t.revisionId)]);

@@ -2,15 +2,19 @@ import { beforeAll, beforeEach, afterAll, expect, test } from "bun:test";
 import { eq, sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { createDatabase } from "@dorob/db";
-import { courses, revisions, observations, groups, memberships, runs, snapshots, attempts } from "@dorob/db/schema";
+import { courses, revisions, observations, groups, memberships, runs, snapshots, attempts, collections, selections, ingestionAttempts, providerLimits, invalidations } from "@dorob/db/schema";
 import { createCourse, type ProviderCourse } from "@dorob/utils/course";
 import { importSavedExport } from "@dorob/backend/importer";
-import { createQueue, setupQueues, BUILD_GROUP, FINALIZE_GROUP, type Queue } from "@dorob/backend/queue";
+import { createQueue, setupQueues, BUILD_GROUP, FINALIZE_GROUP, COLLECT, RECONCILE, type Queue } from "@dorob/backend/queue";
 import { createDraftGroup, publishGroup } from "@dorob/backend/groups";
 import { buildGroup, finalizeGroup, recordAttempt } from "@dorob/backend/workflows";
 import { readGroup } from "@dorob/backend/queries";
 import type { GroupJob } from "@dorob/core";
 import { createHandler } from "../src/http.ts";
+
+import { enqueueCollection, inspectCollection, processCollection, resumeCollection, dispatchInvalidations, reconcileInvalidation, type CollectionJob } from "@dorob/backend/ingestion";
+import { coordinatedFetch } from "@dorob/backend/provider-transport";
+import { fixtureTransport, maktabUrl, roocketUrl } from "../tests/provider-fixtures.ts";
 
 const url = process.env.TEST_DATABASE_URL;
 if (!url || new URL(url).pathname !== "/dorob_test") throw new Error("Integration tests require an isolated dorob_test database; use test:backend:integration");
@@ -51,7 +55,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await boss.deleteAllJobs();
   // Guard above confines this reset to an ephemeral database with test credentials.
-  await db.execute(sql`truncate workflow_attempts, group_snapshots, workflow_runs, group_memberships, comparison_groups, course_observations, course_revisions, courses, providers cascade`);
+  await db.execute(sql`truncate provider_limits, ingestion_attempts, ingestion_selections, ingestion_collections, group_invalidations, workflow_attempts, group_snapshots, workflow_runs, group_memberships, comparison_groups, course_observations, course_revisions, courses, providers cascade`);
 });
 afterAll(async () => { if (boss) await boss.stop(); await connection.close(); });
 
@@ -232,4 +236,231 @@ test("operator reapproval keeps current source facts separate from retained publ
   await finalizeGroup(db, payload(next));
   await publishGroup(db, definition.slug);
   expect((await readGroup(db, definition.slug))?.stale).toBe(false);
+});
+
+// Milestone 2: real queue delivery and PostgreSQL; all remote responses are fixtures.
+
+async function drainCollections(transport = fixtureTransport()) {
+  for (let step = 0; step < 20; step++) {
+    const jobs = await boss.fetch<CollectionJob>(COLLECT);
+    if (!jobs.length) return;
+    for (const job of jobs) {
+      await processCollection(connection, boss, job.data, { fetch: transport, delayMs: 0 });
+      await boss.complete(COLLECT, job.id);
+    }
+  }
+  throw new Error("Collection did not terminate within bounded test steps");
+}
+for (const providerId of ["maktabkhooneh", "roocket"] as const) {
+  test(`${providerId}: bounded discovery records partial results and duplicate queue delivery coalesces`, async () => {
+    const id = await enqueueCollection(db, boss, { providerId, maxCourses: 2 });
+    const [job] = await boss.fetch<CollectionJob>(COLLECT);
+    await Promise.all([processCollection(connection, boss, job.data, { fetch: fixtureTransport(), delayMs: 0 }),
+      processCollection(connection, boss, job.data, { fetch: fixtureTransport(), delayMs: 0 })]);
+    await boss.complete(COLLECT, job.id);
+    await drainCollections();
+    const result = await inspectCollection(db, id);
+    expect(result.state).toBe("partial");
+    expect(result.discoveredUrls).toHaveLength(2);
+    expect(result.selections.map(item => item.state).sort()).toEqual(["malformed-evidence", "succeeded"]);
+    expect(await db.select().from(courses)).toHaveLength(1);
+    expect(await db.select().from(revisions)).toHaveLength(1);
+    const calls = result.attempts.length;
+    await resumeCollection(db, boss, id);
+    await drainCollections();
+    expect((await inspectCollection(db, id)).attempts).toHaveLength(calls);
+  });
+}
+test("explicit URL bounds and atomic collection/queue insertion", async () => {
+  await expect(enqueueCollection(db, boss, { providerId: "roocket" })).rejects.toThrow();
+  await expect(enqueueCollection(db, boss, { providerId: "roocket", maxCourses: 1, urls: [roocketUrl, "https://roocket.ir/series/other/"] })).rejects.toThrow();
+  await expect(enqueueCollection(db, boss, { providerId: "roocket", urls: [maktabUrl] })).rejects.toThrow();
+  const failing = new Proxy(boss, { get(target, prop) { return prop === "send" ? async () => { throw new Error("Injected"); } : Reflect.get(target, prop); } });
+  await expect(enqueueCollection(db, failing, { providerId: "roocket", urls: [roocketUrl] })).rejects.toThrow();
+  expect(await db.select().from(collections)).toHaveLength(0);
+  expect(await db.select().from(selections)).toHaveLength(0);
+});
+test("retry/resume after worker interruption preserves accepted URLs and total attempt cap", async () => {
+  const id = await enqueueCollection(db, boss, { providerId: "maktabkhooneh", urls: [maktabUrl] });
+  let failed = false;
+  const fixtures = fixtureTransport();
+  const transient = (async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+    if (String(input) === maktabUrl && !failed) { failed = true; return new Response("retry", { status: 503 }); }
+    return fixtures(input, init);
+  }) as unknown as typeof fetch;
+  const [job] = await boss.fetch<CollectionJob>(COLLECT);
+  await processCollection(connection, boss, job.data, { fetch: transient, delayMs: 0 });
+  await boss.complete(COLLECT, job.id);
+  expect((await inspectCollection(db, id)).selections[0].state).toBe("retryable");
+  await boss.stop(); boss = createQueue(config); await boss.start();
+  await drainCollections();
+  const result = await inspectCollection(db, id);
+  expect(result.state).toBe("succeeded"); expect(result.selections[0].attempts).toBe(2);
+  await resumeCollection(db, boss, id); await drainCollections();
+  expect(await db.select().from(revisions)).toHaveLength(1);
+  // An unfinished application attempt left by an abruptly lost host is retained.
+  await db.update(collections).set({ state: "running" }).where(eq(collections.id, id));
+  await db.insert(ingestionAttempts).values({ collectionId: id, state: "running" });
+  await resumeCollection(db, boss, id); await drainCollections();
+  expect((await inspectCollection(db, id)).attempts.some(a => a.state === "interrupted")).toBe(true);
+});
+test("transient failures stop at three attempts; denial pauses all independent workers", async () => {
+  const id = await enqueueCollection(db, boss, { providerId: "roocket", urls: [roocketUrl] });
+  await drainCollections((async () => new Response("temporary", { status: 503 })) as unknown as typeof fetch);
+  expect((await inspectCollection(db, id)).selections[0].attempts).toBe(3);
+  expect((await inspectCollection(db, id)).selections[0].state).toBe("exhausted");
+  await resumeCollection(db, boss, id); await drainCollections();
+  expect((await inspectCollection(db, id)).selections[0].attempts).toBe(3);
+  const denied = await enqueueCollection(db, boss, { providerId: "roocket", urls: [roocketUrl] });
+  await drainCollections((async () => new Response("denied", { status: 403 })) as unknown as typeof fetch);
+  expect((await inspectCollection(db, denied)).state).toBe("paused");
+  await expect(resumeCollection(db, boss, denied)).rejects.toThrow();
+  const other = createDatabase(url!, 1);
+  try {
+    let calls = 0;
+    await expect(coordinatedFetch(other, "roocket", 0, (async () => { calls++; return new Response("unsafe"); }) as unknown as typeof fetch)(roocketUrl)).rejects.toThrow();
+    expect(calls).toBe(0);
+  } finally { await other.close(); }
+});
+test("provider coordination spans independent connections, bodies, new instances and abandoned leases", async () => {
+  const other = createDatabase(url!, 1);
+  let active = 0, maximum = 0;
+  const starts: number[] = [];
+  const transport = (async () => {
+    active++; maximum = Math.max(maximum, active); starts.push(Date.now());
+    return new Response(new ReadableStream({ async start(controller) {
+      await Bun.sleep(70); controller.enqueue(new TextEncoder().encode("fixture")); controller.close(); active--;
+    } }));
+  }) as unknown as typeof fetch;
+  try {
+    await Promise.all([coordinatedFetch(connection, "roocket", 100, transport)(roocketUrl), coordinatedFetch(other, "roocket", 0, transport)(roocketUrl)]);
+    expect(maximum).toBe(1); expect(starts[1] - starts[0]).toBeGreaterThanOrEqual(100);
+    // New transport instance/worker restart cannot erase persisted spacing/lease.
+    await db.update(providerLimits).set({ busyUntil: new Date(Date.now() + 350), nextAt: new Date(0) }).where(eq(providerLimits.providerId, "roocket"));
+    const before = Date.now();
+    await coordinatedFetch(other, "roocket", 0, transport)(roocketUrl);
+    expect(Date.now() - before).toBeGreaterThanOrEqual(350);
+  } finally { await other.close(); }
+});
+test("robots delay and Retry-After persist; unsafe redirects and cancellation are bounded", async () => {
+  const transport = (async (input: Parameters<typeof fetch>[0]) => String(input).endsWith("robots.txt") ? new Response("User-agent: *\nCrawl-delay: 0.1\nAllow: /") : new Response("fixture")) as unknown as typeof fetch;
+  await coordinatedFetch(connection, "roocket", 0, transport)("https://roocket.ir/robots.txt");
+  expect((await db.select().from(providerLimits))[0].delayMs).toBe(100);
+  await expect(coordinatedFetch(connection, "roocket", 0, (async () => new Response("retry", { status: 429, headers: { "retry-after": "2" } })) as unknown as typeof fetch)(roocketUrl)).rejects.toThrow();
+  expect((await db.select().from(providerLimits))[0].nextAt.getTime()).toBeGreaterThan(Date.now() + 1500);
+  const cancelled = new AbortController(); cancelled.abort();
+  await expect(coordinatedFetch(connection, "roocket", 0, transport, cancelled.signal)(roocketUrl)).rejects.toThrow();
+  await db.execute(sql`truncate provider_limits`);
+  const id = await enqueueCollection(db, boss, { providerId: "roocket", urls: [roocketUrl] });
+  await drainCollections((async () => new Response(null, { status: 302, headers: { location: "https://private.invalid/" } })) as unknown as typeof fetch);
+  expect((await inspectCollection(db, id)).selections[0].state).toBe("malformed-evidence");
+});
+test("revision invalidation rolls back atomically, coalesces outbox jobs and never approves changed evidence", async () => {
+  const group = await seedGroup();
+  await buildGroup(db, boss, payload(group)); await finalizeGroup(db, payload(group)); await publishGroup(db, definition.slug);
+  const changed = sample("1", "2026-10-02T00:00:00Z"); changed.learningOutcomes = ["مدرک آموزشی تازه آزمایشی"];
+  // The second conflicting record forces rollback after the first invalidation.
+  const conflict = sample("2"); conflict.title = "conflict";
+  await expect(importSavedExport(db, saved([changed, conflict]))).rejects.toThrow();
+  expect(await db.select().from(invalidations)).toHaveLength(0);
+  expect((await readGroup(db, definition.slug))?.stale).toBe(false);
+  const approved = (await db.select().from(memberships)).find(m => m.courseId === changed.id)!.approvedRevisionId;
+  await importSavedExport(db, saved([changed])); await importSavedExport(db, saved([changed]));
+  expect(await db.select().from(invalidations)).toHaveLength(1);
+  expect((await db.select().from(memberships)).find(m => m.courseId === changed.id)!.approvedRevisionId).toBe(approved);
+  expect(await readGroup(db, definition.slug)).toBeNull();
+  const failing = new Proxy(boss, { get(target, prop) { return prop === "send" ? async () => { throw new Error("Injected"); } : Reflect.get(target, prop); } });
+  await expect(dispatchInvalidations(db, failing)).rejects.toThrow();
+  expect((await db.select().from(invalidations))[0].state).toBe("pending");
+  await Promise.all([dispatchInvalidations(db, boss), dispatchInvalidations(db, boss)]);
+  expect(await boss.findJobs(RECONCILE)).toHaveLength(1);
+  const [job] = await boss.fetch(RECONCILE);
+  await reconcileInvalidation(db, job.data); await reconcileInvalidation(db, job.data);
+  expect((await db.select().from(invalidations))[0].state).toBe("waiting-review");
+  expect((await db.select().from(groups))[0].publishedSnapshotId).not.toBeNull();
+  const newer = sample("1", "2026-10-03T00:00:00Z"); newer.availability = "unavailable";
+  await importSavedExport(db, saved([newer]));
+  // Retrying an old reconciliation cannot promote obsolete evidence.
+  const [old] = await db.select().from(invalidations);
+  await db.update(invalidations).set({ state: "queued" }).where(eq(invalidations.id, old.id));
+  await reconcileInvalidation(db, { invalidationId: old.id });
+  expect((await db.select().from(invalidations).where(eq(invalidations.id, old.id)))[0].state).toBe("superseded");
+  await expect(createDraftGroup(db, boss, definition, ["offline-test:1", "offline-test:2"])).rejects.toThrow();
+});
+test("accepted ingestion and continuation roll back together; single-connection worker can retry", async () => {
+  const id = await enqueueCollection(db, boss, { providerId: "maktabkhooneh", urls: [maktabUrl] });
+  const [job] = await boss.fetch<CollectionJob>(COLLECT);
+  const failing = new Proxy(boss, { get(target, prop) { return prop === "send" ? async () => { throw new Error("Injected continuation failure"); } : Reflect.get(target, prop); } });
+  await expect(processCollection(connection, failing, job.data, { fetch: fixtureTransport(), delayMs: 0 })).rejects.toThrow();
+  expect(await db.select().from(courses)).toHaveLength(0);
+  expect(await db.select().from(revisions)).toHaveLength(0);
+  expect((await inspectCollection(db, id)).selections[0].state).toBe("running");
+  const independent = createDatabase(url!, 1);
+  try { await processCollection(independent, boss, job.data, { fetch: fixtureTransport(), delayMs: 0 }); }
+  finally { await independent.close(); }
+  await processCollection(connection, boss, job.data, { fetch: fixtureTransport(), delayMs: 0 });
+  await boss.complete(COLLECT, job.id); await drainCollections();
+  const result = await inspectCollection(db, id);
+  expect(result.state).toBe("succeeded");
+  expect(result.attempts.map(a => a.state).sort()).toEqual(["interrupted", "succeeded"]);
+  expect(await db.select().from(revisions)).toHaveLength(1);
+  await expect(db.update(collections).set({ maxCourses: 2 }).where(eq(collections.id, id)).execute()).rejects.toThrow();
+  await expect(db.update(selections).set({ sourceUrl: "https://example.invalid/" }).where(eq(selections.collectionId, id)).execute()).rejects.toThrow();
+});
+test("cancellation persists resumable outcomes without accepting failed evidence", async () => {
+  const id = await enqueueCollection(db, boss, { providerId: "maktabkhooneh", urls: [maktabUrl] });
+  const [job] = await boss.fetch<CollectionJob>(COLLECT);
+  const controller = new AbortController();
+  const fixture = fixtureTransport();
+  const transport = (async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+    if (String(input) === maktabUrl) { controller.abort(); throw new DOMException("Cancelled", "AbortError"); }
+    return fixture(input, init);
+  }) as unknown as typeof fetch;
+  await processCollection(connection, boss, job.data, { fetch: transport, delayMs: 0, signal: controller.signal });
+  await boss.complete(COLLECT, job.id);
+  expect((await inspectCollection(db, id)).state).toBe("failed");
+  expect((await inspectCollection(db, id)).attempts[0].state).toBe("interrupted");
+  expect(await db.select().from(courses)).toHaveLength(0);
+  await resumeCollection(db, boss, id); await drainCollections();
+  expect((await inspectCollection(db, id)).state).toBe("succeeded");
+});
+test("provider session lock prevents overlap even when a reservation has expired", async () => {
+  const holder = createDatabase(url!, 1);
+  let calls = 0;
+  try {
+    await holder.client`select pg_advisory_lock(hashtextextended('roocket', 13))`;
+    const request = coordinatedFetch(connection, "roocket", 0, (async () => { calls++; return new Response("fixture"); }) as unknown as typeof fetch)(roocketUrl);
+    await Bun.sleep(75);
+    expect(calls).toBe(0);
+    await holder.client`select pg_advisory_unlock(hashtextextended('roocket', 13))`;
+    await request; expect(calls).toBe(1);
+  } finally { await holder.close(); }
+});
+test("a lost request reservation cannot accept a response or release its replacement", async () => {
+  const replacement = crypto.randomUUID();
+  const transport = (async () => {
+    await db.update(providerLimits).set({ token: replacement, busyUntil: new Date(Date.now() + 60000) }).where(eq(providerLimits.providerId, "roocket"));
+    return new Response("Obsolete fixture response");
+  }) as unknown as typeof fetch;
+  await expect(coordinatedFetch(connection, "roocket", 0, transport)(roocketUrl)).rejects.toThrow();
+  expect((await db.select().from(providerLimits))[0].token).toBe(replacement);
+});
+test("attempt claim rollback cannot consume or reset only half of the durable budget", async () => {
+  const id = await enqueueCollection(db, boss, { providerId: "maktabkhooneh", urls: [maktabUrl] });
+  const [job] = await boss.fetch<CollectionJob>(COLLECT);
+  await db.execute(sql`create function reject_test_ingestion_claim() returns trigger language plpgsql as $$ begin raise exception 'Injected claim failure'; end $$`);
+  await db.execute(sql`create trigger reject_test_ingestion_claim before insert on ingestion_attempts for each row execute function reject_test_ingestion_claim()`);
+  try {
+    await expect(processCollection(connection, boss, job.data, { fetch: fixtureTransport(), delayMs: 0 })).rejects.toThrow();
+    const result = await inspectCollection(db, id);
+    expect(result.attempts).toHaveLength(0);
+    expect(result.selections[0].attempts).toBe(0);
+    expect(result.selections[0].state).toBe("pending");
+  } finally {
+    await db.execute(sql`drop trigger reject_test_ingestion_claim on ingestion_attempts`);
+    await db.execute(sql`drop function reject_test_ingestion_claim()`);
+  }
+  await processCollection(connection, boss, job.data, { fetch: fixtureTransport(), delayMs: 0 });
+  await boss.complete(COLLECT, job.id); await drainCollections();
+  expect((await inspectCollection(db, id)).selections[0].attempts).toBe(1);
 });

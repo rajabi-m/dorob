@@ -22,6 +22,27 @@
       "when": 1791130606532,
       "tag": "0002_damp_true_believers",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791131942797,
+      "tag": "0003_normal_the_leader",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791132023209,
+      "tag": "0004_stiff_mole_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791132728481,
+      "tag": "0005_familiar_trauma",
+      "breakpoints": true
     }
   ]
 }
