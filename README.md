@@ -2,117 +2,77 @@
 
 نام فارسی پروژه «دورُب» است؛ ترکیبی از نام‌های «دوره» و «ترب».
 
-A Persian RTL course discovery and comparison product. Project initialization is complete with a working hello-world frontend. Phase 1 remains incomplete. The selected visual direction is سنجش / لاجورد / the supplied ring-and-cap logo; further component development and validation are pending.
+A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 architecture and production integration remain pending.
 
-## Current frontend
+Start with the [documentation hub](docs/index.md), [project plan](Plan.md), and [contributor instructions](AGENTS.md).
 
-- `/`: a responsive Persian welcome page with an original graduation-cap brand concept, a teal-and-ivory palette, and an introduction to the product.
-- `/design-system`: the selected سنجش design with the لاجورد palette and supplied ring-and-cap logo. Preview sample search, free-course filtering, comparison, buttons, badges, typography, color tokens, and logo sizes. Alternative selectors have been removed. All course, provider, and price data is fictional.
-- The welcome page is introductory. Design-lab search and comparison only demonstrate component states with fictional samples; product pages, scheduled ingestion, and live AI are not implemented yet. Standalone scraper utilities are described below.
+## Current experience
 
-## Standalone provider utilities
+- `/`: snapshot-backed homepage with Persian search, category/free filtering, shared course cards and details, the selected blue hero, and cycling course-group covers.
+- `/design-system`: approved سنجش / لاجورد design, the supplied ring-and-cap logo, Vazirmatn, semantic tokens, interactive discovery examples, and component previews. Most examples are fictional; course-card snapshots are dated explicitly.
+- `/groups/[id]`: three topic destinations with course information and comparison interactions. `/groups/python-beginner` uses the selected eight-course Python prototype with real saved facts, a manual cover gallery, and labeled editorial analysis.
 
-### Maktabkhooneh scraper utility
-
-The owner-requested `apps/utils` workspace package provides reusable public-page collection and a JSON-export CLI. Run `bun run scrape:maktabkhooneh --limit 2` from the root; output defaults to the Git-ignored `apps/utils/output/maktabkhooneh.json`. See [utility usage and limitations](apps/utils/README.md) for full-catalog collection, resume, backend methods, and tests. This utility does not replace the mock frontend or add scheduled ingestion.
-
-### Additional MVP provider adapters
-
-Standalone adapters for **TopLearn, Sabzlearn, and Roocket** now live in `apps/utils`, with package exports for a future server-side backend. All three return the complete [golden course contract](docs/course-data-format.md), preserve source evidence and unknown values, and share safe request handling and atomic resumable JSON exports. Run `bun run scrape:toplearn --limit 2`, `bun run scrape:sabzlearn --limit 2`, or `bun run scrape:roocket --limit 2`; each supports `--help`, explicit course URLs, and `--all --resume`. Outputs remain ignored under `apps/utils/output`. Maktabkhooneh parser version 2.0.0 now returns the same golden structure. Its old exports/checkpoints must be freshly exported without --resume; they are not automatically migrated.
-
-See the [provider selection and implementation plan](docs/provider-adapter-plan.md) and [utility documentation](apps/utils/README.md). Quera was excluded at the owner's request; Faradars was deferred after public-page/access assessment. TopLearn and Sabzlearn passed actual adapter discovery/detail smoke checks. Roocket's public pages were retrieved and parsed successfully using publicly resolved DNS with TLS verification, but normal local DNS still fails; its catalog discovery is covered by retained public-response tests. TopLearn's conflicting IRR/toman evidence and Roocket's unverified graphic currency keep paid normalized prices null. No full catalog details were scraped, no system changes were made, and no frontend/backend integration or scheduled refresh was enabled. The utility workspace adds development tooling recorded in `bun.lock`.
-
-Final validation (October 3, 2026): workspace lint and type checking, all **40 utility tests**, CLI help commands, and whitespace checks pass. Production compilation and its TypeScript step pass, but page-data collection still fails on the separately documented Bun CommonJS runtime bug. The owner authorized a utility-only commit on October 3, 2026; frontend changes and the experimental build configuration are excluded.
-
-Utility validation commands:
-
-```sh
-bun run --cwd apps/utils lint
-bun run typecheck:utils
-bun run test:utils
-```
+The homepage uses 18 dated provider samples; its beginner Python group has three members, while the Python route previews eight offerings across levels. Reconciling that membership and dedicated results/detail/comparison routes remain follow-ups. Search/filter state resets on reload. Prices are snapshots, popularity/order is illustrative, and no live AI, scheduled refresh, or production backend is connected. See [frontend behavior and decisions](docs/frontend.md) and [snapshot provenance](docs/provider-snapshots.md).
 
 ## Local development
 
-Use Bun 1.3.8 or a compatible newer release. The workspace uses Bun for dependency management and explicitly runs the frontend tooling with Bun. This allows development on the current machine, whose Homebrew Node installation fails to start because of a missing `llhttp` library. No system installation is modified.
-
-From the repository root:
+Use Bun 1.3.8 or a compatible release. From the repository root:
 
 ```sh
 bun install --frozen-lockfile
 bun run dev
 ```
 
-Open `http://localhost:3000`. Stop the server with Ctrl+C.
-
-Alternatively, run `./run.sh` (or `bash run.sh`). The script checks for Bun, installs dependencies with the frozen lockfile if Next.js is missing, and starts the development server. Open `/design-system` at the Local URL shown in the terminal. You can choose a port with `./run.sh --port 3001`. The script also works when invoked by its full path from another directory.
-
-Validation and production commands:
+Open `http://localhost:3000`. Stop the server with Ctrl+C. Alternatively use `./run.sh` (or `bash run.sh`); it checks for Bun, installs with the frozen lockfile if Next.js is missing, and starts development. `./run.sh --port 3001` selects another port; the script also works when invoked by its full path from another directory.
 
 ```sh
 bun run lint
 bun run typecheck
+bun run test:utils
 bun run build
 bun run start
 ```
 
-Run `build` before `start`. No environment variables, database, API keys, or remote font requests are needed. Vazirmatn is bundled locally through its font package; its license is included in the installed package.
+Run `build` successfully before `start`. Lint, type checking, and 72 utility tests pass. Production compilation/types pass, but page-data collection fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`. The experimental Turbopack worker-thread configuration resolves the earlier worker-port failure. The local Homebrew Node executable was previously unable to start because `libllhttp.9.3.dylib` was missing. See [current validation and limitations](docs/validation.md).
 
-## Layout
+No environment variables, database, API keys, or remote fonts are needed. Vazirmatn is bundled locally; its license is included in the installed font package.
 
-```text
-apps/web/
-  src/app/                 App Router pages, metadata, global tokens and styles
-  src/components/          Shared frontend components
-apps/utils/                Server-side provider adapters and JSON-export CLIs
-AGENTS.md                  Contributor instructions and commit policy
-Plan.md                    Product decisions, phases, and progress
+## Standalone data utilities
+
+Four server-side adapters export the [version-2 course contract](docs/course-data-format.md), separately from frontend fixtures:
+
+```sh
+bun run scrape:maktabkhooneh --limit 2
+bun run scrape:toplearn --limit 2
+bun run scrape:sabzlearn --limit 2
+bun run scrape:roocket --limit 2
 ```
 
-The frontend uses Next.js, React, TypeScript, Tailwind CSS, Lucide icons, and Vazirmatn. Welcome-page tokens live in `apps/web/src/app/globals.css`; proposed design-system colors live in `apps/web/src/app/design-system/page.tsx` and scoped geometry, spacing, and feedback tokens in `preview.css`. The selected direction is سنجش with لاجورد and the supplied logo. The full design system must be completed and reviewed before phase 2.
+Each supports `--help`, explicit URLs, `--all`, `--resume`, and an output path. Generated exports are ignored under `apps/utils/output/`. Version-1 checkpoints require a fresh export without `--resume`; use a new output path to preserve old files. Requests are bounded, obey access rules, and preserve unknown values and source evidence. Public feedback is an anonymous bounded sample, not all student reviews.
 
-Lint and type checking pass. Both routes have been served locally with HTTP 200 responses. The production build currently fails with a Turbopack local-port permission error on this machine, including after an escalated retry. Full visual and accessibility validation remains pending.
+To inspect existing local exports:
 
-Future API, worker, UI, and core packages will be introduced when their phases require them. Browser-safe shared contracts and backend-only dependencies must remain separate.
+```sh
+bun run dashboard:aggregate
+bun run dashboard:data
+```
 
-## Contribution workflow
+Aggregation expects `apps/utils/output/dashboard-<provider>.json` files by default and supports repeatable `--input PATH` plus `--output PATH`. The read-only dashboard opens at `http://127.0.0.1:8787`; use `--file PATH --port N` for another snapshot/port. It rereads saved data without scraping and omits raw source HTML from browser responses. Generated files must be supplied locally; they are not committed. See [utility setup and limitations](apps/utils/README.md) and [provider mappings](docs/provider-adapters.md).
 
-Read `AGENTS.md` and `Plan.md` before making changes. Never commit without user confirmation. After confirmation, update all affected documentation before committing. The initial planning commit does not authorize commits of subsequent frontend work.
+## Workspace
 
-## Design system
+```text
+apps/web/       Next.js frontend, component showcase, browser-safe snapshots
+apps/utils/     Standalone TypeScript adapters, export CLI, local data dashboard
+docs/index.md   Documentation hub
+Plan.md         Current decisions, phase status, and remaining scope
+AGENTS.md       Contributor instructions and commit policy
+```
 
-Open `http://localhost:3000/design-system` after starting development. The page uses the selected سنجش design, لاجورد palette (`#304CB2` primary), and the supplied ring-and-cap mark. It has no design, palette, or logo selector. Try sample search, the free filter, and selecting at least two courses for comparison. Download the selected logo as SVG with the approved palette colors; small-size and reversed specimens remain available.
+The frontend uses Next.js, React, TypeScript, Tailwind CSS, and Lucide icons. Shared tokens live in `apps/web/src/app/globals.css`; components use shared styles and CSS modules. Future API, worker, UI, and core packages will be introduced when needed. Keep scraper/server code and secrets out of browser-safe contracts.
 
-The exploration checkpoint is commit `f56b49f`, preserving all three directions, nine palettes, and ten logos. The selected-system component checkpoint includes the page simplification and its documentation. Exploration logo assets remain in `apps/web/public/logos` and their reusable renderer in `src/components/logo-prototypes.tsx`; the page only uses the supplied mark. The original root `logo.svg` is no longer present.
+## Contributing
 
-Phase 1 continues: overlays, additional forms and components, shared UI extraction, and comprehensive accessibility review remain pending. Phase 2 has not started. The welcome page retains its initial teal treatment.
+Read `AGENTS.md` and `Plan.md` before changing product scope. Use the documented Bun commands and preserve the lockfile. Never commit without explicit confirmation for the current changes; review affected documentation, staged scope, and checks before committing. Pushes, branches, and history rewriting require separate authorization.
 
-Validation for the selected showcase: lint, type checking, and RTL audit pass; the route responds with HTTP 200. Turbopack remains blocked by worker-port permissions. A Webpack fallback (`bun run --cwd apps/web build --webpack`) compiles and type-checks successfully, then fails during page-data collection with a Bun CommonJS function-wrapper error. Full browser, keyboard, and mobile review remains pending.
-
-## Course discovery component showcase
-
-The selected design-system page now includes six category cards and full-width rectangular course rows, alongside the earlier compact-card variant. Category, level, free/paid, and search filters work together; sorting supports price and duration. Removable chips, three-item pagination, a comparison tray/table, and a native course-details dialog demonstrate interaction states with fictional samples.
-
-Additional examples cover paid, discounted, free, and unknown prices; source/freshness notices; a clearly labeled placeholder for AI-summary attribution; native accordions; and selectable loading, empty, and error states. Retry is a visual example with no live request. Components live in `src/components/discovery-showcase.tsx`; styling uses the selected shared semantic colors in `preview.css`. Course rows span the content area on desktop and reflow on mobile; comparison tables allow horizontal scrolling. The hero and horizontal course list share search state. The compact cards are labeled as an independent component demonstration and retain separate selection state.
-
-This expansion is included in the component checkpoint and remains in phase 1. Lint, types, and the RTL audit pass, and the local route returns HTTP 200. Computer Use permission was unavailable for Firefox, so visual mobile, focus-restoration, and keyboard interaction checks remain pending. The production build continues to encounter the existing Turbopack worker-port permission restriction.
-
-### Card imagery preview
-
-Phase 1 now includes three illustrated categories (programming, design, data) and three sample course covers (Python, UX, automation). Reusable decorative SVG artwork lives in `apps/web/src/components/course-artwork.tsx`, uses the selected brand colors with muted secondary tones, and contains no provider claims or embedded text. Other course rows demonstrate a missing-image fallback. Desktop thumbnails use a 16:10 aspect ratio and reflow alongside course text on mobile. These examples are included in the component checkpoint.
-
-Lint, type checking, and RTL audit pass. Production build still fails on the existing Turbopack worker-port permission restriction after an escalated retry. Firefox accessibility output confirmed the updated page content, but subsequent Computer Use actions were denied; screenshot, mobile, and keyboard validation remain pending.
-
-Discounted prices use a normal-size, muted struck-through original price, with a slightly smaller bold current price underneath and a compact discount badge. This shared treatment appears in course rows, price specimens, comparison tables, and the details dialog. The price treatment is included in the component checkpoint; lint, types, and RTL checks pass. Visual review remains pending, and the build still encounters the documented worker-port restriction.
-
-Firefox review now confirms desktop rendering and a 393px responsive preview. Search/filter combinations, sorting, pagination, comparisons, accordions, and demo state controls were exercised; dialog Escape and trigger focus restoration worked. Known issues before refinement: search focus rings target the inner input, dialogs sit at the top-right, card demos have separate search/selection state, removed chips lose page focus, and mobile descriptions wrap beside thumbnails. Full screen-reader and all-breakpoint review remain pending. The owner first authorized a checkpoint before these improvements, then subsequently authorized the refinement commit described below.
-
-### Firefox review refinements
-
-Checkpoint `0d9f509` preserves the component preview before refinements. The preview now places search focus outlines on the complete field, centers scrollable dialogs, shares hero/list search, and shows selected course names with individual removal. Filter removal restores focus to the corresponding control; opening comparison focuses and scrolls to its heading. Compact select-all selects only displayed cards. All six categories have coordinated illustrations, mobile course descriptions span the row, and discounted prices have tighter vertical spacing.
-
-Firefox desktop and 393px checks confirmed search focus, centered dialogs, chip focus restoration, comparison focus and removal, compact filtered selection, and mobile course layout. Lint, types, and the RTL audit pass. Full screen-reader and all-breakpoint review remain pending. The owner has authorized committing these refinements; phase 1 continues.
-
-Final refinement validation: lint, types, and the RTL audit of the design-system/components directories pass. The wider source audit reports 20 existing warnings in the unchanged welcome-page CSS. Production build still fails when Turbopack binds its worker port, including an escalated retry.
-
-Project-local contributor skills live in `.agents/skills/`: frontend design guidance and RTL guidance with a zero-dependency Python audit script. They are development resources and are not shipped in the app bundle. Preserve their supplied license and attribution when modifying or redistributing them.
+Project-local frontend and RTL skills live in `.agents/skills/`. Preserve their supplied license and attribution. Earlier exploration and implementation checkpoints are in [project history](docs/project-history.md).

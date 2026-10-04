@@ -1,0 +1,1261 @@
+{
+  "schemaVersion": 1,
+  "datasetKind": "provider-snapshot-for-mock-use",
+  "isLive": false,
+  "label": "نمونهٔ دادهٔ گردآوری‌شده؛ اطلاعات و قیمت‌ها زنده نیستند.",
+  "collectedAt": "2026-10-01T08:40:07Z",
+  "language": "fa",
+  "priceUnit": "toman",
+  "providers": [
+    {
+      "id": "maktabkhooneh",
+      "name": "مکتب‌خونه",
+      "url": "https://maktabkhooneh.org/"
+    },
+    {
+      "id": "toplearn",
+      "name": "تاپ‌لرن",
+      "url": "https://toplearn.com/"
+    },
+    {
+      "id": "quera",
+      "name": "کوئرا",
+      "url": "https://quera.org/college"
+    }
+  ],
+  "courses": [
+    {
+      "id": "maktabkhooneh-mk346",
+      "providerId": "maktabkhooneh",
+      "title": "آموزش برنامه نویسی جامع پایتون",
+      "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D9%87-%D9%86%D9%88%DB%8C%D8%B3%DB%8C-%D8%A8%D8%A7-%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86-%D9%85%D9%82%D8%AF%D9%85%D8%A7%D8%AA%DB%8C-mk346/",
+      "imageUrl": "https://media1.maktabkhooneh.org/CACHE/images/courses/images/Python-Jadi-2_1403-12-13-113008363/3b93e9d629dc333cc648387a996d35db.webp?expire=4893471932&token=94fb7de009a85c6b8a27e6bce14262e9&md5=lPt94AmoXGuKJ-a84UJi6Q==",
+      "imageAlt": "آموزش برنامه نویسی جامع پایتون",
+      "level": "مقدماتی تا پیشرفته",
+      "instructors": [
+        {
+          "name": "جادی میرمیرانی",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 1020,
+        "effortHours": 74,
+        "completionWindowDays": null,
+        "sourceText": "74 ساعت"
+      },
+      "price": {
+        "amount": 1299500,
+        "originalAmount": 2599000,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "full",
+        "sourceText": "2,599,000 1,299,500 تومان"
+      },
+      "rating": {
+        "value": 4.7,
+        "scale": 5,
+        "count": 21861
+      },
+      "studentCount": 268353,
+      "lessonCount": null,
+      "status": null,
+      "summary": {
+        "text": "تمرین پایتون از مفاهیم پایه تا شیءگرایی و پروژه‌های کاربردی.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D9%87-%D9%86%D9%88%DB%8C%D8%B3%DB%8C-%D8%A8%D8%A7-%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86-%D9%85%D9%82%D8%AF%D9%85%D8%A7%D8%AA%DB%8C-mk346/"
+      },
+      "source": {
+        "listingUrl": "https://maktabkhooneh.org/",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "Duration keeps provider content_hours separate from required_hours (total study effort). Price is the offer displayed on the public listing; other access/certificate offers are omitted."
+        ],
+        "fieldSources": {
+          "title": "courseDetails.title",
+          "imageUrl": "listing course cover",
+          "level": "courseDetails.level",
+          "instructors": "courseDetails.teachers",
+          "duration": "courseDetails.content_hours / required_hours / course_effort_time",
+          "price": "listing card, cross-checked against courseDetails.price and discounted_price",
+          "rating": "courseDetails.avg_rating / courseReviewsCount.overall_count",
+          "studentCount": "courseDetails.student_count"
+        }
+      }
+    },
+    {
+      "id": "maktabkhooneh-mk11887",
+      "providerId": "maktabkhooneh",
+      "title": "آموزش عملی ساخت AI Agent با n8n",
+      "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D8%B9%D9%85%D9%84%DB%8C-%D8%B3%D8%A7%D8%AE%D8%AA-ai-agent-n8n-mk11887/",
+      "imageUrl": "https://media1.maktabkhooneh.org/CACHE/images/courses/images/tehrani_1404-07-21-151102652/f6d4f1e3602e3504f8aface42816018e.webp?expire=4893471932&token=277a2149d1ac353a14a0c3e6e1f52b8d&md5=J3ohSdGsNToUoMPm4fUrjQ==",
+      "imageAlt": "آموزش عملی ساخت AI Agent با n8n",
+      "level": "مقدماتی تا پیشرفته",
+      "instructors": [
+        {
+          "name": "سهیل تهرانی‌پور",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 840,
+        "effortHours": 48,
+        "completionWindowDays": null,
+        "sourceText": "48 ساعت"
+      },
+      "price": {
+        "amount": 799500,
+        "originalAmount": 1599000,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "full",
+        "sourceText": "1,599,000 799,500 تومان"
+      },
+      "rating": {
+        "value": 4.6,
+        "scale": 5,
+        "count": 1506
+      },
+      "studentCount": 22545,
+      "lessonCount": null,
+      "status": null,
+      "summary": {
+        "text": "ساخت عامل‌های هوشمند در n8n با اتصال API و مدل‌های زبانی.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D8%B9%D9%85%D9%84%DB%8C-%D8%B3%D8%A7%D8%AE%D8%AA-ai-agent-n8n-mk11887/"
+      },
+      "source": {
+        "listingUrl": "https://maktabkhooneh.org/",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "Duration keeps provider content_hours separate from required_hours (total study effort). Price is the offer displayed on the public listing; other access/certificate offers are omitted."
+        ],
+        "fieldSources": {
+          "title": "courseDetails.title",
+          "imageUrl": "listing course cover",
+          "level": "courseDetails.level",
+          "instructors": "courseDetails.teachers",
+          "duration": "courseDetails.content_hours / required_hours / course_effort_time",
+          "price": "listing card, cross-checked against courseDetails.price and discounted_price",
+          "rating": "courseDetails.avg_rating / courseReviewsCount.overall_count",
+          "studentCount": "courseDetails.student_count"
+        }
+      }
+    },
+    {
+      "id": "maktabkhooneh-mk760",
+      "providerId": "maktabkhooneh",
+      "title": "آموزش اکسل کاربردی",
+      "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%DA%A9%D8%A7%D8%B1%D8%A8%D8%B1%D8%AF%DB%8C-%D9%86%D8%B1%D9%85%D8%A7%D9%81%D8%B2%D8%A7%D8%B1-%D9%85%D8%A7%DB%8C%DA%A9%D8%B1%D9%88%D8%B3%D8%A7%D9%81%D8%AA-%D8%A7%DA%A9%D8%B3%D9%84-mk760/",
+      "imageUrl": "https://media1.maktabkhooneh.org/CACHE/images/courses/images/760_1405-02-16-133423911/66d58e24b8fbb57e0368ca9528a7f303.webp?expire=4893471932&token=355ee1eedb931c9b6caf66bfda74f4f2&md5=NV7h7tuTHJtsr2a_2nT08g==",
+      "imageAlt": "آموزش اکسل کاربردی",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "سجاد شکوهیار",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 600,
+        "effortHours": 20,
+        "completionWindowDays": null,
+        "sourceText": "20 ساعت"
+      },
+      "price": {
+        "amount": 539400,
+        "originalAmount": 899000,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "full",
+        "sourceText": "899,000 539,400 تومان"
+      },
+      "rating": {
+        "value": 4.7,
+        "scale": 5,
+        "count": 3175
+      },
+      "studentCount": 37971,
+      "lessonCount": null,
+      "status": null,
+      "summary": {
+        "text": "یادگیری کاربردهای اکسل برای کار با داده‌ها و نیازهای روزمره.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%DA%A9%D8%A7%D8%B1%D8%A8%D8%B1%D8%AF%DB%8C-%D9%86%D8%B1%D9%85%D8%A7%D9%81%D8%B2%D8%A7%D8%B1-%D9%85%D8%A7%DB%8C%DA%A9%D8%B1%D9%88%D8%B3%D8%A7%D9%81%D8%AA-%D8%A7%DA%A9%D8%B3%D9%84-mk760/"
+      },
+      "source": {
+        "listingUrl": "https://maktabkhooneh.org/",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "Duration keeps provider content_hours separate from required_hours (total study effort). Price is the offer displayed on the public listing; other access/certificate offers are omitted."
+        ],
+        "fieldSources": {
+          "title": "courseDetails.title",
+          "imageUrl": "listing course cover",
+          "level": "courseDetails.level",
+          "instructors": "courseDetails.teachers",
+          "duration": "courseDetails.content_hours / required_hours / course_effort_time",
+          "price": "listing card, cross-checked against courseDetails.price and discounted_price",
+          "rating": "courseDetails.avg_rating / courseReviewsCount.overall_count",
+          "studentCount": "courseDetails.student_count"
+        }
+      }
+    },
+    {
+      "id": "maktabkhooneh-mk1318",
+      "providerId": "maktabkhooneh",
+      "title": "آموزش یادگیری ماشین با پایتون",
+      "sourceUrl": "https://maktabkhooneh.org/course/%DB%8C%D8%A7%D8%AF%DA%AF%DB%8C%D8%B1%DB%8C-%D9%85%D8%A7%D8%B4%DB%8C%D9%86-%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86-mk1318/",
+      "imageUrl": "https://media1.maktabkhooneh.org/CACHE/images/courses/images/machin.learning_NvSv1jL_1403-08-16-164234254/7fdf137999a41a36e2b9038ea6ea9f9b.webp?expire=4893471932&token=5cf0d39d07561b243bb5681bfeeb21f9&md5=XPDTnQdWGyQ7tWgb_ush-Q==",
+      "imageAlt": "آموزش یادگیری ماشین با پایتون",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "جادی میرمیرانی",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 780,
+        "effortHours": 33,
+        "completionWindowDays": null,
+        "sourceText": "33 ساعت"
+      },
+      "price": {
+        "amount": 1999600,
+        "originalAmount": 4999000,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "full",
+        "sourceText": "4,999,000 1,999,600 تومان"
+      },
+      "rating": {
+        "value": 4.6,
+        "scale": 5,
+        "count": 2711
+      },
+      "studentCount": 48388,
+      "lessonCount": null,
+      "status": null,
+      "summary": {
+        "text": "آشنایی با یادگیری ماشین و پیاده‌سازی آن با پایتون.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://maktabkhooneh.org/course/%DB%8C%D8%A7%D8%AF%DA%AF%DB%8C%D8%B1%DB%8C-%D9%85%D8%A7%D8%B4%DB%8C%D9%86-%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86-mk1318/"
+      },
+      "source": {
+        "listingUrl": "https://maktabkhooneh.org/",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "Duration keeps provider content_hours separate from required_hours (total study effort). Price is the offer displayed on the public listing; other access/certificate offers are omitted."
+        ],
+        "fieldSources": {
+          "title": "courseDetails.title",
+          "imageUrl": "listing course cover",
+          "level": "courseDetails.level",
+          "instructors": "courseDetails.teachers",
+          "duration": "courseDetails.content_hours / required_hours / course_effort_time",
+          "price": "listing card, cross-checked against courseDetails.price and discounted_price",
+          "rating": "courseDetails.avg_rating / courseReviewsCount.overall_count",
+          "studentCount": "courseDetails.student_count"
+        }
+      }
+    },
+    {
+      "id": "maktabkhooneh-mk12029",
+      "providerId": "maktabkhooneh",
+      "title": "آموزش جامع گیت و گیت هاب 2026",
+      "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%DA%AF%DB%8C%D8%AA-%D8%AC%D8%A7%D8%AF%DB%8C-mk12029/",
+      "imageUrl": "https://media1.maktabkhooneh.org/CACHE/images/courses/images/%D8%AC%D8%A7%D8%AF%DB%8C_1404-09-24-125631055/f591395fd706113268a5015bdcaea579.webp?expire=4893471932&token=00633a0fc2b2a3e346d91b007964ce0e&md5=AGM6D8Kyo-NG2RsAeWTODg==",
+      "imageAlt": "آموزش جامع گیت و گیت هاب 2026",
+      "level": "مقدماتی تا پیشرفته",
+      "instructors": [
+        {
+          "name": "جادی میرمیرانی",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 480,
+        "effortHours": 29,
+        "completionWindowDays": null,
+        "sourceText": "29 ساعت"
+      },
+      "price": {
+        "amount": 649500,
+        "originalAmount": 1299000,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "full",
+        "sourceText": "1,299,000 649,500 تومان"
+      },
+      "rating": {
+        "value": 4.8,
+        "scale": 5,
+        "count": 2157
+      },
+      "studentCount": 31291,
+      "lessonCount": null,
+      "status": null,
+      "summary": {
+        "text": "مدیریت نسخه و همکاری تیمی با Git و GitHub.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%DA%AF%DB%8C%D8%AA-%D8%AC%D8%A7%D8%AF%DB%8C-mk12029/"
+      },
+      "source": {
+        "listingUrl": "https://maktabkhooneh.org/",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "Duration keeps provider content_hours separate from required_hours (total study effort). Price is the offer displayed on the public listing; other access/certificate offers are omitted."
+        ],
+        "fieldSources": {
+          "title": "courseDetails.title",
+          "imageUrl": "listing course cover",
+          "level": "courseDetails.level",
+          "instructors": "courseDetails.teachers",
+          "duration": "courseDetails.content_hours / required_hours / course_effort_time",
+          "price": "listing card, cross-checked against courseDetails.price and discounted_price",
+          "rating": "courseDetails.avg_rating / courseReviewsCount.overall_count",
+          "studentCount": "courseDetails.student_count"
+        }
+      }
+    },
+    {
+      "id": "maktabkhooneh-mk8902",
+      "providerId": "maktabkhooneh",
+      "title": "آموزش پروژه محور CSS ،HTML و JavaScript",
+      "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-css-html-javascript-%D9%BE%D8%B1%D9%88%DA%98%D9%87-%D9%85%D8%AD%D9%88%D8%B1-mk8902/",
+      "imageUrl": "https://media1.maktabkhooneh.org/CACHE/images/courses/images/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_CSS_HTML_%D9%88_JavaScript_%D9%BE%D8%B1%D9%88%DA%98%D9%87_%D9%85%D8%AD%D9%88%D8%B1_1403-09-26-144158971/888182551cfa15fc6c505ad4c1ee6b61.webp?expire=4893471932&token=27711a08076c0343b175d3b5db2f724f&md5=J3EaCAdsA0OxddO12y9yTw==",
+      "imageAlt": "آموزش پروژه محور CSS ،HTML و JavaScript",
+      "level": "مقدماتی تا پیشرفته",
+      "instructors": [
+        {
+          "name": "ابوالفضل وفادوست",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 600,
+        "effortHours": 10,
+        "completionWindowDays": null,
+        "sourceText": "10 ساعت"
+      },
+      "price": {
+        "amount": 134100,
+        "originalAmount": 149000,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "content",
+        "sourceText": "149,000 134,100 تومان"
+      },
+      "rating": {
+        "value": 4.6,
+        "scale": 5,
+        "count": 995
+      },
+      "studentCount": 12867,
+      "lessonCount": null,
+      "status": null,
+      "summary": {
+        "text": "ساخت صفحات وب با تمرین HTML، CSS و JavaScript.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-css-html-javascript-%D9%BE%D8%B1%D9%88%DA%98%D9%87-%D9%85%D8%AD%D9%88%D8%B1-mk8902/"
+      },
+      "source": {
+        "listingUrl": "https://maktabkhooneh.org/",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "Duration keeps provider content_hours separate from required_hours (total study effort). Price is the offer displayed on the public listing; other access/certificate offers are omitted."
+        ],
+        "fieldSources": {
+          "title": "courseDetails.title",
+          "imageUrl": "listing course cover",
+          "level": "courseDetails.level",
+          "instructors": "courseDetails.teachers",
+          "duration": "courseDetails.content_hours / required_hours / course_effort_time",
+          "price": "listing card, cross-checked against courseDetails.price and discounted_price",
+          "rating": "courseDetails.avg_rating / courseReviewsCount.overall_count",
+          "studentCount": "courseDetails.student_count"
+        }
+      }
+    },
+    {
+      "id": "toplearn-7ed1a6e4bb4d",
+      "providerId": "toplearn",
+      "title": "آموزش رایگان پایتون ( Python )",
+      "sourceUrl": "https://toplearn.com/courses/windows/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86-%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86-(-Python-)",
+      "imageUrl": "https://toplearn.com/img/course/400x286/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86_%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86_(_Python_).jpg",
+      "imageAlt": "آموزش رایگان پایتون ( Python )",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "محمد اردوخانی",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 1762.0,
+        "effortHours": null,
+        "completionWindowDays": null,
+        "sourceText": "29:22:00"
+      },
+      "price": {
+        "amount": 0,
+        "originalAmount": null,
+        "unit": "toman",
+        "status": "free",
+        "offerType": "course",
+        "sourceText": "رایگانــ"
+      },
+      "rating": null,
+      "studentCount": null,
+      "lessonCount": 110,
+      "status": "به اتمام رسیده",
+      "summary": {
+        "text": "یادگیری پایتون از مبانی زبان تا موضوعات پیشرفته‌تر.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://toplearn.com/courses/windows/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86-%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86-(-Python-)"
+      },
+      "source": {
+        "listingUrl": "https://toplearn.com/",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "Ongoing course durations and lesson counts are a snapshot of the published material, not a promised final length."
+        ],
+        "fieldSources": {
+          "title": "listing course image alt",
+          "imageUrl": "listing image data-src (not LazyLoad.png)",
+          "instructors": "course page مدرس دوره",
+          "level": "course page سطح دوره",
+          "duration": "course page مدت زمان دوره",
+          "price": "course page قیمت این دوره (displayed toman amounts)",
+          "lessonCount": "course page تعداد ویدیوها",
+          "status": "course page وضعیت دوره"
+        }
+      }
+    },
+    {
+      "id": "toplearn-fa4cc5c2826a",
+      "providerId": "toplearn",
+      "title": "آموزش پروژه محور پایتون با 5 پروژه عملی",
+      "sourceUrl": "https://toplearn.com/courses/windows/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%D9%BE%D8%B1%D9%88%DA%98%D9%87_%D9%85%D8%AD%D9%88%D8%B1_%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86",
+      "imageUrl": "https://toplearn.com/img/course/400x286/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%D9%BE%D8%B1%D9%88%DA%98%D9%87_%D9%85%D8%AD%D9%88%D8%B1_%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86_%D8%A8%D8%A7_5_%D9%BE%D8%B1%D9%88%DA%98%D9%87_%D8%B9%D9%85%D9%84%DB%8C.jpg",
+      "imageAlt": "آموزش پروژه محور پایتون با 5 پروژه عملی",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "آرمین دهقان",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 120.0,
+        "effortHours": null,
+        "completionWindowDays": null,
+        "sourceText": "2:0:00"
+      },
+      "price": {
+        "amount": 0,
+        "originalAmount": null,
+        "unit": "toman",
+        "status": "free",
+        "offerType": "course",
+        "sourceText": "رایگانــ"
+      },
+      "rating": null,
+      "studentCount": null,
+      "lessonCount": 12,
+      "status": "در حال برگزاری",
+      "summary": {
+        "text": "تمرین پایتون با ساخت پنج پروژه عملی.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://toplearn.com/courses/windows/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%D9%BE%D8%B1%D9%88%DA%98%D9%87_%D9%85%D8%AD%D9%88%D8%B1_%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86"
+      },
+      "source": {
+        "listingUrl": "https://toplearn.com/",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "Ongoing course durations and lesson counts are a snapshot of the published material, not a promised final length."
+        ],
+        "fieldSources": {
+          "title": "listing course image alt",
+          "imageUrl": "listing image data-src (not LazyLoad.png)",
+          "instructors": "course page مدرس دوره",
+          "level": "course page سطح دوره",
+          "duration": "course page مدت زمان دوره",
+          "price": "course page قیمت این دوره (displayed toman amounts)",
+          "lessonCount": "course page تعداد ویدیوها",
+          "status": "course page وضعیت دوره"
+        }
+      }
+    },
+    {
+      "id": "toplearn-81651d228742",
+      "providerId": "toplearn",
+      "title": "آموزش رایگان Html و Css",
+      "sourceUrl": "https://toplearn.com/courses/web-design/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86-html-%D9%88-css",
+      "imageUrl": "https://toplearn.com/img/course/400x286/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86_Html_%D9%88_Css.jpg",
+      "imageAlt": "آموزش رایگان Html و Css",
+      "level": "متوسط",
+      "instructors": [
+        {
+          "name": "حسن خسروجردی",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 1196.0,
+        "effortHours": null,
+        "completionWindowDays": null,
+        "sourceText": "19:56:00"
+      },
+      "price": {
+        "amount": 0,
+        "originalAmount": null,
+        "unit": "toman",
+        "status": "free",
+        "offerType": "course",
+        "sourceText": "رایگانــ"
+      },
+      "rating": null,
+      "studentCount": null,
+      "lessonCount": 70,
+      "status": "به اتمام رسیده",
+      "summary": {
+        "text": "یادگیری ساختار و ظاهر صفحات وب با HTML و CSS.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://toplearn.com/courses/web-design/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86-html-%D9%88-css"
+      },
+      "source": {
+        "listingUrl": "https://toplearn.com/",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "Ongoing course durations and lesson counts are a snapshot of the published material, not a promised final length."
+        ],
+        "fieldSources": {
+          "title": "listing course image alt",
+          "imageUrl": "listing image data-src (not LazyLoad.png)",
+          "instructors": "course page مدرس دوره",
+          "level": "course page سطح دوره",
+          "duration": "course page مدت زمان دوره",
+          "price": "course page قیمت این دوره (displayed toman amounts)",
+          "lessonCount": "course page تعداد ویدیوها",
+          "status": "course page وضعیت دوره"
+        }
+      }
+    },
+    {
+      "id": "toplearn-f70755c2593b",
+      "providerId": "toplearn",
+      "title": "آموزش تیلویند ۴",
+      "sourceUrl": "https://toplearn.com/courses/web-design/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%D8%AA%D9%84%D9%88%DB%8C%D9%86%D8%AF_4",
+      "imageUrl": "https://toplearn.com/img/course/400x286/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%D8%AA%DB%8C%D9%84%D9%88%DB%8C%D9%86%D8%AF_%DB%B4.png",
+      "imageAlt": "آموزش تیلویند ۴",
+      "level": "پیشرفته",
+      "instructors": [
+        {
+          "name": "رضا پور",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 358.0,
+        "effortHours": null,
+        "completionWindowDays": null,
+        "sourceText": "5:58:00"
+      },
+      "price": {
+        "amount": 1235000,
+        "originalAmount": 1900000,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "course",
+        "sourceText": "1,900,000 1,235,000 تومان"
+      },
+      "rating": null,
+      "studentCount": null,
+      "lessonCount": 33,
+      "status": "در حال برگزاری",
+      "summary": {
+        "text": "آشنایی با امکانات نسخه چهارم Tailwind CSS برای طراحی وب.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://toplearn.com/courses/web-design/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%D8%AA%D9%84%D9%88%DB%8C%D9%86%D8%AF_4"
+      },
+      "source": {
+        "listingUrl": "https://toplearn.com/",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "Ongoing course durations and lesson counts are a snapshot of the published material, not a promised final length."
+        ],
+        "fieldSources": {
+          "title": "listing course image alt",
+          "imageUrl": "listing image data-src (not LazyLoad.png)",
+          "instructors": "course page مدرس دوره",
+          "level": "course page سطح دوره",
+          "duration": "course page مدت زمان دوره",
+          "price": "course page قیمت این دوره (displayed toman amounts)",
+          "lessonCount": "course page تعداد ویدیوها",
+          "status": "course page وضعیت دوره"
+        }
+      }
+    },
+    {
+      "id": "toplearn-f17689168374",
+      "providerId": "toplearn",
+      "title": "آموزش میکروتیک MTCNA+",
+      "sourceUrl": "https://toplearn.com/courses/operating-system/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_mikrotik_mtcna",
+      "imageUrl": "https://toplearn.com/img/course/400x286/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%D9%85%DB%8C%DA%A9%D8%B1%D9%88%D8%AA%DB%8C%DA%A9_mtcnaplus.jpg",
+      "imageAlt": "آموزش میکروتیک MTCNA+",
+      "level": "پیشرفته",
+      "instructors": [
+        {
+          "name": "بهمن قنبرپور",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 1020.0,
+        "effortHours": null,
+        "completionWindowDays": null,
+        "sourceText": "17:0:00"
+      },
+      "price": {
+        "amount": 1170000,
+        "originalAmount": 1800000,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "course",
+        "sourceText": "1,800,000 1,170,000 تومان"
+      },
+      "rating": null,
+      "studentCount": null,
+      "lessonCount": 49,
+      "status": "در حال برگزاری",
+      "summary": {
+        "text": "آموزش شبکه و کار با تجهیزات میکروتیک در مسیر MTCNA.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://toplearn.com/courses/operating-system/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_mikrotik_mtcna"
+      },
+      "source": {
+        "listingUrl": "https://toplearn.com/",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "Ongoing course durations and lesson counts are a snapshot of the published material, not a promised final length."
+        ],
+        "fieldSources": {
+          "title": "listing course image alt",
+          "imageUrl": "listing image data-src (not LazyLoad.png)",
+          "instructors": "course page مدرس دوره",
+          "level": "course page سطح دوره",
+          "duration": "course page مدت زمان دوره",
+          "price": "course page قیمت این دوره (displayed toman amounts)",
+          "lessonCount": "course page تعداد ویدیوها",
+          "status": "course page وضعیت دوره"
+        }
+      }
+    },
+    {
+      "id": "toplearn-96acdc2bb089",
+      "providerId": "toplearn",
+      "title": "آموزش کدنویسی امن - از شناسایی تا دفاع",
+      "sourceUrl": "https://toplearn.com/courses/security/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%DA%A9%D8%AF_%D9%86%D9%88%DB%8C%D8%B3%DB%8C_%D8%A7%D9%85%D9%86",
+      "imageUrl": "https://toplearn.com/img/course/400x286/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%DA%A9%D8%AF%D9%86%D9%88%DB%8C%D8%B3%DB%8C_%D8%A7%D9%85%D9%86_-_%D8%A7%D8%B2_%D8%B4%D9%86%D8%A7%D8%B3%D8%A7%DB%8C%DB%8C_%D8%AA%D8%A7_%D8%AF%D9%81%D8%A7%D8%B92.jpg",
+      "imageAlt": "آموزش کدنویسی امن - از شناسایی تا دفاع",
+      "level": "پیشرفته",
+      "instructors": [
+        {
+          "name": "متین فتحی",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 273.0,
+        "effortHours": null,
+        "completionWindowDays": null,
+        "sourceText": "4:33:00"
+      },
+      "price": {
+        "amount": 385000,
+        "originalAmount": 1100000,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "course",
+        "sourceText": "1,100,000 385,000 تومان"
+      },
+      "rating": null,
+      "studentCount": null,
+      "lessonCount": 15,
+      "status": "در حال برگزاری",
+      "summary": {
+        "text": "شناخت آسیب‌پذیری‌های کد و روش‌های دفاع در برنامه‌نویسی.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://toplearn.com/courses/security/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%DA%A9%D8%AF_%D9%86%D9%88%DB%8C%D8%B3%DB%8C_%D8%A7%D9%85%D9%86"
+      },
+      "source": {
+        "listingUrl": "https://toplearn.com/",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "Ongoing course durations and lesson counts are a snapshot of the published material, not a promised final length."
+        ],
+        "fieldSources": {
+          "title": "listing course image alt",
+          "imageUrl": "listing image data-src (not LazyLoad.png)",
+          "instructors": "course page مدرس دوره",
+          "level": "course page سطح دوره",
+          "duration": "course page مدت زمان دوره",
+          "price": "course page قیمت این دوره (displayed toman amounts)",
+          "lessonCount": "course page تعداد ویدیوها",
+          "status": "course page وضعیت دوره"
+        }
+      }
+    },
+    {
+      "id": "quera-12547",
+      "providerId": "quera",
+      "title": "برنامه‌نویسی پایتون مقدماتی",
+      "sourceUrl": "https://quera.org/college/landpage/12547/fundamentals-of-python",
+      "imageUrl": "https://quera.org/media/public/college/card_images/63bdecf13226479cba181179ef3dc9a4.png",
+      "imageAlt": "برنامه‌نویسی پایتون مقدماتی",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "نیلوفر فخفور",
+          "role": "طراح"
+        },
+        {
+          "name": "عطیه پوردرخشان",
+          "role": "طراح"
+        },
+        {
+          "name": "علی شفیعی",
+          "role": "طراح"
+        },
+        {
+          "name": "محمدرضا رستگاری",
+          "role": "طراح"
+        },
+        {
+          "name": "سید امین حسینی",
+          "role": "طراح"
+        },
+        {
+          "name": "محمدصالح مهدی‌نژاد",
+          "role": "مربی"
+        },
+        {
+          "name": "پرهام نجارزاده",
+          "role": "مربی"
+        }
+      ],
+      "duration": {
+        "contentMinutes": null,
+        "effortHours": null,
+        "completionWindowDays": 90,
+        "sourceText": null
+      },
+      "price": {
+        "amount": 3499000,
+        "originalAmount": null,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "course",
+        "sourceText": "مقدماتی ۳٬۴۹۹٬۰۰۰ تومان"
+      },
+      "rating": null,
+      "studentCount": 5181,
+      "lessonCount": null,
+      "status": null,
+      "summary": {
+        "text": "تمرین تعاملی مفاهیم پایه پایتون، از متغیرها تا فایل‌ها.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://quera.org/college/landpage/12547/fundamentals-of-python"
+      },
+      "source": {
+        "listingUrl": "https://quera.org/college",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "days_to_finish is a completion window, not video duration. Instructor roles retain the provider labels (designers and coaches).",
+          "The JSON-LD offer labels currency IRR while the visible listing shows the same numeric amounts in toman; this snapshot follows the visible toman price."
+        ],
+        "fieldSources": {
+          "title": "college.name",
+          "imageUrl": "listing course cover / college.card_image_url",
+          "level": "listing card level badge",
+          "instructors": "college.landpage.teachers name and tags",
+          "duration": "college.days_to_finish",
+          "price": "college.price_info, cross-checked against visible listing in toman",
+          "studentCount": "college.participants_count",
+          "features": "college.landpage.hero_features"
+        }
+      },
+      "features": [
+        {
+          "label": "تمرین عملی",
+          "value": "105+"
+        },
+        {
+          "label": "درسنامه آموزشی",
+          "value": "110+"
+        },
+        {
+          "label": "ویدیو آموزشی",
+          "value": "50+"
+        }
+      ]
+    },
+    {
+      "id": "quera-23458",
+      "providerId": "quera",
+      "title": "آموزش اتوماسیون با n8n",
+      "sourceUrl": "https://quera.org/college/landpage/23458/n8n",
+      "imageUrl": "https://quera.org/media/public/college/card_images/012b2c0c217d47918ed542d9f250fc9a.png",
+      "imageAlt": "آموزش اتوماسیون با n8n",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "میلاد محمدی",
+          "role": "طراح"
+        },
+        {
+          "name": "پرهام نجارزاده",
+          "role": "طراح، مربی"
+        },
+        {
+          "name": "سید محمد سروش سجادی",
+          "role": "طراح"
+        },
+        {
+          "name": "سید امین حسینی",
+          "role": "طراح"
+        }
+      ],
+      "duration": {
+        "contentMinutes": null,
+        "effortHours": null,
+        "completionWindowDays": 45,
+        "sourceText": null
+      },
+      "price": {
+        "amount": 2149000,
+        "originalAmount": null,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "course",
+        "sourceText": "مقدماتی ۲٬۱۴۹٬۰۰۰ تومان"
+      },
+      "rating": null,
+      "studentCount": 1147,
+      "lessonCount": null,
+      "status": null,
+      "summary": {
+        "text": "ساخت اتوماسیون با n8n و تمرین روی پروژه‌های عملی.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://quera.org/college/landpage/23458/n8n"
+      },
+      "source": {
+        "listingUrl": "https://quera.org/college",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "days_to_finish is a completion window, not video duration. Instructor roles retain the provider labels (designers and coaches).",
+          "The JSON-LD offer labels currency IRR while the visible listing shows the same numeric amounts in toman; this snapshot follows the visible toman price."
+        ],
+        "fieldSources": {
+          "title": "college.name",
+          "imageUrl": "listing course cover / college.card_image_url",
+          "level": "listing card level badge",
+          "instructors": "college.landpage.teachers name and tags",
+          "duration": "college.days_to_finish",
+          "price": "college.price_info, cross-checked against visible listing in toman",
+          "studentCount": "college.participants_count",
+          "features": "college.landpage.hero_features"
+        }
+      },
+      "features": [
+        {
+          "label": "درسنامه آموزشی",
+          "value": "40+"
+        },
+        {
+          "label": "ویدیوی آموزشی",
+          "value": "25+"
+        }
+      ]
+    },
+    {
+      "id": "quera-14471",
+      "providerId": "quera",
+      "title": "دروازه ورود به برنامه‌نویسی",
+      "sourceUrl": "https://quera.org/college/landpage/14471/programming-gateway",
+      "imageUrl": "https://quera.org/media/public/college/card_images/ed3baa96149544ada77c1df86db628d3.png",
+      "imageAlt": "دروازه ورود به برنامه‌نویسی",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "سید امین حسینی",
+          "role": "طراح"
+        },
+        {
+          "name": "محمدرضا رستگاری",
+          "role": "طراح"
+        },
+        {
+          "name": "علی شفیعی",
+          "role": "طراح"
+        },
+        {
+          "name": "امین انوری",
+          "role": "طراح"
+        },
+        {
+          "name": "سید محمد سروش سجادی",
+          "role": "طراح"
+        },
+        {
+          "name": "صابر سبزی",
+          "role": "مربی"
+        }
+      ],
+      "duration": {
+        "contentMinutes": null,
+        "effortHours": null,
+        "completionWindowDays": null,
+        "sourceText": null
+      },
+      "price": {
+        "amount": 0,
+        "originalAmount": 1199000,
+        "unit": "toman",
+        "status": "free",
+        "offerType": "course",
+        "sourceText": "مقدماتی ۱٬۱۹۹٬۰۰۰ رایگان"
+      },
+      "rating": null,
+      "studentCount": 20940,
+      "lessonCount": null,
+      "status": null,
+      "summary": {
+        "text": "آشنایی اولیه با برنامه‌نویسی برای شروع مسیر یادگیری.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://quera.org/college/landpage/14471/programming-gateway"
+      },
+      "source": {
+        "listingUrl": "https://quera.org/college",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "days_to_finish is a completion window, not video duration. Instructor roles retain the provider labels (designers and coaches).",
+          "The JSON-LD offer labels currency IRR while the visible listing shows the same numeric amounts in toman; this snapshot follows the visible toman price.",
+          "Source days_to_finish is 0; no positive completion window is supplied, so completionWindowDays is null."
+        ],
+        "fieldSources": {
+          "title": "college.name",
+          "imageUrl": "listing course cover / college.card_image_url",
+          "level": "listing card level badge",
+          "instructors": "college.landpage.teachers name and tags",
+          "duration": "college.days_to_finish",
+          "price": "college.price_info, cross-checked against visible listing in toman",
+          "studentCount": "college.participants_count",
+          "features": "college.landpage.hero_features"
+        }
+      },
+      "features": [
+        {
+          "label": "درسنامه آموزشی",
+          "value": "70+"
+        },
+        {
+          "label": "ویدیوی آموزشی",
+          "value": "40+"
+        },
+        {
+          "label": "تمرین",
+          "value": "10+"
+        }
+      ]
+    },
+    {
+      "id": "quera-28515",
+      "providerId": "quera",
+      "title": "آموزش عملی Agentic AI",
+      "sourceUrl": "https://quera.org/college/landpage/28515/agentic-ai",
+      "imageUrl": "https://quera.org/media/public/college/card_images/45569f815d714ce7b7740f08850e3968.png",
+      "imageAlt": "آموزش عملی Agentic AI",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "دوین غریبی",
+          "role": "طراح"
+        },
+        {
+          "name": "علی پیشگرد",
+          "role": "طراح"
+        },
+        {
+          "name": "محمد دهقان",
+          "role": "طراح"
+        },
+        {
+          "name": "مرتضی خانبابایی",
+          "role": "طراح، مربی"
+        },
+        {
+          "name": "سید امین حسینی",
+          "role": "طراح"
+        }
+      ],
+      "duration": {
+        "contentMinutes": null,
+        "effortHours": null,
+        "completionWindowDays": 60,
+        "sourceText": null
+      },
+      "price": {
+        "amount": 1499400,
+        "originalAmount": 2499000,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "course",
+        "sourceText": "مقدماتی ۴۰ ٪ ۲٬۴۹۹٬۰۰۰ ۱٬۴۹۹٬۴۰۰ تومان"
+      },
+      "rating": null,
+      "studentCount": 685,
+      "lessonCount": null,
+      "status": null,
+      "summary": {
+        "text": "یادگیری مفاهیم و ابزارهای ساخت عامل‌های هوش مصنوعی.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://quera.org/college/landpage/28515/agentic-ai"
+      },
+      "source": {
+        "listingUrl": "https://quera.org/college",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "days_to_finish is a completion window, not video duration. Instructor roles retain the provider labels (designers and coaches).",
+          "The JSON-LD offer labels currency IRR while the visible listing shows the same numeric amounts in toman; this snapshot follows the visible toman price."
+        ],
+        "fieldSources": {
+          "title": "college.name",
+          "imageUrl": "listing course cover / college.card_image_url",
+          "level": "listing card level badge",
+          "instructors": "college.landpage.teachers name and tags",
+          "duration": "college.days_to_finish",
+          "price": "college.price_info, cross-checked against visible listing in toman",
+          "studentCount": "college.participants_count",
+          "features": "college.landpage.hero_features"
+        }
+      },
+      "features": [
+        {
+          "label": "درسنامه آموزشی",
+          "value": "۹۹"
+        },
+        {
+          "label": "کوییز",
+          "value": "۱۵"
+        }
+      ]
+    },
+    {
+      "id": "quera-16809",
+      "providerId": "quera",
+      "title": "آموزش عملی HTML و CSS",
+      "sourceUrl": "https://quera.org/college/landpage/16809/html-css",
+      "imageUrl": "https://quera.org/media/public/college/card_images/0d7a2f9f618f4533a9d4284d814fe7a1.png",
+      "imageAlt": "آموزش عملی HTML و CSS",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "نسرین اسحاقیان",
+          "role": "به‌روزرسان، مربی"
+        },
+        {
+          "name": "سالار امیر عظیمی نیلی",
+          "role": "طراح"
+        },
+        {
+          "name": "مهدی طارقی",
+          "role": "طراح"
+        },
+        {
+          "name": "حسین افسرپور",
+          "role": "طراح"
+        }
+      ],
+      "duration": {
+        "contentMinutes": null,
+        "effortHours": null,
+        "completionWindowDays": 90,
+        "sourceText": null
+      },
+      "price": {
+        "amount": 2769000,
+        "originalAmount": null,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "course",
+        "sourceText": "مقدماتی ۲٬۷۶۹٬۰۰۰ تومان"
+      },
+      "rating": null,
+      "studentCount": 1087,
+      "lessonCount": null,
+      "status": null,
+      "summary": {
+        "text": "تمرین طراحی وب با HTML و CSS و ابزارهای مرتبط.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://quera.org/college/landpage/16809/html-css"
+      },
+      "source": {
+        "listingUrl": "https://quera.org/college",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "days_to_finish is a completion window, not video duration. Instructor roles retain the provider labels (designers and coaches).",
+          "The JSON-LD offer labels currency IRR while the visible listing shows the same numeric amounts in toman; this snapshot follows the visible toman price."
+        ],
+        "fieldSources": {
+          "title": "college.name",
+          "imageUrl": "listing course cover / college.card_image_url",
+          "level": "listing card level badge",
+          "instructors": "college.landpage.teachers name and tags",
+          "duration": "college.days_to_finish",
+          "price": "college.price_info, cross-checked against visible listing in toman",
+          "studentCount": "college.participants_count",
+          "features": "college.landpage.hero_features"
+        }
+      },
+      "features": [
+        {
+          "label": "تمرین عملی",
+          "value": "45+"
+        },
+        {
+          "label": "درسنامه آموزشی",
+          "value": "150+"
+        }
+      ]
+    },
+    {
+      "id": "quera-15166",
+      "providerId": "quera",
+      "title": "آموزش دیزاین پترن‌ها در پایتون",
+      "sourceUrl": "https://quera.org/college/landpage/15166/design-patterns",
+      "imageUrl": "https://quera.org/media/public/college/card_images/8981c885b4b24b5f949bab5ec18a98a4.png",
+      "imageAlt": "آموزش دیزاین پترن‌ها در پایتون",
+      "level": "پیشرفته",
+      "instructors": [
+        {
+          "name": "محمدحسین باقری",
+          "role": "طراح"
+        },
+        {
+          "name": "محمد جعفری",
+          "role": "طراح"
+        },
+        {
+          "name": "حامد صفری",
+          "role": "طراح"
+        },
+        {
+          "name": "معین کیانی",
+          "role": "طراح"
+        },
+        {
+          "name": "علی صفری",
+          "role": "طراح"
+        },
+        {
+          "name": "دوین غریبی",
+          "role": "به‌روزرسان"
+        },
+        {
+          "name": "امیرحسین خلیلی",
+          "role": "مربی"
+        }
+      ],
+      "duration": {
+        "contentMinutes": null,
+        "effortHours": null,
+        "completionWindowDays": 60,
+        "sourceText": null
+      },
+      "price": {
+        "amount": 2599000,
+        "originalAmount": null,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "course",
+        "sourceText": "پیشرفته ۲٬۵۹۹٬۰۰۰ تومان"
+      },
+      "rating": null,
+      "studentCount": 722,
+      "lessonCount": null,
+      "status": null,
+      "summary": {
+        "text": "آشنایی با الگوهای طراحی از طریق مثال‌ها و تمرین‌های پایتون.",
+        "kind": "ai-derived-source-summary",
+        "sourceUrl": "https://quera.org/college/landpage/15166/design-patterns"
+      },
+      "source": {
+        "listingUrl": "https://quera.org/college",
+        "collectedAt": "2026-10-01T08:40:07Z",
+        "method": "public-html-and-embedded-page-data",
+        "imageHttpStatus": 200,
+        "notes": [
+          "days_to_finish is a completion window, not video duration. Instructor roles retain the provider labels (designers and coaches).",
+          "The JSON-LD offer labels currency IRR while the visible listing shows the same numeric amounts in toman; this snapshot follows the visible toman price."
+        ],
+        "fieldSources": {
+          "title": "college.name",
+          "imageUrl": "listing course cover / college.card_image_url",
+          "level": "listing card level badge",
+          "instructors": "college.landpage.teachers name and tags",
+          "duration": "college.days_to_finish",
+          "price": "college.price_info, cross-checked against visible listing in toman",
+          "studentCount": "college.participants_count",
+          "features": "college.landpage.hero_features"
+        }
+      },
+      "features": [
+        {
+          "label": "تمرین عملی",
+          "value": "10+"
+        },
+        {
+          "label": "درسنامه آموزشی",
+          "value": "40+"
+        }
+      ]
+    }
+  ]
+}

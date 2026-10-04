@@ -11,7 +11,7 @@ export type ExportScraper = {
 };
 
 type Export = {
-  schemaVersion: 1; providerId: string; startedAt: string; updatedAt: string;
+  schemaVersion: 2; providerId: string; startedAt: string; updatedAt: string;
   status: "running" | "complete" | "partial" | "interrupted";
   discovery: "provider-catalog" | "explicit-urls"; discoveredCount: number; selectedUrls: string[];
   fullCatalog: boolean; courses: ProviderCourse[];
@@ -62,11 +62,11 @@ Resume skips saved courses; omit it when refreshing prices and details.`);
     const discovered = [...new Set((values.url ?? await scraper.discoverCourses()).map(canonicalCourseUrl))];
     if (!discovered.length) throw new Error("No courses discovered; no export created");
     const selectedUrls = values.url || values.all ? discovered : discovered.slice(0, limit);
-    const draft: Export = { schemaVersion: 1, providerId, startedAt: new Date().toISOString(), updatedAt: new Date().toISOString(), status: "running", discovery: values.url ? "explicit-urls" : "provider-catalog", discoveredCount: discovered.length, selectedUrls, fullCatalog: false, courses: [], successfulSelections: {}, errors: [] };
+    const draft: Export = { schemaVersion: 2, providerId, startedAt: new Date().toISOString(), updatedAt: new Date().toISOString(), status: "running", discovery: values.url ? "explicit-urls" : "provider-catalog", discoveredCount: discovered.length, selectedUrls, fullCatalog: false, courses: [], successfulSelections: {}, errors: [] };
     if (values.resume) {
       // A missing checkpoint is an error: never silently start a different run.
       const previous = JSON.parse(await readFile(output, "utf8")) as Export;
-      if (previous.schemaVersion !== 1 || previous.providerId !== providerId || !Array.isArray(previous.courses) || JSON.stringify(previous.selectedUrls) !== JSON.stringify(selectedUrls)) throw new Error("Resume requires the same provider and selected URLs");
+      if (previous.schemaVersion !== 2 || previous.providerId !== providerId || !Array.isArray(previous.courses) || JSON.stringify(previous.selectedUrls) !== JSON.stringify(selectedUrls)) throw new Error("Resume requires schema version 2, the same provider and selected URLs (old exports require a fresh run)");
       if (previous.courses.some(course => course.providerId !== providerId || !canonicalCourseUrl(course.sourceUrl) || !course.id || !course.source?.checkedAt)) throw new Error("Invalid checkpoint courses");
       draft.startedAt = previous.startedAt;
       draft.courses = [...new Map(previous.courses.map(course => [course.id, finalizeCourse(course)])).values()];

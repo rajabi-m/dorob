@@ -1,18 +1,28 @@
-import { createCourse, finalizeCourse, type ProviderCourse } from "./course.ts";
+import { anonymizeReviewText, createCourse, finalizeCourse, reviewContentId, type ProviderCourse } from "./course.ts";
 import { setTimeout as sleep } from "node:timers/promises";
 import { AccessDeniedError } from "./public-provider.ts";
 
 export const PROVIDER_URL = "https://maktabkhooneh.org";
-export const ADAPTER_VERSION = "2.0.0";
+export const ADAPTER_VERSION = "3.1.0";
 type Obj = Record<string, unknown>;
 const object = (value: unknown): Obj => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Obj : {};
 const text = (value: unknown): string | null => typeof value === "string" && value.trim() ? value.trim() : null;
 const number = (value: unknown): number | null => typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
 
+// Public content_hours/required_hours use both numeric hours and H:MM clock strings.
+// Chapter/lesson effort labels have different semantics and must not use this mapper.
+function publishedMinutes(value: unknown): number | null {
+  const numeric = number(value);
+  if (numeric !== null) return numeric * 60;
+  const clock = text(value)?.replace(/[۰-۹٠-٩]/g, char => String(char.charCodeAt(0) >= 0x6f0 ? char.charCodeAt(0) - 0x6f0 : char.charCodeAt(0) - 0x660)).match(/^(\d+):([0-5]\d)$/);
+  return clock ? Number(clock[1]) * 60 + Number(clock[2]) : null;
+}
+
 export function canonicalCourseUrl(input: string): string {
   const url = providerUrl(input);
-  if (!/^\/course\/[^/]+-mk\d+\/$/u.test(decodeURIComponent(url.pathname))) throw new Error("Not a course detail URL");
+  if (!/^\/course\/[^/]+-mk\d+\/?$/u.test(decodeURIComponent(url.pathname))) throw new Error("Not a course detail URL");
   url.search = "";
+  if (!url.pathname.endsWith("/")) url.pathname += "/";
   return url.href;
 }
 
@@ -126,13 +136,13 @@ export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new
     if (current === 0 && !free) warnings.push(`${type} zero amount has no explicit FREE evidence; normalized price is unknown.`);
     const id = type.toLowerCase() as "full" | "content";
     offers.push({ id, type: id, label: type, amount, originalAmount: amount !== null && originalAmount !== null && originalAmount > amount ? originalAmount : null,
-      unit: "toman", status: free ? "free" : amount === null ? "unknown" : "paid", billingPeriod: null, certificateIncluded: null,
+      unit: "toman", status: free ? "free" : amount === null ? "unknown" : "paid", billingPeriod: null, certificateIncluded: null, accessDescription: null, supportDescription: null,
       sourcePrice: { amount: current, originalAmount: current !== null && originalAmount !== null && originalAmount > current ? originalAmount : null,
         unit: current !== null || originalAmount !== null ? "toman" : "unknown", label: null } });
     fields[`offers.${id}`] = `courseDetails.price.${type} / discounted_price.${type} / sale flags; toman verified against public display during adapter development`;
   }
   if (!offers.length && details.type === "FREE") {
-    offers.push({ id: "free", type: "free", label: "FREE", amount: 0, originalAmount: null, unit: "toman", status: "free", billingPeriod: null, certificateIncluded: null,
+    offers.push({ id: "free", type: "free", label: "FREE", amount: 0, originalAmount: null, unit: "toman", status: "free", billingPeriod: null, certificateIncluded: null, accessDescription: null, supportDescription: null,
       sourcePrice: { amount: null, originalAmount: null, unit: "unknown", label: "courseDetails.type=FREE" } });
     fields["offers.free"] = "courseDetails.type=FREE";
   }
@@ -144,14 +154,14 @@ export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new
       const c = object(chapter), title = plainText(c.title);
       if (!title) throw new Error("Chapter title missing");
       if (c.units !== undefined && c.units !== null && !Array.isArray(c.units)) throw new Error("Invalid chapter lesson list");
-      return { id: number(c.id) === null ? null : String(c.id), order: i + 1, title,
+      return { id: number(c.id) === null ? null : String(c.id), order: i + 1, title, description: plainText(c.description),
         lessons: Array.isArray(c.units) ? c.units.map((unit, j) => {
           const u = object(unit), title = plainText(u.title), providerType = text(u.type);
           if (!title) throw new Error("Lesson title missing");
           const types: Record<string, NonNullable<NonNullable<ProviderCourse["syllabus"]>[number]["lessons"]>[number]["type"]> = {
             video: "video", text: "text", exercise: "exercise", quiz: "quiz", project: "project", live: "live",
           };
-          return { id: number(u.id) === null ? null : String(u.id), order: j + 1, title,
+          return { id: number(u.id) === null ? null : String(u.id), order: j + 1, title, description: plainText(u.description),
             type: providerType ? types[providerType] ?? "unknown" : "unknown", providerType, contentMinutes: null };
         }) : null };
     });
@@ -160,6 +170,31 @@ export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new
   course.image = safeImageUrl(details.image_thumbnail_url ?? details.image) ? { url: safeImageUrl(details.image_thumbnail_url ?? details.image)!, alt: course.title } : null;
   if (course.image) fields.image = "courseDetails.image_thumbnail_url / image";
   course.description = plainText(details.description); if (course.description) fields.description = "courseDetails.description";
+  if (Array.isArray(details.learning_goals)) {
+    const goals = details.learning_goals.map(plainText);
+    course.learningOutcomes = goals.some(goal => goal === null) ? null : goals as string[];
+    if (course.learningOutcomes) fields.learningOutcomes = "courseDetails.learning_goals[]";
+  }
+  if (Array.isArray(details.course_features)) {
+    const features = details.course_features.flatMap(entry => { const feature = object(entry), label = plainText(feature.title), value = plainText(feature.description); return label && value ? [{ label, value }] : []; });
+    course.features = features.length || !details.course_features.length ? features : null;
+    if (course.features) fields.features = "courseDetails.course_features[].title / description";
+    for (const [field, pattern] of [["practiceDescription", /پروژه|تمرین|آزمون/u], ["assessmentDescription", /تصحیح/u], ["supportDescription", /منتور|پشتیبانی/u]] as const) {
+      const matching = features.filter(feature => pattern.test(feature.label));
+      course.learningSupport[field] = matching.length ? matching.map(feature => `${feature.label}: ${feature.value}`).join("\n") : null;
+      if (matching.length) fields[`learningSupport.${field}`] = "courseDetails.course_features[] with explicit matching title; course-level claims, not per-offer entitlements";
+    }
+  }
+  const categories: string[] = [];
+  let category = object(details.categories);
+  for (let depth = 0; depth < 20 && plainText(category.title); depth++) {
+    categories.unshift(plainText(category.title)!);
+    category = object(category.parent);
+  }
+  if (categories.length) { course.providerCategories = [...new Set(categories)]; fields.providerCategories = "courseDetails.categories.parent chain / title; root-to-leaf order"; }
+  if (course.features?.some(feature => /^(?:دوبله فارسی|زبان فارسی)$/u.test(feature.label))) {
+    course.language = "fa"; fields.language = "courseDetails.course_features[].title explicitly identifies Persian dubbing/language";
+  }
   course.prerequisites = plainText(details.prerequisite_description); if (course.prerequisites) fields.prerequisites = "courseDetails.prerequisite_description";
   course.providerLevel = text(details.level); if (course.providerLevel) fields.providerLevel = "courseDetails.level";
   if (Array.isArray(details.teachers)) {
@@ -169,10 +204,11 @@ export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new
     course.instructors = teachers.length && !known.length ? null : known;
     fields.instructors = "courseDetails.teachers[].full_name";
   }
-  course.duration.contentMinutes = number(details.content_hours) === null ? null : number(details.content_hours)! * 60;
-  course.duration.effortHours = number(details.required_hours);
-  if (course.duration.contentMinutes !== null) fields["duration.contentMinutes"] = "courseDetails.content_hours * 60";
-  if (course.duration.effortHours !== null) fields["duration.effortHours"] = "courseDetails.required_hours";
+  course.duration.contentMinutes = publishedMinutes(details.content_hours);
+  const effortMinutes = publishedMinutes(details.required_hours);
+  course.duration.effortHours = effortMinutes === null ? null : effortMinutes / 60;
+  if (course.duration.contentMinutes !== null) fields["duration.contentMinutes"] = "courseDetails.content_hours (numeric hours or H:MM) * 60";
+  if (course.duration.effortHours !== null) fields["duration.effortHours"] = "courseDetails.required_hours (numeric hours or H:MM)";
   course.providerStatus = text(details.publish_status); if (course.providerStatus) fields.providerStatus = "courseDetails.publish_status";
   course.ongoing = typeof details.ongoing === "boolean" ? details.ongoing : null; if (course.ongoing !== null) fields.ongoing = "courseDetails.ongoing";
   if (number(details.avg_rating) !== null && number(details.avg_rating)! <= 5) {
@@ -187,13 +223,113 @@ export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new
   } else if (updated) warnings.push("Provider update date lacks an unambiguous timestamp; retained raw.");
   const parsedLessonCount = course.syllabus?.reduce((sum, chapter) => sum + (chapter.lessons?.length ?? 0), 0);
   if (parsedLessonCount !== undefined && course.lessonCount !== null && parsedLessonCount !== course.lessonCount) warnings.push("Published lesson count differs from extracted syllabus; coverage may be partial.");
-  course.raw = { slugId, heading: plainText(details.heading), type: details.type, level: details.level ?? null,
+  const missingLessons = course.syllabus?.some(chapter => chapter.lessons === null) ?? true;
+  course.syllabusCoverage = {
+    status: (course.syllabus !== null && missingLessons) || (parsedLessonCount !== undefined && course.lessonCount !== null && parsedLessonCount < course.lessonCount) ? "partial" : "unknown",
+    publishedLessonCount: course.lessonCount, extractedLessonCount: course.syllabus !== null && (course.syllabus.length === 0 || course.syllabus.some(chapter => chapter.lessons !== null)) ? parsedLessonCount ?? null : null,
+    reasons: [course.syllabus === null ? "Public chapter data unavailable." : missingLessons ? "Some chapter lesson lists unavailable." : "Embedded public chapter list read; full-list pagination semantics are not established.",
+      ...(parsedLessonCount !== undefined && course.lessonCount !== null && parsedLessonCount !== course.lessonCount ? ["Published and extracted lesson counts differ."] : [])],
+  };
+  fields.syllabusCoverage = "courseDetails.unit_count / chapterData.chapters[].units; completeness not inferred from matching counts";
+  collectPublicReviews(html, page, course);
+  course.raw = { ...course.raw, slugId, heading: plainText(details.heading), type: details.type, level: details.level ?? null,
     description: details.description ?? null, prerequisiteDescription: details.prerequisite_description ?? null,
     price: original, discountedPrice: discounted, fullCourseSale: details.full_course_sale ?? null, contentSale: details.course_content_sale ?? null,
     contentHours: details.content_hours ?? null, requiredHours: details.required_hours ?? null, latestUpdateDate: updated,
     syllabusEffort: Array.isArray(chapters) ? chapters.map(chapter => { const c = object(chapter); return { id: number(c.id), effortTime: text(c.total_effort_time),
       lessons: Array.isArray(c.units) ? c.units.map(unit => ({ id: number(object(unit).id), effortTime: text(object(unit).effort_time_in_minutes) })) : null }; }) : null };
   return finalizeCourse(course);
+}
+
+
+/** Standard public JSON-LD Review nodes only; discussion and replies are never treated as reviews. */
+function collectPublicReviews(html: string, page: Obj, course: ProviderCourse): void {
+  const count = number(object(page.courseReviewsCount).confirmed_review_count);
+  let publishedCount = count !== null && Number.isInteger(count) ? count : null;
+  const items: NonNullable<ProviderCourse["reviews"]["items"]> = [];
+  let omittedCount = 0, reviewSectionFound = false;
+  const seen = new Set<string>();
+  if (Array.isArray(page.courseReviews)) {
+    reviewSectionFound = true;
+    for (const [index, entry] of page.courseReviews.entries()) {
+      const review = object(entry), body = plainText(review.review_description);
+      if (!body || review.parent_id != null || review.parentItem != null) { omittedCount++; continue; }
+      const user = object(review.user);
+      const names = Object.entries(user).filter(([key, value]) => /name|username/i.test(key) && typeof value === "string").map(([, value]) => String(value));
+      const anonymized = anonymizeReviewText(body, [...names, names.join(" ")]);
+      if (!anonymized.text.trim()) { omittedCount++; continue; }
+      const value = number(review.rate);
+      const rating = value !== null && value <= 5 ? { value, scale: 5 } : null;
+      const publishedDateText = text(review.created_date);
+      const publishedAt = publishedDateText && /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(publishedDateText) && Number.isFinite(Date.parse(publishedDateText)) ? new Date(publishedDateText).toISOString() : null;
+      const id = reviewContentId(anonymized.text, publishedDateText, rating);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const sourceLocator = `courseReviews[${index}].review_description / rate / created_date`;
+      items.push({ id, sourceType: "review", text: anonymized.text, rating, publishedAt, publishedDateText, verifiedEnrollment: null,
+        sourceUrl: course.sourceUrl, sourceLocator, redacted: anonymized.redacted || review.redacted === true });
+      course.source.fieldSources[`reviews.items.${items.length - 1}`] = sourceLocator;
+    }
+  }
+  for (const [scriptIndex, match] of [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)].entries()) {
+    if (!/\btype\s*=\s*(["'])application\/ld\+json\1/i.test(match[1])) continue;
+    let data: unknown;
+    try { data = JSON.parse(match[2]); } catch { course.source.warnings.push("Invalid public JSON-LD skipped during review extraction."); continue; }
+    const inspect = (value: unknown, locator: string, inheritedCourse = false, depth = 0): void => {
+      if (depth > 20 || value === null || typeof value !== "object") return;
+      if (Array.isArray(value)) { value.forEach((entry, index) => inspect(entry, `${locator}[${index}]`, inheritedCourse, depth + 1)); return; }
+      const node = object(value);
+      const types = Array.isArray(node["@type"]) ? node["@type"] : [node["@type"]];
+      const matchesUrl = (value: unknown) => value == null || text(value) === course.sourceUrl;
+      const isCourse = types.includes("Course") && plainText(node.name) === course.title && matchesUrl(node.url);
+      if (types.includes("Review")) {
+        const target = object(node.itemReviewed);
+        const explicitTargetMatches = node.itemReviewed == null || (target["@type"] === "Course" && plainText(target.name) === course.title && matchesUrl(target.url));
+        const associated = explicitTargetMatches && (inheritedCourse || node.itemReviewed != null);
+        // Reviews about providers/products, replies, and explicit questions are excluded.
+        if (!associated || node.parentItem != null || node.inReplyTo != null || types.includes("Question")) return;
+        reviewSectionFound = true;
+        const body = plainText(node.reviewBody);
+        if (!body) { omittedCount++; return; }
+        const authors = Array.isArray(node.author) ? node.author : [node.author];
+        const names = authors.flatMap(author => typeof author === "string" ? [author] : [text(object(author).name), text(object(author).alternateName)].filter((name): name is string => name !== null));
+        const anonymized = anonymizeReviewText(body, names);
+        if (!anonymized.text.trim()) { omittedCount++; return; }
+        const sourceRating = object(node.reviewRating), value = Number(sourceRating.ratingValue), scale = Number(sourceRating.bestRating);
+        const rating = sourceRating.ratingValue != null && sourceRating.bestRating != null && Number.isFinite(value) && value >= 0 && Number.isFinite(scale) && scale > 0 && value <= scale ? { value, scale } : null;
+        const publishedDateText = text(node.datePublished);
+        const publishedAt = publishedDateText && /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(publishedDateText) && Number.isFinite(Date.parse(publishedDateText)) ? new Date(publishedDateText).toISOString() : null;
+        const id = reviewContentId(anonymized.text, publishedDateText, rating);
+        if (seen.has(id)) return;
+        seen.add(id);
+        items.push({ id, sourceType: "review", text: anonymized.text, rating, publishedAt, publishedDateText, verifiedEnrollment: null,
+          sourceUrl: course.sourceUrl, sourceLocator: locator, redacted: anonymized.redacted });
+        course.source.fieldSources[`reviews.items.${items.length - 1}`] = locator;
+        return;
+      }
+      for (const [key, child] of Object.entries(node)) inspect(child, `${locator}.${key}`, isCourse && key === "review", depth + 1);
+    };
+    inspect(data, `script[${scriptIndex}].jsonld`);
+  }
+  if (publishedCount !== null && items.length > publishedCount) {
+    course.raw.reviewCountConflict = publishedCount;
+    course.source.warnings.push("Published confirmed review count is smaller than extracted reviews; normalized total is unknown.");
+    publishedCount = null;
+  }
+  const explicitEmpty = publishedCount === 0;
+  const hasMore = text(page.courseReviewsNext) ? true : explicitEmpty ? false : null;
+  course.reviews = {
+    items: items.length ? items : explicitEmpty ? [] : null,
+    collection: {
+      status: explicitEmpty && !items.length && !omittedCount && hasMore === false ? "complete" : hasMore === true || omittedCount > 0 || (publishedCount !== null && publishedCount > items.length) ? "partial" : "unknown",
+      publishedCount, collectedCount: items.length || explicitEmpty ? items.length : null, selection: reviewSectionFound ? "Public embedded course review document order; provider sort/filter unknown." : null,
+      pagesRead: 1, hasMore,
+      omittedCount, stopReason: explicitEmpty && !items.length ? "Provider explicitly reports zero reviews." : "Only the public course page was read; review pagination was not traversed.",
+    },
+  };
+  if (publishedCount !== null) course.source.fieldSources["reviews.collection.publishedCount"] = "courseReviewsCount.confirmed_review_count (text reviews; overall_count includes rating-only votes)";
+  if (!reviewSectionFound && !explicitEmpty) course.source.warnings.push("No identifiable public review bodies in embedded page data/JSON-LD; review items remain unknown. Review endpoints are not guessed.");
+  if (omittedCount) course.source.warnings.push(`${omittedCount} public review items omitted because usable review text was unavailable.`);
 }
 
 function safeImageUrl(value: unknown): string | null {

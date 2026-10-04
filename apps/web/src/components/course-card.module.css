@@ -1,0 +1,30 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  overflow: hidden;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+}
+.thumbnail { position: relative; aspect-ratio: 16 / 9; background: var(--ds-soft); overflow: hidden; }
+.thumbnail img { object-fit: contain; }
+.thumbnail > div, .thumbnail svg { inline-size: 100%; block-size: 100%; }
+.body { display: flex; flex: 1; flex-direction: column; padding: 12px 14px; }
+.card .level { position: absolute; inset-block-end: 8px; inset-inline-start: 8px; background: var(--ds-surface); }
+.heading { margin-block: 0 8px; }
+.card .title { padding: 0; border: 0; background: none; color: var(--ds-ink); text-align: start; font-size: 15px; font-weight: 750; line-height: 1.8; overflow-wrap: anywhere; }
+.card .title:hover { color: var(--ds-primary); }
+.info { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; margin-block-end: 10px; }
+.provider { display: flex; align-items: center; gap: 6px; color: var(--ds-muted); font-size: 11px; line-height: 1.9; }
+.logo { flex-shrink: 0; inline-size: 24px; block-size: 24px; object-fit: contain; }
+.metadata { display: flex; align-items: center; gap: 5px; color: var(--ds-muted); font-size: 10px; line-height: 1.9; }
+.metadata svg { flex-shrink: 0; }
+.footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; margin-block-start: auto; padding-block-start: 10px; border-block-start: 1px solid var(--ds-border); }
+.card .footer strong { font-size: 14px; }
+.footer :global(.discovery-price) > div { gap: 4px; margin-block-end: 2px; }
+.footer :global(.discovery-price) del { font-size: 10px; font-weight: 400; }
+.footer :global(.discovery-price) small { font-size: 9px; }
+.footer :global(.discovery-price) :global(.ds-badge) { font-size: 8px; padding: 1px 4px; }
+.card .action { min-block-size: 40px; padding: 7px 10px; white-space: normal; }
+.card button:focus-visible { outline: 3px solid var(--ds-primary); outline-offset: 3px; }

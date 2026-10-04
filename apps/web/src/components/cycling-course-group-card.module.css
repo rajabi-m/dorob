@@ -1,0 +1,9 @@
+.root { min-inline-size: 0; }
+.covers { position: relative; inline-size: 100%; block-size: 100%; isolation: isolate; overflow: hidden; border-radius: inherit; }
+.slides { position: absolute; inset: 0; z-index: 0; isolation: isolate; }
+.tile { position: absolute; inset: 0; z-index: 0; opacity: 0; transition: opacity 600ms ease-in-out; background: var(--ds-surface); overflow: hidden; }
+.tile[data-active="true"] { opacity: 1; }
+.covers .tile img { object-fit: contain; }
+.countdown { position: absolute; z-index: 1; isolation: isolate; pointer-events: none; box-shadow: 0 1px 0 var(--ds-surface); inset-inline: 0; inset-block-start: 0; block-size: 4px; overflow: hidden; background: var(--ds-border); }
+.countdown span { display: block; inline-size: 100%; block-size: 100%; background: var(--ds-primary); transform-origin: right center; }
+.fallback { display: grid; place-items: center; block-size: 100%; padding: 6px; font-size: 11px; color: var(--ds-muted); text-align: center; overflow-wrap: anywhere; }

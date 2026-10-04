@@ -2,7 +2,9 @@
 
 Created: September 30, 2026
 
-Status: Project initialized with a working Persian RTL hello-world frontend. Phase 1 remains incomplete; the owner selected سنجش with the لاجورد palette and the supplied ring-and-cap logo as the direction for continued component development. Phases 2 and 3 have not started.
+Current checks and build limitations are maintained in [validation](docs/validation.md).
+
+Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 has not started.
 
 ## Product vision
 
@@ -65,7 +67,7 @@ Create only the packages needed by the active phase. Shared browser-safe code mu
 
 ## Phase 1 — Design system
 
-Status: Visual direction selected; component development and validation remain incomplete. The exploration showcase is preserved in commit `f56b49f`; the working page now shows only سنجش / لاجورد / the supplied logo. This selection does not complete phase 1.
+Status: Complete — accepted by the owner on September 30, 2026. The working showcase uses سنجش / لاجورد / the supplied logo, with interactive core and discovery components reviewed on desktop and mobile. The exploration showcase is preserved in commit `f56b49f`. Remaining validation and component-library work are recorded below as follow-up work.
 
 ### Objective
 
@@ -118,6 +120,8 @@ Establish Dorob's visual identity and build an interactive RTL component showcas
 
 ## Phase 2 — Frontend with mock data
 
+Status: Complete for now — closed by the owner on October 4, 2026. The delivered milestone includes the snapshot-backed homepage, reusable course/category/group cards, group destinations, and the selected eight-course Python prototype. The proposed minimum scope and completion criteria below remain the original roadmap; dedicated results/detail/comparison routes and comprehensive accessibility coverage were not completed and are carried forward, rather than prerequisites for this owner-accepted closure.
+
 ### Objective
 
 Build a fully navigable product experience using the approved design system and mock data only.
@@ -136,6 +140,7 @@ Suggested first filters are provider, free/paid, price, and level. Add others on
 
 ### Implementation approach
 
+- Owner-requested one-time provider snapshot: `apps/web/src/data/provider-courses.json` holds six real course samples each from Maktabkhooneh, TopLearn, and Quera, collected October 1, 2026 for phase 2 mock use. Includes source/cover URLs, available metadata, dated toman prices, and labeled AI-derived paraphrases. The homepage uses all 18 snapshots for individual cards, search/filtering, and details; group pages use editorial subsets of the same snapshots (at least two courses per group), except the Python prototype which includes two additional legacy-export offerings; the design-system showcase retains fictional fixtures. No production ingestion or live integration is added. Field conventions and limitations are in [snapshot provenance](docs/provider-snapshots.md).
 - Define shared domain models for providers, topics, groups, courses, offers, syllabus sections, and comparison results.
 - Put mock access behind a data-service boundary so phase 3 can replace it with API requests.
 - Include realistic fixtures for free courses, discounts, missing information, long Persian titles, mixed-direction text, and multiple providers.
@@ -224,7 +229,7 @@ Replace mock data with traceable provider data and connect the existing frontend
 
 | Decision | When to resolve |
 | --- | --- |
-| Final brand color, logo, and Persian font | Phase 1 foundations |
+| Brand color, logo, and Persian font | Resolved in phase 1: لاجورد, supplied ring-and-cap mark, and Vazirmatn |
 | TypeScript, styling tools, and workspace defaults | Phase 1 setup |
 | Toman and Persian numeral presentation | Phase 1 price and text components |
 | Exact initial pages and filters | Start of phase 2 |
@@ -234,116 +239,14 @@ Replace mock data with traceable provider data and connect the existing frontend
 | API framework, database, hosting, and budget | Start of phase 3 |
 | AI provider, evaluation criteria, and review workflow | Before live AI integration |
 
-## Immediate next step
+## Next steps and remaining work
 
-Expand components using the selected سنجش / لاجورد / supplied-logo direction. Do not start phase 2 until the design system meets its completion criteria and is approved.
+- Agree phase 3 architecture, database, hosting, refresh operations, and AI evaluation before implementation. No production backend, scheduled scraping, or live AI is active.
+- Retain the four standalone version-2 adapters and local read-only data dashboard as owner-authorized groundwork outside the normal phase order. Frontend fixtures remain separate from current scraper exports.
+- Resolve the production build runtime blocker and finish screen-reader, keyboard, and mobile review. Previously reviewed layouts/interactions are recorded in the frontend documentation and history.
+- Reconcile the homepage's three-course beginner Python group with the eight-course broad Python prototype, extract its page-local components when scope is agreed, and decide whether dedicated results/detail/comparison routes are needed.
+- Review analyzer ranking weights, badge rules, and evidence coverage before any production assessment.
 
-## Implementation progress — September 30, 2026
+## Phase 2 closure — October 4, 2026
 
-- Initialized Git and committed the project plan, `.gitignore`, and `AGENTS.md` as the initial repository setup.
-- Added a commit policy requiring explicit user confirmation and documentation updates before each authorized commit.
-- Scaffolded `apps/web` with Next.js App Router, React, TypeScript, Tailwind CSS, and a Bun workspace.
-- Added a Persian RTL welcome page with a teal-and-ivory palette, an original vector graduation-cap mark, and responsive CSS artwork.
-- Added an experimental `/design-system` page covering color tokens, locally bundled Vazirmatn typography, buttons, links, and badges. Its design direction was not approved.
-- Added setup and workflow documentation in `README.md`.
-- Accepted the working welcome page as the project's initial hello-world frontend, with the Persian name «دورُب» (from «دوره» and «ترب»).
-- Lint and type checking pass. Both frontend routes returned HTTP 200 locally. The production build remains blocked by a Turbopack local-port permission error, including after an escalated retry; full visual and accessibility validation remains pending.
-- Remaining in phase 1: redesign and approve the visual direction, expand tokens and component states, implement forms and overlays, and build the course-specific showcase.
-- The user authorized committing the project initialization and these documentation updates.
-
-## Phase 1 design exploration — September 30, 2026
-
-- Replaced the initial design-system experiment with an interactive review lab at `/design-system`.
-- Added three proposed visual directions: سنجش (compact comparison), رویش (spacious discovery), and جهش (bold graphic). Each has three palettes, for nine preview combinations.
-- Each direction changes typography weights, spacing, radii, borders, and course-card treatments. All use the existing locally bundled Persian-capable Vazirmatn font.
-- Added scoped semantic color and feedback tokens, responsive layouts, button and badge states, sample search, a free filter, course selection, and inline sample comparison. Fictional providers and prices are labeled.
-- This is phase 1 component exploration; it does not start phase 2. No final brand, palette, or design-system approval is implied. Full component coverage and shared-package extraction remain pending selection.
-- Lint, type checking, and the RTL detector pass. The local preview returns HTTP 200. Browser-based visual, mobile, and keyboard validation remains pending because no browser was available. Production build still fails on the existing Turbopack local-port permission restriction, including an escalated retry.
-- Next: review the three directions and nine palettes with the owner, select a direction, and complete its reusable component system and accessibility review. No commit has been authorized for these changes.
-
-### Logo prototype review
-
-- Added five original vector proposals (جوانه، کتاب، هم‌سنج، مسیر، دال) with a persistent session selection across all three directions and nine palettes.
-- Selected marks appear in the preview header and hero, alongside wordmark, small-size, and reversed-color specimens. SVG downloads use the selected primary color. Added standalone teal SVGs and a reusable renderer/export helper.
-- No logo is approved or applied to the welcome page. Phase 1 remains active.
-- Lint, type checking, and the RTL detector pass; the preview route returns HTTP 200. Production build still encounters the Turbopack local-port restriction after an escalated retry. Browser visual, keyboard, and mobile review remain pending. No commit was requested.
-
-### Expanded logo exploration
-
-- Added the user-supplied `logo.svg` as option six, preserving its geometry and viewBox while adapting its ring, cap, and tassel to active semantic palette colors. The source file remains untouched.
-- Added four ring-and-cap alternatives: مدار (open orbit), پیوند (paired loops), درگاه (rounded portal), and شکوفه (leaf-like ring). There are exactly ten selectable logos across all nine theme combinations.
-- Updated vector rendering and SVG downloads to support per-mark viewBoxes, circles, and multiple semantic colors. Your supplied mark is selected on initial load; all options follow the palette.
-- Rendered and visually reviewed all ten vector marks. Lint, type checking, RTL audit, and diff whitespace checks pass; the preview route returns HTTP 200. Full browser interaction/mobile review remains pending. The production build still fails on the existing Turbopack worker-port restriction after an escalated retry.
-
-### Authorized exploration checkpoint
-
-- The owner selected سنجش, the لاجورد palette, and نشان شما (the supplied ring-and-cap SVG) for continued phase 1 work.
-- The owner explicitly requested committing the current exploration before removing the alternative options. This checkpoint preserves all three systems, nine palettes, and ten logos.
-- After this checkpoint, simplify the design-system page to the selected direction and leave that work uncommitted so more components can be added. Phase 1 remains incomplete; no phase 2 work is authorized.
-- Local skill files under `.agents/` are outside this frontend checkpoint and are not staged.
-
-### Selected showcase — component checkpoint
-
-- Created exploration checkpoint `f56b49f` before simplifying the page, as explicitly requested.
-- Removed all design, palette, and logo selectors and alternative theme styles from `/design-system`. It now always uses سنجش, لاجورد, and the supplied mark. The outer page header also uses the selected mark.
-- Retained component demos, semantic swatches, typography, sample comparison, logo-size/reversed specimens, and the palette-colored SVG download. Exploration logo assets remain archived in the repository.
-- Updated current documentation. These changes are included in the owner-authorized component checkpoint. Phase 1 remains incomplete; the welcome page is unchanged.
-
-Validation for the selected showcase: lint, type checking, and RTL audit pass; the route responds with HTTP 200. Turbopack remains blocked by worker-port permissions. A Webpack fallback (`bun run --cwd apps/web build --webpack`) compiles and type-checks successfully, then fails during page-data collection with a Bun CommonJS function-wrapper error. Full browser, keyboard, and mobile review remains pending.
-
-- Wordmark exploration: colored only the damma (ُ) in the selected showcase’s brand lockups with the لاجورد gold accent. Added a reusable inline wordmark with its complete accessible Persian name; ordinary text remains unchanged. This preview is included in the component checkpoint.
-
-### Discovery component expansion — component checkpoint
-
-- Added six interactive category cards and full-content-width rectangular course rows with provider, level, duration, format, sample labels, price, details, and comparison actions. Existing compact cards remain as a second variant.
-- Added combined sample search/category/level/price filters, removable chips, price/duration sorting, pagination, an independent comparison tray and semantic scrollable table, and a native modal details dialog with sample syllabus.
-- Added reusable price presentation (paid, discounted, free, unavailable), source/freshness notices, AI-attribution placeholder, native accordions, and selectable skeleton/empty/error states. No source facts, live provider connections, or AI output are implied.
-- Preserved سنجش / لاجورد / selected ring-and-cap mark and gold wordmark accent. Responsive rules reflow course actions and allow comparison-table scrolling.
-- Lint, type checking, and RTL detector pass. Route returns HTTP 200; production build remains affected by the existing worker-port restriction. Firefox Computer Use permission was unavailable, so full visual/mobile and keyboard/dialog validation remain pending.
-- Phase 1 continues; no commit, phase 2 pages, or backend integration was added.
-
-### Card imagery preview
-
-Phase 1 now includes three illustrated categories (programming, design, data) and three sample course covers (Python, UX, automation). Reusable decorative SVG artwork lives in `apps/web/src/components/course-artwork.tsx`, uses the selected brand colors with muted secondary tones, and contains no provider claims or embedded text. Other course rows demonstrate a missing-image fallback. Desktop thumbnails use a 16:10 aspect ratio and reflow alongside course text on mobile. These examples are included in the component checkpoint.
-
-Lint, type checking, and RTL audit pass. Production build still fails on the existing Turbopack worker-port permission restriction after an escalated retry. Firefox accessibility output confirmed the updated page content, but subsequent Computer Use actions were denied; screenshot, mobile, and keyboard validation remain pending.
-
-### Component checkpoint before interaction refinements
-
-The owner authorized a checkpoint of the selected system, wordmark accent, expanded discovery components, card artwork, discounted-price treatment, and Bash launcher before applying the Firefox review improvements. Desktop and 393px Firefox review exercised search, filters, sorting, pagination, comparison, dialogs, accordions, and state specimens. Observed issues include inner-input focus rings, top-right dialog placement, separate search/selection demos, focus loss after chip removal, and narrow mobile description columns. These refinements are pending at this checkpoint; phase 1 remains incomplete.
-
-### Firefox review refinements — approved commit
-
-- Created authorized checkpoint `0d9f509` before changes. The owner subsequently authorized committing the refinements and current project state.
-- Added whole-field search focus, centered scrollable dialogs, shared hero/list search, named removable selections, filtered compact select-all, chip focus restoration, and comparison heading focus/scroll.
-- Added artwork for all six categories, full-width mobile descriptions, and tighter discounted-price spacing. Compact cards remain a clearly labeled independent demo.
-- Verified interactions in Firefox desktop and 393px responsive mode, including dialog Escape, selection removal, comparison heading focus, chip focus restoration, and mobile layout. Lint, type checking, and RTL audit pass. Full screen-reader and all-breakpoint checks remain pending. Phase 1 remains active.
-
-Final refinement validation: lint, types, and the RTL audit of the design-system/components directories pass. The wider source audit reports 20 existing warnings in the unchanged welcome-page CSS. Production build still fails when Turbopack binds its worker port, including an escalated retry.
-
-Project-local frontend-design and rtl-design skills are included with their supplied license/attribution and audit references so future contributors can use the same guidance.
-
-## Additional MVP adapter groundwork — October 2, 2026
-
-The owner authorized parallel agents to add at least three reusable standalone adapters based on the Maktabkhooneh utility, explicitly requiring the golden contract and excluding Quera. Three agents implemented TopLearn, Sabzlearn, and Roocket in `apps/utils`; the [shared plan](docs/provider-adapter-plan.md) records instructions, ownership and selection. Faradars was considered for subject breadth but deferred after robots and public detail-page assessment; Roocket supplies useful programming comparison coverage instead. This extends utility groundwork without starting live frontend integration or the broader phase-3 backend.
-
-All new adapters return the complete version-1 record with nullable unknowns, explicit price evidence, original currency, ordered syllabi, field provenance, parser version, successful-check timestamp, deterministic fact hash, selected raw evidence, and `derived: null`. Shared transport provides robots checks, same-host HTTPS redirects, sequential delays, retries/Retry-After, bounded responses, and cancellation. The export CLI validates records/checkpoints, saves atomically, reports partial failures, and tracks requested URL aliases separately for resume. Root scripts and package exports support CLI use or a future server-side TypeScript backend. Existing Maktabkhooneh records remain their earlier format and require later contract alignment; frontend samples were untouched.
-
-Live samples: TopLearn discovered 1,242 advertised course URLs and parsed three detail pages; Sabzlearn discovered 89 and fetched two details, with a third retained live page also parsed. Roocket's observed catalog contains 106 URLs; two public course pages were fetched with normal TLS via public DNS resolution and parsed. Local Roocket DNS fails, so ordinary network end-to-end collection is not claimed; discovery uses retained-response tests. No complete detail catalog was collected. TopLearn's IRR/toman conflict and Roocket's unverified currency glyph deliberately leave paid normalized amounts null until resolved; original source observations are retained. Broader template sampling and ongoing operational suitability remain follow-up work.
-
-Validation: all 39 utility tests, workspace lint/type checking, CLI help and whitespace checks pass. Production compilation/type checking succeed; page-data collection still encounters the existing Bun CommonJS runtime bug. No dependencies, system runtime changes, commits, branches, or pushes were introduced by this work.
-
-### Maktabkhooneh golden-contract alignment — October 2, 2026
-
-The owner requested bringing the existing adapter into the same golden structure. Parser version 2.0.0 now uses the shared ProviderCourse factory/validator/hash; the CLI uses the shared export implementation. New IDs use the stable provider course ID, old slug identifiers and effort labels remain raw, and offers/source/image/lesson fields follow the contract. All nullable fields and derived:null are included. Ambiguous zero amounts do not imply free access; missing lists remain null; rating counts do not use review totals. This supersedes the earlier note that Maktabkhooneh still needs output alignment.
-
-Old-format checkpoints are deliberately rejected without overwriting them; re-export without --resume, preferably to a new path. Frontend fixtures and existing generated exports are untouched. The existing Nuxt decoder and course collection behavior are retained. Tests cover complete shape, source facts, string IDs, unknown/free-price semantics, signed cover hashes, failure handling and safe legacy-checkpoint rejection. No commit was requested.
-
-Final alignment validation: all 40 utility tests (including 11 Maktabkhooneh tests), workspace lint/type checking, CLI help and whitespace checks pass. No fresh live collection was performed for this shape-only update; validation uses the retained public-page fixture and injected transport cases. Production compilation/types pass; page-data collection still fails with the existing Bun CommonJS runtime error.
-
-
-## Utility checkpoint — October 3, 2026
-
-The owner authorized committing `apps/utils`, its four provider adapters, shared golden contract and export CLI, retained fixtures and tests, workspace scripts/lockfile, ignored output directory, and utility documentation. The frontend changes and experimental Next.js build configuration remain outside this commit. This is standalone ingestion groundwork authorized as an exception to the phase order; API, database, scheduling, frontend integration, and live AI remain deferred.
-
-Validation: workspace lint and type checking, all 40 offline utility tests, and all four CLI help commands pass. Generated exports remain ignored. The current working-tree frontend compiles and type-checks, but production page-data collection fails with the documented Bun CommonJS runtime error. The utility package has no production build step; TypeScript checks its source exports. No new live collection or full-catalog run is part of this checkpoint.
+The owner requested committing all current work, updating and merging related documentation, creating a documentation hub, and calling this the end of stage 2 for now. This closes the accepted milestone without starting phase 3. Related frontend, snapshot, and provider-adapter documents are consolidated; [docs/index.md](docs/index.md) is the navigation hub. Dated checkpoint notes are preserved in [project history](docs/project-history.md). See [validation](docs/validation.md) for current check results and limitations.

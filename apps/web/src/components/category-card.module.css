@@ -1,0 +1,17 @@
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.card { background: var(--ds-surface, white); border: 1px solid var(--ds-border); border-radius: var(--ds-radius, 8px); text-align: start; text-decoration: none; padding: 14px; display: flex; align-items: center; gap: 14px; color: var(--ds-ink); font: inherit; cursor: pointer; min-inline-size: 0; }
+.card:hover, .card[aria-pressed="true"] { border-color: var(--ds-primary); background: var(--ds-soft); }
+.card:focus-visible { outline: 3px solid var(--ds-primary); outline-offset: 3px; }
+.card > svg:first-child { inline-size: 76px; flex-shrink: 0; border-radius: 5px; }
+.copy { min-inline-size: 0; }
+.copy strong { display: block; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+.copy small { display: block; color: var(--ds-muted); font-size: 10px; line-height: 1.9; overflow-wrap: anywhere; }
+.arrow { color: var(--ds-primary); margin-inline-start: auto; flex-shrink: 0; }
+.arrow:dir(rtl) { transform: scaleX(-1); }
+@media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) {
+  .card { flex-wrap: wrap; gap: 10px; padding: 12px; }
+  .card > svg:first-child { inline-size: 100%; }
+  .copy { flex: 1; }
+  .copy strong { font-size: 13px; }
+}

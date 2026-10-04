@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createCourse, finalizeCourse } from "../scrapers/course.ts";
+import { anonymizeReviewText, createCourse, finalizeCourse, reviewContentId } from "../scrapers/course.ts";
 import { AccessDeniedError, PublicProviderClient, parseRobots } from "../scrapers/public-provider.ts";
 import { runExportCli, type ExportScraper } from "../export-cli.ts";
 
@@ -36,7 +36,7 @@ test("golden records keep unknown fields, reject invalid prices/counts and produ
   assert.throws(() => finalizeCourse(incomplete as typeof first), /Incomplete golden/);
   const offer = {
     id: "full", type: "full" as const, label: null, amount: 10, originalAmount: 5, unit: "toman" as const,
-    status: "paid" as const, billingPeriod: null, certificateIncluded: null,
+    status: "paid" as const, billingPeriod: null, certificateIncluded: null, accessDescription: null, supportDescription: null,
     sourcePrice: { amount: 10, originalAmount: 5, unit: "toman" as const, label: null },
   };
   assert.throws(() => finalizeCourse({ ...first, offers: [offer] }), /discount/);
@@ -51,6 +51,96 @@ test("fact hashes ignore signed cover expiry but retain meaningful cover paramet
   assert.equal(finalizeCourse(first).source.contentHash, initial);
   first.image.url = "https://example.org/image?w=400";
   assert.notEqual(finalizeCourse(first).source.contentHash, initial);
+});
+
+test("v2 review evidence is anonymous, validated and invalidates source hashes", () => {
+  const cleaned = anonymizeReviewText("نام نمونه: تمرین خوب بود user@example.org @sample ۰۹۱۲۳۴۵۶۷۸۹ https://example.org/profile", ["نام نمونه"]);
+  assert.equal(cleaned.redacted, true);
+  assert.doesNotMatch(cleaned.text, /نام نمونه|example.org|@sample|۰۹۱۲/);
+  const first = course();
+  const review = {
+    id: reviewContentId(cleaned.text, null, { value: 4, scale: 5 }), sourceType: "review" as const, text: cleaned.text,
+    rating: { value: 4, scale: 5 }, publishedAt: null, publishedDateText: null, verifiedEnrollment: null,
+    sourceUrl: url, sourceLocator: "course.reviews[0]", redacted: true,
+  };
+  first.reviews = { items: [review], collection: { status: "partial", publishedCount: 10, collectedCount: 1,
+    selection: "newest", pagesRead: 1, hasMore: true, omittedCount: 0, stopReason: "page-only sample" } };
+  const initial = finalizeCourse(first).source.contentHash;
+  first.reviews.collection.pagesRead = 2;
+  first.reviews.collection.stopReason = "request bound";
+  assert.equal(finalizeCourse(first).source.contentHash, initial);
+  first.reviews.collection.selection = "highest-rated";
+  assert.notEqual(finalizeCourse(first).source.contentHash, initial);
+  first.reviews.collection.selection = "newest";
+  first.reviews.items![0].text = "تمرین کافی نبود";
+  assert.notEqual(finalizeCourse(first).source.contentHash, initial);
+  first.reviews.items![0].text = "user@example.org";
+  assert.throws(() => finalizeCourse(first), /redacted/);
+  first.reviews.items![0].text = cleaned.text;
+  first.reviews.collection.status = "complete";
+  assert.throws(() => finalizeCourse(first), /Complete reviews/);
+  first.reviews.collection.status = "partial";
+  first.reviews.collection.collectedCount = 2;
+  assert.throws(() => finalizeCourse(first), /count mismatch/);
+  first.reviews.collection.collectedCount = 1;
+  Object.assign(first.reviews.items![0], { author: "forbidden" });
+  assert.throws(() => finalizeCourse(first), /identities/);
+});
+
+test("v2 syllabus coverage distinguishes unknown from empty and rejects false completeness", () => {
+  const first = course();
+  first.syllabus = [{ id: null, order: 1, title: "شروع", description: null, lessons: [
+    { id: null, order: 1, title: "نصب", description: "آماده‌سازی", type: "video", providerType: null, contentMinutes: 5 },
+  ] }];
+  first.syllabusCoverage = { status: "partial", publishedLessonCount: 2, extractedLessonCount: 1, reasons: ["truncated list"] };
+  const hash = finalizeCourse(first).source.contentHash;
+  first.syllabus![0].lessons![0].description = "شرح جدید";
+  assert.notEqual(finalizeCourse(first).source.contentHash, hash);
+  first.syllabusCoverage.status = "complete";
+  assert.throws(() => finalizeCourse(first), /Complete syllabus/);
+  first.syllabusCoverage.status = "partial";
+  first.syllabusCoverage.extractedLessonCount = 0;
+  assert.throws(() => finalizeCourse(first), /count mismatch/);
+  const empty = course();
+  empty.reviews.items = [];
+  empty.reviews.collection = { status: "complete", publishedCount: 0, collectedCount: 0, selection: "explicit zero",
+    pagesRead: 1, hasMore: false, omittedCount: 0, stopReason: null };
+  assert.equal(finalizeCourse(empty).reviews.items?.length, 0);
+  assert.equal(course().reviews.items, null);
+  empty.syllabus = [];
+  empty.syllabusCoverage = { status: "complete", publishedLessonCount: 0, extractedLessonCount: 0, reasons: ["explicit empty list"] };
+  assert.equal(finalizeCourse(empty).syllabusCoverage.extractedLessonCount, 0);
+  empty.syllabus = [{ id: null, order: 1, title: "شروع", description: null, lessons: null }];
+  empty.syllabusCoverage = { status: "unknown", publishedLessonCount: null, extractedLessonCount: null, reasons: ["lesson lists missing"] };
+  assert.equal(finalizeCourse(empty).syllabusCoverage.extractedLessonCount, null);
+});
+
+test("v1 checkpoints cannot resume or overwrite saved exports", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "dorob-schema-test-"));
+  const output = join(directory, "courses.json");
+  const factory = (): ExportScraper => ({ discoverCourses: async () => [url], async *scrapeCourses() { yield { sourceUrl: url, course: course(), error: null }; } });
+  try {
+    const args = ["--url", url, "--output", output];
+    await runExportCli("example", factory, canonical, args);
+    const { writeFile } = await import("node:fs/promises");
+    const previous = JSON.parse(await readFile(output, "utf8"));
+    previous.schemaVersion = 1;
+    previous.courses[0].schemaVersion = 1;
+    const old = JSON.stringify(previous);
+    await writeFile(output, old);
+    await assert.rejects(runExportCli("example", factory, canonical, [...args, "--resume"]), /schema version 2/);
+    assert.equal(await readFile(output, "utf8"), old);
+    assert.throws(() => finalizeCourse({ ...course(), schemaVersion: 1 } as unknown as ReturnType<typeof course>), /schema/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("documented golden example validates against the implemented v2 contract", async () => {
+  const document = await readFile(new URL("../../../docs/course-data-format.md", import.meta.url), "utf8");
+  const example = document.match(/```json\n([\s\S]*?)\n```/);
+  assert.ok(example);
+  const parsed = JSON.parse(example[1]);
+  assert.equal(finalizeCourse(parsed).schemaVersion, 2);
+  assert.match(parsed.source.contentHash, /^[a-f0-9]{64}$/);
 });
 
 test("shared robots handling works across hosts and uses longest applicable rules", async () => {
@@ -78,6 +168,27 @@ test("shared transport rejects redirects outside host or into robots-denied path
     : new Response(null, { status: 302, headers: { Location: "https://127.0.0.1/" } })) });
   await assert.rejects(offHost.request(url), /Only HTTPS/);
   assert.throws(() => offHost.canonicalUrl("https://user:pass@example.org/"), /Only HTTPS/);
+});
+
+test("missing robots permits public requests, but denied/unreachable robots and resource 404s still fail", async () => {
+  let requests = 0;
+  const missing = new PublicProviderClient(origin, { delayMs: 0, retries: 0, fetch: transport(input => {
+    requests++;
+    return input.endsWith("robots.txt") ? new Response("missing", { status: 404 }) : new Response("public data");
+  }) });
+  assert.equal((await missing.request(url)).body, "public data");
+  assert.equal(requests, 2);
+  assert.deepEqual(missing.sitemapUrls, []);
+  for (const status of [401, 403, 500]) {
+    const requested: string[] = [];
+    const blocked = new PublicProviderClient(origin, { delayMs: 0, retries: 0, fetch: transport(input => {
+      requested.push(input); return new Response("unavailable", { status });
+    }) });
+    await assert.rejects(blocked.request(url));
+    assert.deepEqual(requested, [`${origin}/robots.txt`]);
+  }
+  const absent = new PublicProviderClient(origin, { delayMs: 0, retries: 0, fetch: transport(input => new Response("", { status: input.endsWith("robots.txt") ? 200 : 404 })) });
+  await assert.rejects(absent.request(url), /404/);
 });
 
 test("shared transport stops access-denied providers and respects Retry-After", async () => {

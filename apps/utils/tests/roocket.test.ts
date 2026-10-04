@@ -5,7 +5,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { main } from "../scrape-roocket.ts";
-import { AccessDeniedError, canonicalCourseUrl, decodeCourseData, parseCoursePage, RoocketScraper } from "../scrapers/roocket.ts";
+import { AccessDeniedError, applyPublicComments, canonicalCourseUrl, decodeCourseData, parseCoursePage, RoocketScraper } from "../scrapers/roocket.ts";
 const python = "https://roocket.ir/series/learn-python/", laravel = "https://roocket.ir/series/learn-laravel-with-projects/";
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/roocket-${name}`, import.meta.url), "utf8");
 const free = fixture("python.html"), paid = fixture("laravel.html");
@@ -42,6 +42,34 @@ describe("Roocket source parsing", () => {
     assert.equal(course.syllabus!.length, 4); assert.equal(course.syllabus![0].title, "معرفی و مقدمه");
     assert.match(course.source.warnings.join(" "), /currency/);
   });
+  test("live course-scoped JSON-LD anchors the displayed toman price and rejects unrelated/mismatched evidence", () => {
+    const proof = fixture("price-evidence.html"), course = parseCoursePage(paid + proof, laravel);
+    assert.equal(course.offers![0].amount, 2450000); assert.equal(course.offers![0].originalAmount, 4900000);
+    assert.equal(course.offers![0].status, "paid"); assert.equal(course.offers![0].sourcePrice.unit, "toman");
+    assert.match(course.source.fieldSources["offers.course.currency"], /JSON-LD/);
+    assert.equal(parseCoursePage(paid + proof.replace("49000000", "49000001"), laravel).offers![0].amount, null);
+    assert.equal(parseCoursePage(paid + proof.replace("learn-laravel-with-projects", "learn-python"), laravel).offers![0].amount, null);
+    assert.equal(parseCoursePage(paid + proof.replace("IRR", "USD"), laravel).offers![0].amount, null);
+  });
+  test("reduced live anonymous API feedback retains comments and first-page coverage without mixed totals", () => {
+    const url = "https://api.roocket.ir/api/v1/series/learn-laravel-with-projects/comments/?page=1";
+    const course = applyPublicComments(parseCoursePage(paid, laravel), JSON.parse(fixture("comments.json")), url);
+    assert.equal(course.reviews.items!.length, 2); assert.equal(course.reviews.items![0].sourceType, "comment");
+    assert.equal(course.reviews.items![0].rating, null); assert.equal(course.reviews.items![0].verifiedEnrollment, null);
+    assert.equal(course.reviews.collection.status, "partial"); assert.equal(course.reviews.collection.publishedCount, null);
+    assert.equal(course.reviews.collection.pagesRead, 1); assert.equal(course.reviews.collection.hasMore, true);
+    assert.equal(course.reviews.items![0].publishedAt, null); assert.ok(course.reviews.items![0].publishedDateText);
+  });
+  test("synthetic public comment cases redact identities and exclude replies, questions, duplicates and known instructor", () => {
+    const body = { parent_id: 0, body_html: "تمرین‌ها خوب بودند", created_at: "دیروز" };
+    const comments = [{ ...body, name: "هویت ساختگی", author: { name: "هویت ساختگی" }, body_html: "هویت ساختگی: تمرین‌ها خوب بودند synthetic@example.invalid" }, body, body,
+      { ...body, parent_id: 1 }, { ...body, body_html: "پیش نیاز چیست؟" }, { ...body, author: { name: "حسام موسوی" } }];
+    const course = applyPublicComments(parseCoursePage(free, python), { data: { comments, meta: { current_page: 1, last_page: 1, has_more: false, total: 6 } } }, "https://api.roocket.ir/api/v1/series/learn-python/comments/?page=1");
+    assert.equal(course.reviews.items!.length, 2); assert.equal(course.reviews.collection.omittedCount, 4);
+    assert.equal(course.reviews.collection.status, "partial"); assert.ok(!JSON.stringify(course).includes("هویت ساختگی"));
+    assert.ok(!JSON.stringify(course).includes("synthetic@example.invalid")); assert.equal(course.reviews.items![0].redacted, true);
+    assert.throws(() => applyPublicComments(course, { data: {} }, "https://api.roocket.ir/api/v1/series/learn-python/comments/?page=1"), /payload/);
+  });
   test("missing prices/syllabus remain unknown; disabled zero and login state do not imply free", () => {
     const unknown = parseCoursePage(page({ price: null, final_price: null, is_free: false }), laravel);
     assert.equal(unknown.offers![0].sourcePrice.amount, null); assert.equal(unknown.offers![0].amount, null);
@@ -67,6 +95,71 @@ describe("Roocket source parsing", () => {
     assert.throws(() => parseCoursePage(page({ learning_count: -5 }), laravel), /count/);
     assert.throws(() => parseCoursePage(page({ price: 20, final_price: 20 }, free), python), /free price/);
   });
+  test("reduced live v2 evidence resolves UTF-8 RSC text and explicit educational headings", () => {
+    const course = parseCoursePage(fixture("python-v2.html"), python, timestamp);
+    assert.equal(course.schemaVersion, 2); assert.equal(course.source.parserVersion, "2.1.0");
+    assert.match(course.prerequisites!, /پیش‌نیاز خاصی ندارید/);
+    assert.match(course.intendedAudience!, /ویژه افرادیست/); assert.equal(course.learningOutcomes!.length, 8);
+    assert.equal(course.syllabusCoverage.extractedLessonCount, 26); assert.equal(course.syllabusCoverage.publishedLessonCount, 26);
+    assert.equal(course.syllabusCoverage.status, "unknown"); // Counts alone do not establish traversal completeness.
+    assert.equal(course.reviews.items, null); assert.equal(course.reviews.collection.publishedCount, null);
+    assert.ok(!JSON.stringify(course.raw).includes("comment_count"));
+    assert.equal(course.offers![0].accessDescription, null); assert.equal(course.learningSupport.practiceDescription, null);
+    assert.notEqual(course.source.contentHash, parseCoursePage(free, python).source.contentHash);
+  });
+  test("syllabus coverage records partial and unknown separately", () => {
+    const partial = parseCoursePage(page({ episodes_count: 100 }), laravel);
+    assert.equal(partial.syllabusCoverage.status, "partial"); assert.equal(partial.syllabusCoverage.extractedLessonCount, 73);
+    const data = decodeCourseData(free); delete data.sections; delete data.episodes;
+    const missing = parseCoursePage(`<script>self.__next_f.push(${JSON.stringify([1, JSON.stringify({ data })])})</script>`, python);
+    assert.equal(missing.syllabusCoverage.extractedLessonCount, null); assert.equal(missing.syllabusCoverage.status, "unknown");
+  });
+  test("synthetic course-scoped JSON-LD reviews redact, deduplicate, preserve individual evidence and exclude questions", () => {
+    const review = { "@type": "Review", reviewBody: "تمرین‌ها مفید بودند. @synthetic_handle synthetic@example.invalid", reviewRating: { ratingValue: 4, bestRating: 5 }, datePublished: "2026-10-03T12:00:00Z" };
+    const ld = (reviews: unknown[]) => `<script type="application/ld+json">${JSON.stringify({ "@type": "Course", url: python, review: reviews })}</script>`;
+    const course = parseCoursePage(free + ld([review, review, { "@type": "Question", reviewBody: "پیش‌نیاز چیست؟" }, { "@type": "Comment", text: "پاسخ مدرس" }]), python);
+    assert.equal(course.reviews.items!.length, 1); const item = course.reviews.items![0];
+    assert.equal(item.sourceType, "review"); assert.equal(item.redacted, true); assert.equal(item.verifiedEnrollment, null);
+    assert.equal(item.rating!.value, 4); assert.equal(course.rating!.value, 4.49);
+    assert.equal(item.publishedAt, "2026-10-03T12:00:00.000Z"); assert.match(item.sourceLocator, /review\[0\]/);
+    assert.ok(!JSON.stringify(course).includes("synthetic_handle")); assert.ok(!JSON.stringify(course).includes("synthetic@example"));
+    assert.equal(course.reviews.collection.omittedCount, 3); assert.equal(course.reviews.collection.status, "unknown");
+    assert.equal(course.reviews.collection.publishedCount, null); assert.equal(course.reviews.collection.pagesRead, 1);
+    assert.equal(course.source.contentHash, parseCoursePage(free + ld([review, review, { "@type": "Question", reviewBody: "پیش‌نیاز چیست؟" }, { "@type": "Comment", text: "پاسخ مدرس" }]), python, timestamp).source.contentHash);
+    assert.notEqual(course.source.contentHash, parseCoursePage(free + ld([{ ...review, reviewBody: "تمرین‌ها کم بودند" }]), python).source.contentHash);
+    const unrelated = free + `<script type="application/ld+json">${JSON.stringify({ "@type": "Course", url: laravel, review: [review] })}</script>`;
+    assert.equal(parseCoursePage(unrelated, python).reviews.items, null);
+    const empty = parseCoursePage(free + ld([]), python); assert.deepEqual(empty.reviews.items, []); assert.equal(empty.reviews.collection.status, "unknown");
+  });
+  test("synthetic review safety rejects replies and mismatched subjects while preserving rhetorical feedback", () => {
+    const encode = (node: unknown) => `<script type="application/ld+json">${JSON.stringify(node)}</script>`;
+    const review = { "@type": "Review", reviewBody: "چرا این‌قدر تمرین‌ها مفید بودند؟" };
+    const unsafe = [{ ...review, parentItem: "reply" }, { ...review, inReplyTo: "reply" }, { ...review, itemReviewed: { url: laravel } }];
+    const rejected = parseCoursePage(free + encode({ "@type": "Course", url: python, review: unsafe }), python);
+    assert.equal(rejected.reviews.items, null); assert.equal(rejected.reviews.collection.collectedCount, null);
+    assert.equal(rejected.reviews.collection.omittedCount, 3);
+    const accepted = parseCoursePage(free + encode({ "@graph": [{ "@type": "Course", url: python, review: [review] }] }), python);
+    assert.equal(accepted.reviews.items!.length, 1); assert.equal(accepted.reviews.items![0].sourceLocator, "JSON-LD script[0] $.@graph[0].review[0]");
+    const array = parseCoursePage(free + encode([{ "@type": "Course", url: python, review }]), python);
+    assert.equal(array.reviews.items![0].sourceLocator, "JSON-LD script[0] $[0].review");
+    // Entirely synthetic author labels; never retained in outputs or public fixtures.
+    const anonymous = parseCoursePage(free + encode({ "@type": "Course", url: python, review: [{ ...review,
+      author: [{ name: "نام ساختگی آزمایش", alternateName: "syntheticAlias" }], reviewBody: "نام ساختگی آزمایش گفت syntheticAlias تمرین‌ها خوب بود" }] }), python);
+    assert.ok(!JSON.stringify(anonymous).includes("نام ساختگی آزمایش")); assert.ok(!JSON.stringify(anonymous).includes("syntheticAlias"));
+    assert.equal(anonymous.reviews.items![0].redacted, true);
+  });
+  test("synthetic RSC references reject truncated and invalid UTF-8 bodies, unresolved references keep description", () => {
+    const data = decodeCourseData(free); (data.course as Record<string, unknown>).body_html = "$ff";
+    const prefix = `${JSON.stringify({ data })}\n`;
+    const encode = (stream: string) => `<script>self.__next_f.push(${JSON.stringify([1, stream])})</script>`;
+    assert.equal(parseCoursePage(encode(prefix), python).description, parseCoursePage(free, python).description);
+    assert.throws(() => parseCoursePage(encode(prefix + "ff:Tff,short"), python), /Truncated/);
+    assert.throws(() => parseCoursePage(encode(prefix + "ff:T1,پ"), python), /UTF-8/);
+    const sectionData = decodeCourseData(paid);
+    for (const value of sectionData.sections as Record<string, unknown>[]) delete value.episodes;
+    const unavailable = parseCoursePage(encode(JSON.stringify({ data: sectionData })), laravel);
+    assert.equal(unavailable.syllabusCoverage.extractedLessonCount, null); assert.equal(unavailable.syllabusCoverage.status, "partial");
+  });
   test("canonical URLs enforce host, credentials and course-only paths", () => {
     assert.equal(canonicalCourseUrl(python + "?utm_source=x#test"), python);
     assert.equal(canonicalCourseUrl("/series/learn-python"), python);
@@ -85,6 +178,23 @@ describe("Roocket collection", () => {
     const urls = await scraper.discoverCourses(); assert.equal(urls.length, 106); assert.ok(urls.includes(python));
     assert.equal(scraper.discoveryIsComplete, true);
     assert.ok(!requests.some(url => /sitemap-article|sitemap-video/.test(url)));
+  });
+  test("scrapeCourse fetches bounded same-origin public API sample after unavailable robots, with no credentials", async () => {
+    const requests: string[] = [];
+    const scraper = new RoocketScraper({ delayMs: 0, fetch: (async (input, init) => {
+      const url = String(input); requests.push(url); assert.equal(init?.credentials, undefined);
+      if (url === "https://api.roocket.ir/robots.txt") return new Response("not found", { status: 404 });
+      if (url.endsWith("robots.txt")) return new Response(fixture("robots.txt"));
+      if (url === laravel) return new Response(paid + fixture("price-evidence.html"));
+      if (url === "https://api.roocket.ir/api/v1/series/learn-laravel-with-projects/comments/?page=1") return new Response(fixture("comments.json"));
+      throw new Error("Unexpected public request");
+    }) as typeof fetch });
+    const course = await scraper.scrapeCourse(laravel);
+    assert.equal(course.offers![0].amount, 2450000); assert.equal(course.reviews.items!.length, 2);
+    assert.equal(course.source.method, "public-html-and-public-api");
+    assert.equal(requests.filter(url => url.includes("comments/")).length, 1);
+    const blocked = new RoocketScraper({ delayMs: 0, fetch: transport(url => url === "https://api.roocket.ir/robots.txt" ? new Response("User-agent: *\nDisallow: /api/") : url.endsWith("robots.txt") ? new Response("User-agent: *") : new Response(paid)) });
+    await assert.rejects(blocked.scrapeCourse(laravel), AccessDeniedError);
   });
   test("streams ordinary failures, deduplicates and stops on denial/robots", async () => {
     const scraper = new RoocketScraper({ delayMs: 0, fetch: transport(input => input.endsWith("robots.txt") ? new Response("User-agent: *") : input === python ? new Response(free) : new Response("missing", { status: 404 })) });

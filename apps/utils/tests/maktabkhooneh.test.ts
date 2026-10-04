@@ -11,10 +11,11 @@ import { createCourse } from "../scrapers/course.ts";
 const fixture = readFileSync(new URL("./fixtures/maktabkhooneh-course.html", import.meta.url), "utf8");
 const url = "https://maktabkhooneh.org/course/python-mk346/";
 const timestamp = "2026-10-01T08:40:07Z";
-function page(overrides: Record<string, unknown>) {
+function page(overrides: Record<string, unknown>, pageOverrides: Record<string, unknown> = {}) {
   const payload = decodeNuxtPayload(fixture);
   const data = payload.data as Record<string, Record<string, unknown>>;
   Object.assign(data[Object.keys(data)[0]].courseDetails as object, overrides);
+  Object.assign(data[Object.keys(data)[0]], pageOverrides);
   const values: unknown[] = [];
   function encode(value: unknown): number {
     const id = values.length; values.push(null);
@@ -34,10 +35,10 @@ describe("Maktabkhooneh parsing", () => {
     assert.equal(course.title, "آموزش برنامه نویسی جامع پایتون");
     assert.equal(course.id, "maktabkhooneh:10465");
     assert.deepEqual(Object.keys(course).sort(), Object.keys(createCourse("sample", "1", "title", "https://example.org/course")).sort());
-    assert.equal(course.schemaVersion, 1);
+    assert.equal(course.schemaVersion, 2);
     assert.equal(course.derived, null);
     assert.equal(course.source.parser, "maktabkhooneh");
-    assert.equal(course.source.parserVersion, "2.0.0");
+    assert.equal(course.source.parserVersion, "3.1.0");
     assert.equal(course.source.method, "public-html-and-embedded-data");
     assert.equal(course.providerLevel, "مقدماتی تا پیشرفته");
     assert.equal(course.providerStatus, "NORMAL_PUBLISH");
@@ -61,6 +62,101 @@ describe("Maktabkhooneh parsing", () => {
     assert.equal(course.source.checkedAt, timestamp);
     assert.equal(course.source.contentHash, parseCoursePage(fixture, url).source.contentHash);
     assert.ok(!JSON.stringify(course).includes("review_description"));
+  });
+  test("numeric and published H:MM durations remain distinct from lesson effort", () => {
+    const course = parseCoursePage(page({ content_hours: "1:35", required_hours: "۲:۳۰", video_hours: 2 }), url);
+    assert.equal(course.duration.contentMinutes, 95);
+    assert.equal(course.duration.effortHours, 2.5);
+    assert.equal(course.syllabus![0].lessons![0].contentMinutes, null);
+    assert.match(course.source.fieldSources["duration.contentMinutes"], /H:MM/);
+    for (const value of ["1:65", "95 دقیقه", "2", -1, null]) {
+      assert.equal(parseCoursePage(page({ content_hours: value, required_hours: value }), url).duration.contentMinutes, null);
+      assert.equal(parseCoursePage(page({ content_hours: value, required_hours: value }), url).duration.effortHours, null);
+    }
+    assert.equal(parseCoursePage(page({ content_hours: 1.5 }), url).duration.contentMinutes, 90);
+    assert.notEqual(course.source.contentHash, parseCoursePage(page({ content_hours: "1:36", required_hours: "۲:۳۰" }), url).source.contentHash);
+  });
+  test("explicit category hierarchy and Persian dubbing are retained without language guessing", () => {
+    const course = parseCoursePage(page({ categories: { title: "انیمیشن", parent: { title: "هنر", parent: null } },
+      course_features: [{ title: "دوبله فارسی", description: "دارای دوبله اختصاصی" }] }), url);
+    assert.deepEqual(course.providerCategories, ["هنر", "انیمیشن"]);
+    assert.equal(course.language, "fa");
+    assert.match(course.source.fieldSources.providerCategories, /parent chain/);
+    assert.equal(parseCoursePage(page({ categories: null, course_features: [{ title: "دوبله اختصاصی", description: "آموزش" }] }), url).language, null);
+    assert.equal(parseCoursePage(page({ categories: null }), url).providerCategories, null);
+  });
+  test("v2 coverage distinguishes unavailable reviews from an explicit empty list", () => {
+    const course = parseCoursePage(fixture, url);
+    assert.equal(course.reviews.items, null);
+    assert.equal(course.reviews.collection.collectedCount, null);
+    assert.equal(course.reviews.collection.publishedCount, null);
+    assert.equal(course.reviews.collection.status, "unknown");
+    assert.equal(course.reviews.collection.hasMore, null);
+    assert.equal(course.syllabusCoverage.status, "partial");
+    assert.equal(course.syllabusCoverage.extractedLessonCount, 4);
+    assert.equal(course.intendedAudience, null);
+    assert.equal(course.technologies, null);
+    assert.deepEqual(course.learningSupport, { practiceDescription: null, assessmentDescription: null, supportDescription: null });
+    const empty = parseCoursePage(page({}, { courseReviewsCount: { confirmed_review_count: 0 } }), url);
+    assert.deepEqual(empty.reviews.items, []);
+    assert.equal(empty.reviews.collection.status, "complete");
+    const absent = parseCoursePage(page({}, { courseReviewsCount: null, chapterData: null }), url);
+    assert.equal(absent.reviews.items, null);
+    assert.equal(absent.reviews.collection.status, "unknown");
+    assert.equal(absent.syllabusCoverage.extractedLessonCount, null);
+  });
+  test("course-associated JSON-LD reviews are anonymous, deduplicated and distinct from replies", () => {
+    // Explicitly synthetic examples, with fictitious identity/contact markers only.
+    const review = { "@type": "Review", author: { name: "نویسنده ساختگی", alternateName: "fixture_handle" },
+      reviewBody: "نویسنده ساختگی هستم؛ تمرین‌ها مفید بود. fixture@example.test @fixture_handle 09120000000",
+      datePublished: "۱۴۰۵/۰۷/۰۱", reviewRating: { ratingValue: "4", bestRating: "5" } };
+    const jsonld = (body: string) => `<script type="application/ld+json">${JSON.stringify({ "@type": "Course", name: "آموزش برنامه نویسی جامع پایتون", review: [review, review,
+      { ...review, "@type": "Question", reviewBody: "پرسش ساختگی" }, { ...review, parentItem: "reply", reviewBody: "پاسخ ساختگی" },
+      { ...review, reviewBody: body, author: null, reviewRating: { ratingValue: "4" } }] })}</script>`;
+    const course = parseCoursePage(fixture + jsonld("توضیح‌ها روشن بود"), url);
+    assert.equal(course.reviews.items!.length, 2);
+    const first = course.reviews.items![0];
+    assert.equal(first.redacted, true);
+    assert.deepEqual(first.rating, { value: 4, scale: 5 });
+    assert.equal(first.publishedAt, null);
+    assert.equal(first.publishedDateText, "۱۴۰۵/۰۷/۰۱");
+    assert.equal(first.verifiedEnrollment, null);
+    assert.equal(course.reviews.items![1].rating, null);
+    assert.match(first.sourceLocator, /jsonld.review\[0\]/);
+    assert.equal(course.source.fieldSources["reviews.items.0"], first.sourceLocator);
+    assert.doesNotMatch(JSON.stringify(course), /نویسنده ساختگی|fixture@example|fixture_handle|09120000000|پرسش ساختگی|پاسخ ساختگی/);
+    assert.notEqual(course.source.contentHash, parseCoursePage(fixture + jsonld("توضیح‌ها مبهم بود"), url).source.contentHash);
+    const unrelated = `<script type="application/ld+json">${JSON.stringify({ ...review, itemReviewed: { "@type": "Organization", name: "provider" } })}</script>`;
+    assert.equal(parseCoursePage(fixture + unrelated, url).reviews.items, null);
+  });
+  test("chapter and lesson descriptions preserve educational evidence without asserting completeness", () => {
+    const chapterData = { chapters: [{ id: 1, title: "فصل", description: "<p>تمرین‌های فصل</p>", units: [{ id: 2, title: "تمرین", type: "exercise", description: "<p>ساخت برنامه</p>" }] }] };
+    const course = parseCoursePage(page({ unit_count: 1 }, { chapterData }), url);
+    assert.equal(course.syllabus![0].description, "تمرین‌های فصل");
+    assert.equal(course.syllabus![0].lessons![0].description, "ساخت برنامه");
+    assert.equal(course.syllabusCoverage.status, "unknown");
+    assert.equal(course.syllabusCoverage.extractedLessonCount, 1);
+    assert.notEqual(course.source.contentHash, parseCoursePage(page({ unit_count: 1 }, { chapterData: { chapters: [{ ...chapterData.chapters[0], description: "فصل جدید" }] } }), url).source.contentHash);
+  });
+  test("retained anonymous live Nuxt reviews and learning evidence map to v2", () => {
+    const liveFixture = readFileSync(new URL("./fixtures/maktabkhooneh-reviews.html", import.meta.url), "utf8");
+    const course = parseCoursePage(liveFixture, url);
+    assert.equal(course.reviews.items!.length, 6);
+    assert.equal(course.reviews.collection.publishedCount, 6175);
+    assert.equal(course.reviews.collection.hasMore, true);
+    assert.equal(course.reviews.collection.status, "partial");
+    assert.equal(course.reviews.items![0].sourceType, "review");
+    assert.equal(course.reviews.items![0].verifiedEnrollment, null);
+    assert.equal(course.reviews.items![0].sourceLocator, "courseReviews[0].review_description / rate / created_date");
+    assert.equal(course.learningOutcomes!.length, 4);
+    assert.ok(course.learningSupport.practiceDescription);
+    assert.ok(course.learningSupport.assessmentDescription);
+    assert.ok(course.learningSupport.supportDescription);
+    assert.equal(course.offers![0].supportDescription, null);
+    assert.doesNotMatch(liveFixture, /"user"|"review_reply"|"avatar"|"username"/);
+    const conflicted = parseCoursePage(page({}, { courseReviews: [{ review_description: "تمرین مفید", rate: 4 }], courseReviewsCount: { confirmed_review_count: 0 } }), url);
+    assert.equal(conflicted.reviews.collection.publishedCount, null);
+    assert.equal(conflicted.raw.reviewCountConflict, 0);
   });
   test("disabled zeros do not create a free offer; missing prices remain unknown", () => {
     const course = parseCoursePage(page({ full_course_sale: false, price: { FULL: 0, CONTENT: 149000 }, discounted_price: { FULL: 0, CONTENT: 134100 } }), url);
@@ -93,6 +189,7 @@ describe("Maktabkhooneh parsing", () => {
   });
   test("restricts course URLs and handles XML entities", () => {
     assert.equal(canonicalCourseUrl(url + "?utm_source=x#test"), url);
+    assert.equal(canonicalCourseUrl(url.slice(0, -1)), url);
     assert.throws(() => canonicalCourseUrl("https://localhost/course/python-mk346/"));
     assert.throws(() => canonicalCourseUrl("https://maktabkhooneh.org/search/"));
     assert.deepEqual(parseSitemap(`<urlset><url><loc>${url}?a=1&amp;b=2</loc></url></urlset>`).urls, [url + "?a=1&b=2"]);

@@ -2,7 +2,10 @@
   "name": "dorob",
   "private": true,
   "packageManager": "bun@1.3.8",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "bun run --cwd apps/web dev",
     "build": "bun run --cwd apps/web build",
@@ -14,6 +17,8 @@
     "scrape:maktabkhooneh": "bun run apps/utils/scrape-maktabkhooneh.ts",
     "scrape:toplearn": "bun run apps/utils/scrape-toplearn.ts",
     "scrape:sabzlearn": "bun run apps/utils/scrape-sabzlearn.ts",
-    "scrape:roocket": "bun run apps/utils/scrape-roocket.ts"
+    "scrape:roocket": "bun run apps/utils/scrape-roocket.ts",
+    "dashboard:aggregate": "bun run apps/utils/aggregate-courses.ts",
+    "dashboard:data": "bun run apps/utils/data-dashboard.ts"
   }
 }

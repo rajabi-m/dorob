@@ -1,0 +1,431 @@
+{
+  "datasetKind": "curated-saved-snapshot",
+  "isLive": false,
+  "sources": [
+    "apps/web/src/data/provider-courses.json",
+    "apps/utils/output/maktabkhooneh.json (legacy adapter export)"
+  ],
+  "courses": [
+    {
+      "id": "maktabkhooneh-mk346",
+      "providerId": "maktabkhooneh",
+      "title": "آموزش برنامه نویسی جامع پایتون",
+      "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D9%87-%D9%86%D9%88%DB%8C%D8%B3%DB%8C-%D8%A8%D8%A7-%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86-%D9%85%D9%82%D8%AF%D9%85%D8%A7%D8%AA%DB%8C-mk346/",
+      "imageUrl": "https://media1.maktabkhooneh.org/CACHE/images/courses/images/Python-Jadi-2_1403-12-13-113008363/3b93e9d629dc333cc648387a996d35db.webp?expire=4893471932&token=94fb7de009a85c6b8a27e6bce14262e9&md5=lPt94AmoXGuKJ-a84UJi6Q==",
+      "level": "مقدماتی تا پیشرفته",
+      "instructors": [
+        {
+          "name": "جادی میرمیرانی",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 1020,
+        "effortHours": 74,
+        "completionWindowDays": null,
+        "sourceText": "74 ساعت"
+      },
+      "price": {
+        "amount": 1299500,
+        "originalAmount": 2599000,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "full",
+        "sourceText": "2,599,000 1,299,500 تومان"
+      },
+      "rating": {
+        "value": 4.7,
+        "scale": 5,
+        "count": 21861
+      },
+      "lessonCount": null,
+      "features": null,
+      "summary": "تمرین پایتون از مفاهیم پایه تا شیءگرایی و پروژه‌های کاربردی.",
+      "checkedAt": "2026-10-01T08:40:07Z",
+      "prerequisites": null,
+      "syllabus": null
+    },
+    {
+      "id": "toplearn-7ed1a6e4bb4d",
+      "providerId": "toplearn",
+      "title": "آموزش رایگان پایتون ( Python )",
+      "sourceUrl": "https://toplearn.com/courses/windows/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86-%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86-(-Python-)",
+      "imageUrl": "https://toplearn.com/img/course/400x286/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%D8%B1%D8%A7%DB%8C%DA%AF%D8%A7%D9%86_%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86_(_Python_).jpg",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "محمد اردوخانی",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 1762.0,
+        "effortHours": null,
+        "completionWindowDays": null,
+        "sourceText": "29:22:00"
+      },
+      "price": {
+        "amount": 0,
+        "originalAmount": null,
+        "unit": "toman",
+        "status": "free",
+        "offerType": "course",
+        "sourceText": "رایگانــ"
+      },
+      "rating": null,
+      "lessonCount": 110,
+      "features": null,
+      "summary": "یادگیری پایتون از مبانی زبان تا موضوعات پیشرفته‌تر.",
+      "checkedAt": "2026-10-01T08:40:07Z",
+      "prerequisites": null,
+      "syllabus": null
+    },
+    {
+      "id": "quera-12547",
+      "providerId": "quera",
+      "title": "برنامه‌نویسی پایتون مقدماتی",
+      "sourceUrl": "https://quera.org/college/landpage/12547/fundamentals-of-python",
+      "imageUrl": "https://quera.org/media/public/college/card_images/63bdecf13226479cba181179ef3dc9a4.png",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "نیلوفر فخفور",
+          "role": "طراح"
+        },
+        {
+          "name": "عطیه پوردرخشان",
+          "role": "طراح"
+        },
+        {
+          "name": "علی شفیعی",
+          "role": "طراح"
+        },
+        {
+          "name": "محمدرضا رستگاری",
+          "role": "طراح"
+        },
+        {
+          "name": "سید امین حسینی",
+          "role": "طراح"
+        },
+        {
+          "name": "محمدصالح مهدی‌نژاد",
+          "role": "مربی"
+        },
+        {
+          "name": "پرهام نجارزاده",
+          "role": "مربی"
+        }
+      ],
+      "duration": {
+        "contentMinutes": null,
+        "effortHours": null,
+        "completionWindowDays": 90,
+        "sourceText": null
+      },
+      "price": {
+        "amount": 3499000,
+        "originalAmount": null,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "course",
+        "sourceText": "مقدماتی ۳٬۴۹۹٬۰۰۰ تومان"
+      },
+      "rating": null,
+      "lessonCount": null,
+      "features": [
+        {
+          "label": "تمرین عملی",
+          "value": "105+"
+        },
+        {
+          "label": "درسنامه آموزشی",
+          "value": "110+"
+        },
+        {
+          "label": "ویدیو آموزشی",
+          "value": "50+"
+        }
+      ],
+      "summary": "تمرین تعاملی مفاهیم پایه پایتون، از متغیرها تا فایل‌ها.",
+      "checkedAt": "2026-10-01T08:40:07Z",
+      "prerequisites": null,
+      "syllabus": null
+    },
+    {
+      "id": "toplearn-fa4cc5c2826a",
+      "providerId": "toplearn",
+      "title": "آموزش پروژه محور پایتون با 5 پروژه عملی",
+      "sourceUrl": "https://toplearn.com/courses/windows/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%D9%BE%D8%B1%D9%88%DA%98%D9%87_%D9%85%D8%AD%D9%88%D8%B1_%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86",
+      "imageUrl": "https://toplearn.com/img/course/400x286/%D8%A2%D9%85%D9%88%D8%B2%D8%B4_%D9%BE%D8%B1%D9%88%DA%98%D9%87_%D9%85%D8%AD%D9%88%D8%B1_%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86_%D8%A8%D8%A7_5_%D9%BE%D8%B1%D9%88%DA%98%D9%87_%D8%B9%D9%85%D9%84%DB%8C.jpg",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "آرمین دهقان",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 120.0,
+        "effortHours": null,
+        "completionWindowDays": null,
+        "sourceText": "2:0:00"
+      },
+      "price": {
+        "amount": 0,
+        "originalAmount": null,
+        "unit": "toman",
+        "status": "free",
+        "offerType": "course",
+        "sourceText": "رایگانــ"
+      },
+      "rating": null,
+      "lessonCount": 12,
+      "features": null,
+      "summary": "تمرین پایتون با ساخت پنج پروژه عملی.",
+      "checkedAt": "2026-10-01T08:40:07Z",
+      "prerequisites": null,
+      "syllabus": null
+    },
+    {
+      "id": "maktabkhooneh-mk9907",
+      "providerId": "maktabkhooneh",
+      "title": "آموزش 10 پروژه پایتون برای تازه کارها",
+      "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-10-%D9%BE%D8%B1%D9%88%DA%98%D9%87-%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86-%D8%AA%D8%A7%D8%B2%D9%87-%DA%A9%D8%A7%D8%B1-mk9907/",
+      "imageUrl": "https://media1.maktabkhooneh.org/CACHE/images/courses/images/PythonProjects11_1403-10-19-091910504/ba33b5d6f9a06059bfd96f126f7fb378.webp?expire=4893471932&token=b40cd83ed3a06504667a5d69be4ed3bd&md5=tAzYPtOgZQRmel1pvk7TvQ==",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "غلامرضا شهرابی",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": null,
+        "effortHours": null,
+        "completionWindowDays": null
+      },
+      "rating": {
+        "value": 4,
+        "scale": 5,
+        "count": 12
+      },
+      "lessonCount": 10,
+      "prerequisites": "این دوره به نحوی تهیه و تدوین شده است که مباحث آن به ساده‌ترین شکل ممکن بیان شوند و مخاطبان دوره بتوانند به‌سادگی متوجه موضوعات مطرح شده شوند. به همین جهت برای شرکت در این دوره هیچ پیش‌نیاز به خصوصی وجود ندارد و افراد با هر سطحی از آگاهی و تحصیلات می‌توانند از مباحث این دوره نهایت استفاده را داشته باشند.",
+      "price": {
+        "amount": 111750,
+        "originalAmount": 149000,
+        "unit": "toman",
+        "status": "paid",
+        "type": "content"
+      },
+      "summary": "با ساخت برنامه‌های کاربردی، مفاهیم پایه پایتون را تمرین کنید، مهارت حل مسئله را تقویت کنید و نمونه‌کار بسازید.",
+      "checkedAt": "2026-10-01T11:57:01.922Z",
+      "features": null,
+      "syllabus": [
+        {
+          "title": "پروژه‌های کاربردی",
+          "lessons": [
+            "برعکس کردن رشته ورودی",
+            "بررسی صحت شماره تلفن ورودی",
+            "محاسبه میانگین نمرات ورودی",
+            "محاسبه BMI",
+            "تبدیل واحدهای دمایی به یکدیگر",
+            "صحت سنجی ایمیل ورودی",
+            "پیدا کردن بزرگترین وکوچکترین اعداد لیست",
+            "مقایسه دو لیست",
+            "دفترچه تلفن",
+            "ماشین حساب"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "maktabkhooneh-mk1318",
+      "providerId": "maktabkhooneh",
+      "title": "آموزش یادگیری ماشین با پایتون",
+      "sourceUrl": "https://maktabkhooneh.org/course/%DB%8C%D8%A7%D8%AF%DA%AF%DB%8C%D8%B1%DB%8C-%D9%85%D8%A7%D8%B4%DB%8C%D9%86-%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86-mk1318/",
+      "imageUrl": "https://media1.maktabkhooneh.org/CACHE/images/courses/images/machin.learning_NvSv1jL_1403-08-16-164234254/7fdf137999a41a36e2b9038ea6ea9f9b.webp?expire=4893471932&token=5cf0d39d07561b243bb5681bfeeb21f9&md5=XPDTnQdWGyQ7tWgb_ush-Q==",
+      "level": "مقدماتی",
+      "instructors": [
+        {
+          "name": "جادی میرمیرانی",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": 780,
+        "effortHours": 33,
+        "completionWindowDays": null,
+        "sourceText": "33 ساعت"
+      },
+      "price": {
+        "amount": 1999600,
+        "originalAmount": 4999000,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "full",
+        "sourceText": "4,999,000 1,999,600 تومان"
+      },
+      "rating": {
+        "value": 4.6,
+        "scale": 5,
+        "count": 2711
+      },
+      "lessonCount": null,
+      "features": null,
+      "summary": "آشنایی با یادگیری ماشین و پیاده‌سازی آن با پایتون.",
+      "checkedAt": "2026-10-01T08:40:07Z",
+      "prerequisites": null,
+      "syllabus": null
+    },
+    {
+      "id": "maktabkhooneh-mk11259",
+      "providerId": "maktabkhooneh",
+      "title": "آموزش پیش‌بینی با داده‌ها در پایتون",
+      "sourceUrl": "https://maktabkhooneh.org/course/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D9%BE%DB%8C%D8%B4-%D8%A8%DB%8C%D9%86%DB%8C-%D8%AF%D8%A7%D8%AF%D9%87-%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86-mk11259/",
+      "imageUrl": "https://media1.maktabkhooneh.org/CACHE/images/courses/images/1619134533264_1404-02-21-194737972/2d976beadfbb1792e4d1639fef56f0f7.webp?expire=4893471932&token=e600c8f8ed2d2bec9640bfb4b3025472&md5=5gDI-O0tK-yWQL-0swJUcg==",
+      "level": "متوسط",
+      "instructors": [
+        {
+          "name": "Isil Berkun",
+          "role": null
+        },
+        {
+          "name": "آکادمی گرولی",
+          "role": null
+        }
+      ],
+      "duration": {
+        "contentMinutes": null,
+        "effortHours": null,
+        "completionWindowDays": null
+      },
+      "rating": {
+        "value": 4.8,
+        "scale": 5,
+        "count": 8
+      },
+      "lessonCount": 18,
+      "prerequisites": null,
+      "price": {
+        "amount": 109450,
+        "originalAmount": 199000,
+        "unit": "toman",
+        "status": "paid",
+        "type": "content"
+      },
+      "summary": "داده‌ها را در پایتون برای مدل‌سازی آماده کنید و با ساخت و ارزیابی مدل مناسب، به پیش‌بینی‌های دقیق‌تری برسید.",
+      "checkedAt": "2026-10-01T11:57:02.945Z",
+      "features": null,
+      "syllabus": [
+        {
+          "title": "مقدمه",
+          "lessons": [
+            "نقشه راه یادگیری و پیشرفت در تحلیل‌های پیش‌بینی‌کننده با پایتون"
+          ]
+        },
+        {
+          "title": "پیش‌پردازش داده‌ها",
+          "lessons": [
+            "تشخیص و تفکیک انواع داده‌ها",
+            "کتابخانه‌های پایتون و وارد کردن داده‌ها",
+            "مدیریت داده‌های گمشده",
+            "تبدیل داده‌های طبقه‌ای به اعداد",
+            "تقسیم داده‌ها به مجموعه‌های آموزش و آزمون",
+            "مقیاس‌بندی ویژگی‌ها"
+          ]
+        },
+        {
+          "title": "مدل‌های پیش‌بینی",
+          "lessons": [
+            "مقدمه‌ای بر مدل‌های پیش‌بینی",
+            "رگرسیون خطی",
+            "رگرسیون چندجمله‌ای",
+            "رگرسیون بردار پشتیبان (SVR)",
+            "رگرسیون درخت تصمیم",
+            "رگرسیون جنگل تصادفی",
+            "ارزیابی مدل‌های پیش‌بینی",
+            "بهینه‌سازی ابرپارامترها",
+            "چالش بهینه‌سازی ابرپارامترها",
+            "راه‌حل بهینه‌سازی ابرپارامترها"
+          ]
+        },
+        {
+          "title": "نتیجه گیری",
+          "lessons": [
+            "گام های بعدی"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quera-15166",
+      "providerId": "quera",
+      "title": "آموزش دیزاین پترن‌ها در پایتون",
+      "sourceUrl": "https://quera.org/college/landpage/15166/design-patterns",
+      "imageUrl": "https://quera.org/media/public/college/card_images/8981c885b4b24b5f949bab5ec18a98a4.png",
+      "level": "پیشرفته",
+      "instructors": [
+        {
+          "name": "محمدحسین باقری",
+          "role": "طراح"
+        },
+        {
+          "name": "محمد جعفری",
+          "role": "طراح"
+        },
+        {
+          "name": "حامد صفری",
+          "role": "طراح"
+        },
+        {
+          "name": "معین کیانی",
+          "role": "طراح"
+        },
+        {
+          "name": "علی صفری",
+          "role": "طراح"
+        },
+        {
+          "name": "دوین غریبی",
+          "role": "به‌روزرسان"
+        },
+        {
+          "name": "امیرحسین خلیلی",
+          "role": "مربی"
+        }
+      ],
+      "duration": {
+        "contentMinutes": null,
+        "effortHours": null,
+        "completionWindowDays": 60,
+        "sourceText": null
+      },
+      "price": {
+        "amount": 2599000,
+        "originalAmount": null,
+        "unit": "toman",
+        "status": "paid",
+        "offerType": "course",
+        "sourceText": "پیشرفته ۲٬۵۹۹٬۰۰۰ تومان"
+      },
+      "rating": null,
+      "lessonCount": null,
+      "features": [
+        {
+          "label": "تمرین عملی",
+          "value": "10+"
+        },
+        {
+          "label": "درسنامه آموزشی",
+          "value": "40+"
+        }
+      ],
+      "summary": "آشنایی با الگوهای طراحی از طریق مثال‌ها و تمرین‌های پایتون.",
+      "checkedAt": "2026-10-01T08:40:07Z",
+      "prerequisites": null,
+      "syllabus": null
+    }
+  ]
+}

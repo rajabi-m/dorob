@@ -1,0 +1,175 @@
+# Frontend: homepage and course groups
+
+Phase 2 is complete for now by owner decision on October 4, 2026. The current homepage uses dated provider snapshots, shared categories/course cards, the selected blue hero, and automatically cycling group covers. Group membership comes from snapshots; the Python route is an eight-offering topic prototype with manual cover selection and labeled editorial analysis. Search/filter state resets on reload. Dedicated results/detail/comparison routes, reconciliation of the Python route with the three-course homepage group, shared extraction of page-local components, and comprehensive accessibility review remain follow-ups. The design history below includes superseded layouts, controls, removed previews, and older build failures; [validation](validation.md) records current checks.
+
+## Homepage design and implementation history
+
+The homepage should put visitors straight into discovering and comparing courses. Keep the explanation short, show what Dorob does, and quickly give people useful things to browse. Avoid a long marketing introduction or sections that add scroll without helping users choose a course.
+
+The entire page is Persian and RTL, using the confirmed design system: سنجش, the لاجورد palette, Vazirmatn, the approved logo, and shared responsive components.
+
+### Header
+
+Move the main search bar into the header so visitors can immediately search for a topic or course. Search should remain easy to access on mobile as well.
+
+### Section order
+
+#### 1. A clear hero
+
+Start with a hero that explains what the website does: Dorob helps people discover courses and compare the available choices. Keep the message direct and concise, then lead visitors into the browsing experience.
+
+The exact headline, supporting copy, and hero visual treatment are still to be decided.
+
+#### 2. Persian testimonials from X — deferred
+
+Deferred by the owner for the current implementation. When this section is resumed, below the hero, feature tweets from Persian users describing how Dorob helped them. This section should give visitors concrete evidence of the product’s value.
+
+Use real, attributable testimonials when available. During the mock-data phase, clearly label placeholders as sample content; do not present invented endorsements as real tweets.
+
+#### 3. Compact course categories
+
+Show the existing mini category layout, keeping its vertical footprint small. Each card contains artwork, a category name, a short description, and a directional arrow.
+
+The six existing categories are:
+
+- برنامه‌نویسی
+- طراحی
+- داده و هوش مصنوعی
+- کسب‌وکار
+- زبان‌های خارجی
+- ابزار و بهره‌وری
+
+Reuse the shared `CategoryCard` and `CategoryGrid` components showcased at `/design-system#compact-categories`.
+
+#### 4. Popular course groups — مجموعه دوره‌ها
+
+Feature the most popular course groups. A group represents a learning topic and level, gathering comparable individual courses in one place. Examples include beginner Python, intermediate Python, and n8n.
+
+Use the larger `CourseGroupCard` with the selected cycling treatment: up to three original course thumbnails, four-second countdown overlay flush to the top edge, 600 ms crossfades, and names/logos of all providers in the group. The cards have no visible slideshow controls. Cycling pauses offscreen, in hidden tabs, during hover/focus, and with reduced motion. The cover showcase route has been removed after owner selection.
+
+Each card should communicate the group’s topic, level, learning goal, and course count. Use the count-based comparison action agreed during refinement, such as «۹ دوره رو مقایسه کن», with the actual number for that group.
+
+Clicking a group takes the visitor to its dedicated page. That page contains information about the group, all courses belonging to it, and a comparison between those courses.
+
+Whether the comparison is static or dynamic remains undecided. The larger desktop card direction is the current choice, but its size can be reconsidered if it makes the layout less effective.
+
+#### 5. Trending individual courses
+
+Below popular groups, show the courses that are currently trending. These are individual course offerings, each associated with its provider, rather than course groups.
+
+Use the existing small course-card design for this section. Keep the distinction between a topic/level group and an individual course clear throughout the page.
+
+The definition of “trending” and the ranking method have not yet been decided. Phase 2 uses clearly labeled mock data.
+
+### Open decisions
+
+- Final hero copy and visual treatment.
+- Which real X testimonials to feature and how to display them.
+- Static versus dynamic comparisons on course-group pages.
+- How popularity and trending are measured, and how many cards each section shows.
+- Any additional sections: they may be added if they help visitors discover or choose courses without diluting this direct experience.
+
+This document records the owner’s intended homepage. The earlier homepage implementation was rejected and should not be treated as the approved layout. Live provider ingestion, AI integration, and backend work remain phase 3 tasks.
+
+
+### Current mock implementation — October 1, 2026
+
+The homepage now follows this section order with the X section omitted. Header search is explicitly RTL and moves to its own row on mobile. The hero uses concise discovery/comparison copy and existing decorative artwork. Shared compact categories precede three large group cards and the small individual-course grid.
+
+Each group opens `/groups/[id]`, showing matching offerings from the same dated provider snapshots as the homepage, with details and selectable comparison. Current editorial groups are beginner Python (three courses), HTML/CSS web development (three), and n8n automation (two). Groups with fewer than two available courses are omitted; other courses remain individually discoverable. Provider-reported levels remain visible, and shared topics do not imply identical scope. Comparisons explicitly identify missing syllabi and prerequisites. Popularity and trending remain illustrative ordering, with no live ranking. Existing artwork remains temporary pending owner-created images.
+
+Hero artwork refinement: the homepage now uses a minimal abstract illustration: three smooth blue/gold routes connect a starting point to one learning goal. It has no people or detailed objects. The journey reads right to left and supports «یک مهارت، چند مسیر یادگیری». Group pages retain their topic-specific covers.
+
+Reviewed the simplified hero in Firefox against the frontend-design and RTL guidance: clear right-to-left start/goal, three distinct routes, shared semantic colors, restrained visual weight, and no human figures. Lint, types, and RTL audit pass; the production build retains the existing Turbopack worker-port restriction.
+
+
+### Homepage provider snapshot — October 1, 2026
+
+The individual-course section uses all 18 entries from `apps/web/src/data/provider-courses.json`. Search includes provider and instructor names; category assignments are editorial browsing aids, not claims of equivalence. Actual remote covers have decorative artwork as a failure fallback. Details expose the provider source link and label AI-derived summaries. The collection date and price freshness note appear in course details; the homepage has no collection notice banner. Content duration is separate from study effort and completion windows; unavailable duration, level, syllabi, and prerequisites remain marked as unrecorded. Group cards and their destinations retain clearly labeled fictional fixtures. Ordering remains illustrative.
+
+Validation: lint, type checking, and the touched-file RTL audit pass. Verified the running Firefox preview: all 18 entries, n8n search, four free offerings, two-provider comparison with missing-field labels, detail source links and AI labels, Escape dismissal, and the 320px mobile card layout. Production build remains blocked by the existing Turbopack worker-port permission error, including an escalated retry.
+
+
+### Compact individual course review card
+
+Individual homepage offerings now use the shared `CourseCard` shown at `/design-system#course-cards`. Provider logos and names identify the source immediately. «مشاهده و بررسی» opens the course details; comparison stays in the group experience. The level badge sits on the thumbnail, provider and duration share a wrapping row, and the price sits beside the review action. Full titles can wrap, including long Persian and mixed Latin text. The measured covers favor a 16:9 frame; `contain` preserves covers with taller proportions.
+
+Validation for the review card: lint, type checking, touched-file RTL audit, and whitespace checks pass. Reviewed all three official provider marks and contained thumbnail proportions on desktop; verified details opening, Escape dismissal, keyboard focus, and the final compact card at 320px. Production build remains blocked by the existing Turbopack worker-port permission error after an escalated retry.
+
+
+### Homepage simplification — October 1, 2026
+
+Removed the suggested-topic buttons beneath the hero and the homepage data-collection notice at the owner’s request. Categories now follow the hero directly. The group-page fictional-data notice and course-detail source/date disclosures remain.
+
+Validation for this simplification: lint, type checking, and both touched-file RTL audits pass. Firefox desktop and 320px previews confirm the hero flows directly into categories. Production build still fails with the existing Turbopack worker-port permission error, including an escalated retry.
+
+
+### Hero alternatives — October 1, 2026
+
+Two owner-requested hero alternatives are available at `/hero-preview`, with buttons to switch while retaining the full homepage context. “مقایسه در یک نگاه” pairs a large Persian headline with a semantic two-course comparison table using the existing fictional beginner-Python fixtures. “ویترین دوره‌ها” uses the approved blue with three dated Python course samples and provider marks; clicking an offering opens existing course details. Main homepage selection remains pending owner review. Removed suggested-topic buttons and the collection banner are absent from both alternatives.
+
+Design uses existing semantic colors (لاجورد #304CB2, soft blue #EAF0FF, page #F5F7FC, ink #202C48, white #FFFFFF), locally bundled Vazirmatn, logical CSS, and responsive stacked layouts. The content panel supplies visual weight and demonstrates discovery/comparison directly. No rankings, endorsements, or new live integrations are implied.
+
+Lint, type checking, component RTL audit, and preview-route RTL audit pass. The preview returns HTTP 200; both desktop layouts and the discovery variant at 320px were visually reviewed. Course details, Escape dismissal, and focus restoration work. Full mobile comparison review remains pending due to intermittent Computer Use window errors. Production build encounters the existing Turbopack worker-port permission restriction.
+
+
+### Selected homepage hero — October 1, 2026
+
+The owner selected the second variant, “ویترین دوره‌ها”, for `/`. On desktop it retains the blue panel, course samples, and small provider identities, followed by the owner-requested mock copy «و ۹ وبسایت دیگر». This count is a design placeholder, not a connected-provider count. At 700px and below, only the heading, supporting text, and course-list button remain; both the course shelf and provider strip are hidden to keep the hero compact. Hero styling is now shared from `components/home-hero-variants.css`; preview controls keep their own route styles.
+
+Validation for applying the selected hero: lint, type checking, component/page/preview RTL audits, and whitespace checks pass. The homepage returns HTTP 200 with the selected discovery markup and the additional-provider copy. Shared mobile CSS hides the shelf and provider strip at 700px and below. Final browser visual review was blocked by stale Firefox screenshots and inaccessible document content. Production build still fails with the existing Turbopack worker-port permission restriction, including an escalated retry.
+
+
+### Provider loop and preview removal — October 1, 2026
+
+Replaced the additional-provider text with an infinitely moving provider row: ten mock entries cycle through the three existing logo/name pairs, then a second identical lap provides a seamless RTL loop. Duplicate visuals are hidden from assistive technology, which receives the three unique provider names once. Hover and keyboard focus pause motion; an explicit pause/resume button keeps it paused after focus moves away. Reduced-motion preferences show a static wrapping row. The provider strip remains hidden on mobile, as previously selected.
+
+Removed `/hero-preview`, its chooser component, and its route-only styles at the owner’s request. The selected homepage hero and shared styles remain. Earlier preview-route notes are historical.
+
+Validation: lint, type checking, RTL audit, and whitespace checks pass. The homepage returns HTTP 200 with ten provider entries per loop lap and a pause control; the removed preview route returns HTTP 404. The additional-provider text is absent. Browser animation/focus and reduced-motion visual checks remain pending; production build retains the existing Turbopack port-permission failure after an escalated retry.
+
+
+Removed the provider-strip pause/resume button and its state at the owner’s request. Automatic looping, hover pause, and reduced-motion handling remain. Lint, type checking, RTL audit, and whitespace checks pass; production build retains the documented Turbopack permission failure.
+
+Removed the course-shelf footnote «گزینه‌ها را بررسی کن؛ دوره‌ها الزاماً محتوای یکسانی ندارند.» and its divider/padding at the owner’s request to shorten the hero. Lint, types, RTL audit, and whitespace checks pass; production build retains the documented Turbopack worker-port restriction.
+
+## Python course group prototype
+
+Updated October 3, 2026 after the owner selected the second card design.
+
+Route: `/groups/python-beginner`. The URL is retained, but this prototype now shows all eight Python offerings found in the saved datasets, with their individual levels and purposes. It is a broad Python topic preview, not a claim that advanced design-pattern and data-science courses are equivalent to introductory Python. The homepage's existing three-course beginner group membership remains unchanged; reconciling topic/level navigation is deferred until the prototype scope is finalized.
+
+### Selected layout
+
+Only the second design remains: cover and course information alongside a separate price/action column, with strengths and considerations beneath. The design switcher and unused layouts/styles are removed. New components remain local to `apps/web/src/app/groups/[id]/python-group-preview.tsx` as requested.
+
+The hero side card is replaced by a gallery with one selected cover, its course title, a position/count indicator, and eight thumbnail buttons. Selection is manual with native buttons and pressed-state semantics; covers do not rotate automatically. Images preserve their proportions. Failed images fall back to the course title and an icon. The layout adapts to mobile.
+
+Cards show original course covers, titles, instructor/team names and source roles, provider logos, provider ratings when collected, levels, durations, available lesson counts, dated offers, and outbound provider links. Unknown fields stay visibly unknown. Content time, estimated study effort, and completion windows remain separate. Summary/syllabus details can be expanded; only the two legacy export records have a saved syllabus in this fixture.
+
+### Saved course facts
+
+`apps/web/src/data/python-course-snapshot.json` is a curated browser-safe fixture; it is not a new scraper schema or live service. It contains all records with Python in their title from these existing sources:
+
+| Source | Python records |
+| --- | --- |
+| `apps/web/src/data/provider-courses.json` | Six: Maktabkhooneh comprehensive Python and machine learning; TopLearn free Python and five projects; Quera introductory Python and design patterns. |
+| `apps/utils/output/maktabkhooneh.json` | Two: ten Python projects for beginners and predictive analytics with Python. This is a saved legacy adapter export, not the current golden-contract format. |
+
+Both sources were collected October 1, 2026 (۹ مهر ۱۴۰۵). Exact per-course observation times and source URLs are retained. No new provider requests or scraping were performed for this change. Quera records are retained historical samples; their presence does not reverse the decision to exclude Quera from new adapter development.
+
+The curated fixture includes display facts and selected plain-text evidence, excluding raw provider HTML and scraper/server code. Source prices, aggregate rating values/scales/counts, instructors, and durations are copied without inventing absent values. Missing normalized duration in the legacy export remains unknown; raw time strings are not silently reinterpreted. Its two offers are explicitly labeled content purchases. Ratings are attributed to the provider, not displayed as Dorob scores; absent ratings are not synthesized.
+
+Remote image URLs are retained and rendered unoptimized, consistent with the existing snapshot cards. This relies on provider image availability and network access; fallback text preserves usable cards and gallery buttons if images fail.
+
+### Prototype assessment boundaries
+
+Numbered positions follow a fixed editorial order, not a quality ranking. The page explicitly labels this. The analysis panels are hand-authored preview text grounded in saved fields, not results of a live analyzer. They distinguish educational tradeoffs from missing data in a combined considerations panel. Analytical project/practice tags carry a sample label; free access follows saved offer status. Satisfaction/economic badges and “start from zero” are not assigned without sufficient evidence.
+
+Production assessment, evidence-backed badge validation, comparative ranking, and freshness handling remain governed by the proposed [analyzer specification](course-group-ai-assessment.md).
+
+### Validation
+
+Frontend lint/type checking and the route RTL detector pass. Workspace lint passes; workspace type checking encounters separate in-progress utility schema/adapter mismatches in Roocket and Sabzlearn, outside this page change. Production compilation and the build TypeScript step pass; page-data collection still fails with the documented Bun CommonJS function-wrapper error.
+
+Firefox desktop review confirmed real covers, the selected layout, and gallery selection; 320px hero/gallery layout was inspected. Further mobile card/focus inspection was interrupted when the browser window became unavailable. Native gallery button semantics and global focus styling are present, but full keyboard and screen-reader review remain pending. No commit was requested at that historical checkpoint.

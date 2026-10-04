@@ -1,0 +1,22 @@
+{
+  "data": {
+    "comments": [
+      {
+        "parent_id": 0,
+        "body_html": "<p>پایان هر جسله به روال قدیم لطفا کدهای مربوط درس بزارین<br />\nسپاس </p>",
+        "created_at": "1 سال پیش"
+      },
+      {
+        "parent_id": 0,
+        "body_html": "<p>سلام<br />\nوقت بخیر،<br />\nلطفا  در مورد قابلیت Laravel boost هم آموزش بزارید.<br />\nتشکر</p>",
+        "created_at": "11 ماه پیش"
+      }
+    ],
+    "meta": {
+      "current_page": 1,
+      "last_page": 2,
+      "has_more": true,
+      "total": 22
+    }
+  }
+}

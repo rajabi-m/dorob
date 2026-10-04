@@ -141,6 +141,9 @@ export class PublicProviderClient {
             continue;
           }
           if (response.status === 401 || response.status === 403) { this.denied = true; await response.body?.cancel(); throw new AccessDeniedError(`Provider denied access: HTTP ${response.status}`); }
+          // RFC 9309 §2.3.1.3: a missing robots resource is not an access denial.
+          // Only robots 404 is accepted; ordinary 404s and unreachable/denied robots still fail.
+          if (robotsRequest && response.status === 404) { await response.body?.cancel(); return { body: "", url }; }
           if (!response.ok) { await response.body?.cancel(); throw new HttpError(response.status, response.headers.get("retry-after")); }
           const reader = response.body?.getReader();
           if (!reader) throw new Error("Empty response body");
