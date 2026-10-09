@@ -33,7 +33,8 @@
     "db:up": "docker compose up -d --wait db",
     "queue:setup": "bun run apps/backend/src/cli.ts queue-setup",
     "dashboard:queue": "docker compose --profile ops up -d --build dashboard",
-    "test:backend:containers": "bun run apps/backend/tests/run-container-smoke.ts"
+    "test:backend:containers": "bun run apps/backend/tests/run-container-smoke.ts",
+    "test:web": "bun test apps/web/tests"
   },
   "devDependencies": {
     "@types/bun": "1.3.8",

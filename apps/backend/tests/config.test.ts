@@ -7,6 +7,8 @@ describe("server configuration", () => {
     const config = readConfig({ ...base, OPENROUTER_API_KEY: "", EMBEDDING_DIMENSIONS: "", MODEL_RUN_BUDGET_USD: "" });
     expect(config.LIVE_MODEL_CALLS_ENABLED).toBe(false);
     expect(config.SCHEDULES_ENABLED).toBe(false);
+    expect(config.REFRESH_ENABLED).toBe(false);
+    expect(config.LIVE_REFRESH_ENABLED).toBe(false);
     expect(config.WORKER_CONCURRENCY).toBe(1);
   });
   test("refuses unintended live automation, unsafe limits and invalid booleans", () => {

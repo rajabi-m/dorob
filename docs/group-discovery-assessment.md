@@ -4,7 +4,7 @@ Milestone 4, October 4, 2026. Implementation is offline-capable; acceptance resu
 
 ## Boundaries and persistence
 
-All commands below are local operator CLI actions authorized by database access. Visitors only read stored, published DTOs. Run migrations and queue setup explicitly, then start the independent API and workers as described in [operations](backend-operations.md). No frontend integration, schedule, cloud deployment or additional collection is included.
+All commands below are local operator CLI actions authorized by database access. Visitors only read stored, published DTOs. Run migrations and queue setup explicitly, then start the independent API and workers as described in [operations](backend-operations.md). Milestone 4 itself included no frontend integration, schedule, cloud deployment or additional collection. Milestone 5 now consumes its approved public output; see [integration](frontend-integration.md).
 
 Discovery and generation extend `placement_requests`, `model_attempts`, `model_budgets`, `model_admission` and `placement-v1`; there is no second model pipeline. New retained tables are `discovery_proposals`, `group_definition_history`, `group_review_history`, `group_analysis` and the optional `group_ai_settings` policy fence. Definition data/bindings, analysis inputs and editorial review history are immutable in PostgreSQL. Edits append a new definition with a parent ID. Published snapshots remain immutable.
 
@@ -139,4 +139,4 @@ After changed source evidence, use `proposal-reprocess` with `{proposalId,budget
 
 ## Validation limits
 
-Retained/synthetic fixtures and actual PostgreSQL/container orchestration establish contract and recovery behavior, not live integration or educational quality. Production use still requires a human-reviewed taxonomy/evaluation set, selected available models, bounded authorized live verification and Persian claim/fit calibration. Feedback assessment, optional independent derived review, ranking/badges, richer price terms, frontend integration, schedules and cloud release remain future work.
+Retained/synthetic fixtures and actual PostgreSQL/container orchestration establish contract and recovery behavior, not live integration or educational quality. Production use still requires a human-reviewed taxonomy/evaluation set, selected available models, bounded authorized live verification and Persian claim/fit calibration. Feedback assessment, optional independent derived review, ranking/badges, richer price terms, schedules and cloud release remain future work. Milestone 5 public integration and selected manual refresh are implemented, with outstanding browser acceptance documented separately.

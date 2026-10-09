@@ -32,13 +32,17 @@ export async function enqueueCollection(db: Database, boss: Queue, input: unknow
   const data = collectionRequest.parse(input);
   const urls = [...new Set(data.urls.map(url => checkUrl(data.providerId, url)))];
   if (data.maxCourses !== undefined && urls.length > data.maxCourses) throw new Error("URL count exceeds maximum");
-  return db.transaction(async tx => {
+  return db.transaction(tx => enqueueCollectionTransaction(tx, boss, data, urls));
+}
+export async function enqueueCollectionTransaction(tx: Transaction, boss: Queue, data: z.infer<typeof collectionRequest>, urls: string[], mode: "live" | "offline" = "live", refreshOptIn = false) {
+    data = collectionRequest.parse(data);
+    urls = [...new Set(urls.map(url => checkUrl(data.providerId, url)))];
+    if (!urls.length && data.maxCourses === undefined || urls.length > (data.maxCourses ?? 100)) throw new Error("Collection selection exceeds budget");
     const [run] = await tx.insert(collections).values({ providerId: data.providerId, maxCourses: data.maxCourses ?? urls.length,
-      requestedUrls: urls, discoveredUrls: urls.length ? urls : null }).returning();
+      transportMode: mode, refreshOptIn: refreshOptIn ? "yes" : "no", requestedUrls: urls, discoveredUrls: urls.length ? urls : null }).returning();
     if (urls.length) await tx.insert(selections).values(urls.map(sourceUrl => ({ collectionId: run.id, sourceUrl })));
     await schedule(tx, boss, run);
     return run.id;
-  });
 }
 export async function inspectCollection(db: Database, id: string) {
   z.uuid().parse(id);
@@ -82,12 +86,16 @@ export async function processCollection(connection: ReturnType<typeof createData
     const db = connection.db;
     const [run] = await db.select().from(collections).where(eq(collections.id, job.collectionId));
     if (!run || run.generation !== job.generation || ["succeeded", "partial", "failed", "paused"].includes(run.state)) return;
+    if (run.transportMode === "offline" && !options.fetch || run.refreshOptIn === "yes" && run.transportMode === "live" && (process.env.REFRESH_ENABLED !== "true" || process.env.LIVE_REFRESH_ENABLED !== "true")) {
+      await db.update(collections).set({ state: "failed", error: "Refresh transport disabled; explicit configuration or injected offline transport and resume required" }).where(and(eq(collections.id, run.id), eq(collections.generation, job.generation)));
+      return;
+    }
     await db.update(ingestionAttempts).set({ state: "interrupted", finishedAt: new Date(), error: "Execution interrupted before outcome commit" })
       .where(and(eq(ingestionAttempts.collectionId, run.id), eq(ingestionAttempts.state, "running")));
     const pending = await db.select().from(selections).where(and(eq(selections.collectionId, run.id), sql`${selections.state} in ('pending', 'running', 'retryable')`)).orderBy(selections.sourceUrl);
     const item = pending.find(item => item.attempts < 3);
     if (run.discoveredUrls && !item) {
-      await finish(db, run.id); return;
+      await finish(db, run.id, job.generation); return;
     }
     if (!run.discoveredUrls) {
       const history = await db.select().from(ingestionAttempts).where(eq(ingestionAttempts.collectionId, run.id));
@@ -176,13 +184,16 @@ export async function processCollection(connection: ReturnType<typeof createData
     finally { session.release(); await lockConnection.close(); }
   }
 }
-async function finish(db: Database, collectionId: string) {
-  const items = await db.select().from(selections).where(eq(selections.collectionId, collectionId));
-  // Account explicitly for attempts exhausted by host crashes.
-  await db.update(selections).set({ state: "exhausted", error: "Three attempts exhausted; new bounded collection required" })
-    .where(and(eq(selections.collectionId, collectionId), sql`${selections.state} in ('retryable', 'running') and ${selections.attempts} >= 3`));
-  const succeeded = items.filter(item => item.state === "succeeded").length;
-  await db.update(collections).set({ state: succeeded === items.length ? "succeeded" : succeeded ? "partial" : "failed" }).where(eq(collections.id, collectionId));
+async function finish(db: Database, collectionId: string, generation: number) {
+  await db.transaction(async tx => {
+    const [run] = await tx.select().from(collections).where(eq(collections.id, collectionId)).for("update");
+    if (!run || run.generation !== generation) return;
+    await tx.update(selections).set({ state: "exhausted", error: "Three attempts exhausted; new bounded collection required" })
+      .where(and(eq(selections.collectionId, collectionId), sql`${selections.state} in ('retryable', 'running') and ${selections.attempts} >= 3`));
+    const items = await tx.select().from(selections).where(eq(selections.collectionId, collectionId));
+    const succeeded = items.filter(item => item.state === "succeeded").length;
+    await tx.update(collections).set({ state: succeeded === items.length ? "succeeded" : succeeded ? "partial" : "failed" }).where(eq(collections.id, collectionId));
+  });
 }
 
 export async function dispatchInvalidations(db: Database, boss: Queue) {
@@ -203,5 +214,18 @@ export async function reconcileInvalidation(db: Database, input: unknown) {
     const [member] = await tx.select().from(memberships).where(and(eq(memberships.groupId, request.groupId), eq(memberships.courseId, request.courseId)));
     const state = course.currentRevisionId !== request.revisionId ? "superseded" : member?.approvedRevisionId === request.revisionId ? "approved" : "waiting-review";
     await tx.update(invalidations).set({ state }).where(eq(invalidations.id, request.id));
+  });
+}
+
+/** Durable cancellation fences even a connected worker's late import/continuation. */
+export async function cancelCollection(db: Database, id: string) {
+  z.uuid().parse(id);
+  await db.transaction(async tx => {
+    const [run] = await tx.select().from(collections).where(eq(collections.id, id)).for("update");
+    if (!run) throw new Error("Collection not found");
+    if (["succeeded", "partial"].includes(run.state)) return;
+    await tx.update(collections).set({ generation: run.generation + 1, state: "failed", error: "Cancelled by operator; explicit resume required" }).where(eq(collections.id, id));
+    await tx.update(ingestionAttempts).set({ state: "interrupted", finishedAt: new Date(), error: "Cancelled; remote outcome may be unknown" }).where(and(eq(ingestionAttempts.collectionId, id), eq(ingestionAttempts.state, "running")));
+    await tx.update(selections).set({ state: "retryable", error: "Cancelled; explicit resume required" }).where(and(eq(selections.collectionId, id), eq(selections.state, "running")));
   });
 }

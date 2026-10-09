@@ -55,7 +55,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await boss.deleteAllJobs();
   // Guard above confines this reset to an ephemeral database with test credentials.
-  await db.execute(sql`truncate provider_limits, ingestion_attempts, ingestion_selections, ingestion_collections, group_invalidations, workflow_attempts, group_snapshots, workflow_runs, group_memberships, comparison_groups, course_observations, course_revisions, courses, providers cascade`);
+  await db.execute(sql`truncate refresh_requests, provider_limits, ingestion_attempts, ingestion_selections, ingestion_collections, group_invalidations, workflow_attempts, group_snapshots, workflow_runs, group_memberships, comparison_groups, course_observations, course_revisions, courses, providers cascade`);
 });
 afterAll(async () => { if (boss) await boss.stop(); await connection.close(); });
 
@@ -463,4 +463,96 @@ test("attempt claim rollback cannot consume or reset only half of the durable bu
   await processCollection(connection, boss, job.data, { fetch: fixtureTransport(), delayMs: 0 });
   await boss.complete(COLLECT, job.id); await drainCollections();
   expect((await inspectCollection(db, id)).selections[0].attempts).toBe(1);
+});
+
+// Milestone 5: public discovery applies the publication gate before pagination.
+import { discoverGroups, discoverCategories } from "@dorob/backend/discovery";
+import { parseDiscoveryParams, publicGroupSchema } from "@dorob/core";
+import { requestRefresh, inspectRefresh } from "@dorob/backend/refresh";
+import { cancelCollection } from "@dorob/backend/ingestion";
+import { refreshRequests } from "@dorob/db/schema";
+const publicQuery = (value = "") => parseDiscoveryParams(new URLSearchParams(value));
+test("published discovery paginates eligible groups, normalizes aliases and filters unknown level/categories", async () => {
+  await importSavedExport(db, saved([sample("1"), sample("2")]));
+  for (const slug of ["a-draft", "b-public", "c-withdrawn", "d-public"]) {
+    const result = await createDraftGroup(db, boss, { ...definition, slug, topic: "پایتون", title: "مقایسه پایتون" }, ["offline-test:1", "offline-test:2"]);
+    await buildGroup(db, boss, payload(result)); await finalizeGroup(db, payload(result));
+    if (slug !== "a-draft") await publishGroup(db, slug);
+    if (slug === "c-withdrawn") await db.update(groups).set({ state: "withdrawn" }).where(eq(groups.id, result.groupId));
+  }
+  const first = await discoverGroups(db, publicQuery("q=Python&pageSize=1&level=unknown&category=programming"));
+  expect(first.items.map(g => g.slug)).toEqual(["b-public"]); expect(first.hasNext).toBe(true);
+  const second = await discoverGroups(db, publicQuery("q=پایتون&pageSize=1&page=2"));
+  expect(second.items.map(g => g.slug)).toEqual(["d-public"]); expect(second.hasNext).toBe(false);
+  expect((await discoverGroups(db, publicQuery("level=multi-level"))).items).toHaveLength(0);
+  expect((await discoverGroups(db, publicQuery("category=other"))).items).toHaveLength(0);
+  expect((await discoverGroups(db, publicQuery("page=1000"))).items).toHaveLength(0);
+  expect((await discoverCategories(db)).items.map(c => c.id)).toEqual(["programming"]);
+  const handler = createHandler({ ready: async () => {}, group: (slug, draft) => readGroup(db, slug, draft), discovery: q => discoverGroups(db, q), categories: () => discoverCategories(db) });
+  const response = await handler(new Request("http://localhost/v1/groups?q=Python"));
+  expect(response.status).toBe(200); const text = await response.text(); expect(text).not.toContain("MUST_NOT_REACH_HTTP"); expect(text).not.toContain("criteria");
+  expect((await handler(new Request("http://localhost/v1/groups?page=0"))).status).toBe(400);
+  expect((await handler(new Request("http://localhost/v1/groups?page=1&page=2"))).status).toBe(400);
+  expect((await handler(new Request("http://localhost/v1/categories"))).status).toBe(200);
+  // Changed unapproved sources remove ALL affected groups from discovery and categories.
+  const changed = sample("1", "2026-10-03T00:00:00Z"); changed.title = "منبع تغییرکرده";
+  await importSavedExport(db, saved([changed]));
+  expect((await discoverGroups(db, publicQuery())).items).toHaveLength(0); expect((await discoverCategories(db)).items).toHaveLength(0);
+});
+test("public projection excludes changed/unapproved alternatives while retaining current facts and published history", async () => {
+  await importSavedExport(db, saved([sample("1"), sample("2"), sample("3")]));
+  const result = await createDraftGroup(db, boss, definition, ["offline-test:1", "offline-test:2", "offline-test:3"]);
+  await buildGroup(db, boss, payload(result)); await finalizeGroup(db, payload(result)); await publishGroup(db, definition.slug);
+  const before = await readGroup(db, definition.slug); publicGroupSchema.parse(before);
+  const changed = sample("3", "2026-10-03T00:00:00Z"); changed.title = "تغییر تأییدنشده";
+  await importSavedExport(db, saved([changed]));
+  const after = await readGroup(db, definition.slug); expect(after?.courses.map(c => c.id)).toEqual(["offline-test:1", "offline-test:2"]); expect(after?.stale).toBe(true);
+  const discovery = await discoverGroups(db, publicQuery()); expect(discovery.items[0].alternativeCount).toBe(2); expect(discovery.items[0].stale).toBe(true);
+  expect(await db.select().from(snapshots)).toHaveLength(1);
+});
+test("refresh defaults off, coalesces across connections, is bounded and transactionally hands off collections", async () => {
+  const initial = await enqueueCollection(db, boss, { providerId: "roocket", urls: [roocketUrl] }); await drainCollections();
+  const courseId = (await inspectCollection(db, initial)).selections[0].revisionId;
+  const [revision] = await db.select().from(revisions).where(eq(revisions.id, courseId!));
+  const input = { requestKey: "selected-refresh", mode: "offline", providers: ["roocket"], courseIds: [revision.courseId], maxCourses: 1, operator: "synthetic-test-reviewer" };
+  await expect(requestRefresh(db, boss, input, { enabled: false, liveEnabled: false })).rejects.toThrow();
+  await expect(requestRefresh(db, boss, { ...input, mode: "live" }, { enabled: true, liveEnabled: false })).rejects.toThrow();
+  const other = createDatabase(url!, 2);
+  let ids: string[];
+  try { ids = await Promise.all([requestRefresh(db, boss, input, { enabled: true, liveEnabled: false }), requestRefresh(other.db, boss, input, { enabled: true, liveEnabled: false })]); } finally { await other.close(); }
+  expect(ids![0]).toBe(ids![1]); expect(await db.select().from(refreshRequests)).toHaveLength(1);
+  const refresh = await inspectRefresh(db, ids![0]); expect(refresh.collections).toHaveLength(1); expect(refresh.collections[0].transportMode).toBe("offline");
+  await expect(requestRefresh(db, boss, { ...input, maxCourses: 2 }, { enabled: true, liveEnabled: false })).rejects.toThrow();
+  const failing = new Proxy(boss, { get(target, prop) { return prop === "send" ? async () => { throw new Error("Injected queue failure"); } : Reflect.get(target, prop); } });
+  await expect(requestRefresh(db, failing, { ...input, requestKey: "rollback-refresh" }, { enabled: true, liveEnabled: false })).rejects.toThrow();
+  expect(await db.select().from(refreshRequests)).toHaveLength(1); expect(await db.select().from(collections)).toHaveLength(2);
+  await drainCollections(); expect((await inspectRefresh(db, ids![0])).collections[0].state).toBe("succeeded"); expect(await db.select().from(revisions)).toHaveLength(1);
+});
+test("overlapping refresh groups cannot truncate distinct courses before the total budget gate", async () => {
+  const data = Array.from({ length: 101 }, (_, i) => sample(String(i + 1)));
+  await importSavedExport(db, saved(data));
+  const left = await createDraftGroup(db, boss, { ...definition, slug: "refresh-left" }, data.slice(0, 60).map(c => c.id));
+  const right = await createDraftGroup(db, boss, { ...definition, slug: "refresh-right" }, data.slice(40).map(c => c.id));
+  await expect(requestRefresh(db, boss, { requestKey: "overlapping-refresh", mode: "offline", providers: ["roocket"], groupIds: [left.groupId, right.groupId], maxCourses: 100, operator: "synthetic" }, { enabled: true, liveEnabled: false })).rejects.toThrow("course budget");
+  expect(await db.select().from(refreshRequests)).toHaveLength(0);
+  expect(await db.select().from(collections)).toHaveLength(0);
+});
+test("offline refresh cannot call live transport; cancellation fences an in-flight acceptance and resume preserves budgets", async () => {
+  const initial = await enqueueCollection(db, boss, { providerId: "roocket", urls: [roocketUrl] }); await drainCollections();
+  const [course] = await db.select().from(courses);
+  const id = await requestRefresh(db, boss, { requestKey: "cancel-refresh", mode: "offline", providers: ["roocket"], courseIds: [course.id], maxCourses: 1, operator: "synthetic" }, { enabled: true, liveEnabled: false });
+  const refresh = await inspectRefresh(db, id); const collectionId = refresh.collectionIds[0];
+  const [job] = await boss.fetch<CollectionJob>(COLLECT);
+  await processCollection(connection, boss, job.data); await boss.complete(COLLECT, job.id);
+  expect((await inspectCollection(db, collectionId)).error).toContain("transport disabled"); expect((await inspectCollection(db, collectionId)).attempts).toHaveLength(0);
+  await resumeCollection(db, boss, collectionId);
+  const [next] = await boss.fetch<CollectionJob>(COLLECT);
+  let entered!: () => void; const started = new Promise<void>(r => entered = r); let release!: () => void; const hold = new Promise<void>(r => release = r);
+  const fixture = fixtureTransport(); const blocked = (async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => { entered(); await hold; return fixture(input, init); }) as unknown as typeof fetch;
+  const active = processCollection(connection, boss, next.data, { fetch: blocked, delayMs: 0 }); await started;
+  await cancelCollection(db, collectionId); release(); await active; await boss.complete(COLLECT, next.id);
+  const cancelled = await inspectCollection(db, collectionId); expect(cancelled.state).toBe("failed"); expect(cancelled.selections[0].attempts).toBe(1); expect(cancelled.selections[0].revisionId).toBeNull();
+  await processCollection(connection, boss, next.data, { fetch: fixture, delayMs: 0 }); expect((await inspectCollection(db, collectionId)).selections[0].attempts).toBe(1);
+  await resumeCollection(db, boss, collectionId); await drainCollections(); expect((await inspectCollection(db, collectionId)).selections[0].attempts).toBe(2);
+  expect((await inspectCollection(db, initial)).state).toBe("succeeded");
 });

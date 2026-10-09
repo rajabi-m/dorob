@@ -1,10 +1,10 @@
 # Backend foundation: setup and operations
 
-October 4, 2026. The backend lives in `apps/backend`, with the independently running Bun worker in `apps/worker`. This owner-requested boundary supersedes the earlier Next.js-only backend proposal. Both deploy as separate images from `infra/Dockerfile`; neither starts the other. They coordinate only through PostgreSQL and pg-boss, so they can run on different cloud hosts. The Next.js frontend still reads its existing dated fixtures; frontend integration is a later milestone.
+October 4, 2026. The backend lives in `apps/backend`, with the independently running Bun worker in `apps/worker`. This owner-requested boundary supersedes the earlier Next.js-only backend proposal. Both deploy as separate images from `infra/Dockerfile`; neither starts the other. They coordinate only through PostgreSQL and pg-boss, so they can run on different cloud hosts. The Next.js frontend now has explicit backend/fixture modes; see [integration and selected refresh](frontend-integration.md).
 
-Milestones 1–3 are locally validated; milestone 4 discovery/assessment/publication is complete and locally validated with offline transports. Frontend integration follows later.
+Milestones 1–3 are locally validated; milestone 4 discovery/assessment/publication is complete and locally validated with offline transports. Milestone 5 integration/manual refresh passes automated offline acceptance; complete mobile/focus browser acceptance remains pending.
 
-Implemented scope: validated saved version-2 imports, immutable evidence revisions, successful/failed observations, manually approved group membership, durable deterministic factual snapshots, operator publication, read-only HTTP queries, and private draft inspection. Bounded manual Maktabkhooneh/Roocket ingestion is available. Versioned Jev placement, embeddings and hybrid retrieval are implemented for bounded manual operations. Live model calls default to disabled; schedules, ranking and frontend integration remain deferred.
+Implemented scope: validated saved version-2 imports, immutable evidence revisions, successful/failed observations, manually approved group membership, durable deterministic factual snapshots, operator publication, read-only HTTP queries, and private draft inspection. Bounded manual Maktabkhooneh/Roocket ingestion is available. Versioned Jev placement, embeddings and hybrid retrieval are implemented for bounded manual operations. Live model calls default to disabled; schedules and ranking remain disabled; frontend integration is available.
 
 Pinned foundation dependencies: Bun 1.3.8, Drizzle ORM 0.45.3, Drizzle Kit 0.31.11, postgres.js 3.4.9, Zod 4.6.5, pg-boss 12.35.0, and `pgvector/pgvector:0.8.1-pg17`. The Bun lockfile records transitive versions. The dashboard uses its separate documented Node runtime.
 
@@ -115,7 +115,7 @@ Saved imports and worker collection use one validated transactional persistence 
 
 A changed current revision clears affected factual draft pointers, supersedes unfinished group runs and inserts a unique `(group, course, revision)` invalidation request in the same transaction. Published snapshots/history remain retained. Workers drain this transactional outbox every second: pg-boss reconciliation insertion and its retained job ID commit together using Drizzle's transaction adapter. Concurrent dispatchers use row locks/skip-locked selection. Reconciliation coalesces duplicate requests, records `waiting-review`, `approved` or `superseded`, and never promotes a snapshot or membership. Thus queue outages cannot lose invalidation, and obsolete jobs cannot promote old inputs.
 
-Use a PostgreSQL client to inspect `group_invalidations` for pending domain review; the private queue dashboard shows reconciliation job delivery and IDs. Re-submit the original group JSON with `backend:cli group PATH` after reviewing current evidence. This explicitly reapproves current memberships and enqueues the existing deterministic build/finalize workflow. Publication remains a separate `publish` action. The two-current-eligible-alternatives gate applies throughout; a changed/unapproved or unavailable member may hide public output while preserving published history. Jev placement and retrieval now have bounded review workflows; educational assessment now uses the [milestone 4 review workflow](group-discovery-assessment.md); frontend unavailable states remain later work.
+Use a PostgreSQL client to inspect `group_invalidations` for pending domain review; the private queue dashboard shows reconciliation job delivery and IDs. Re-submit the original group JSON with `backend:cli group PATH` after reviewing current evidence. This explicitly reapproves current memberships and enqueues the existing deterministic build/finalize workflow. Publication remains a separate `publish` action. The two-current-eligible-alternatives gate applies throughout; a changed/unapproved or unavailable member may hide public output while preserving published history. Jev placement and retrieval now have bounded review workflows; educational assessment now uses the [milestone 4 review workflow](group-discovery-assessment.md); frontend stale/unavailable states are implemented.
 
 ## HTTP contracts
 
@@ -123,10 +123,12 @@ Use a PostgreSQL client to inspect `group_invalidations` for pending domain revi
 | --- | --- |
 | `GET /health/live` | Process liveness, independent of database access. |
 | `GET /health/ready` | Application schema/database readiness; 503 when unavailable. |
+| `GET /v1/groups` | Bounded public discovery/search/filter/pagination, eligible publications only; see [query contracts](frontend-integration.md#public-api-and-query-contracts). |
+| `GET /v1/categories` | Navigation categories containing eligible published groups. |
 | `GET /v1/groups/:slug` | Manually published factual group only; 404 for absent, draft, withdrawn or below-minimum eligible groups. |
 | `GET /internal/groups/:slug` | Latest completed draft with `Authorization: Bearer BACKEND_OPERATOR_TOKEN`; denied when token is unset. |
 
-Responses use `Cache-Control: no-store`. Public DTOs expose curated course facts, source URLs, freshness, unknown values, coverage labels, `kind: "source-facts"`, and `analysis: null` or explicitly approved unranked analysis with every candidate and limitations. Stale analysis is removed independently of current facts. Raw evidence, adapter field paths, uncurated warnings, model payloads and secrets are excluded. Source facts still require the frontend to render plain text safely. Only same-origin/server-to-server HTTP access is configured; cross-origin browser integration and discovery/search contracts belong to the frontend integration milestone.
+Responses use `Cache-Control: no-store`. Public DTOs expose curated course facts, source URLs, freshness, unknown values, coverage labels, `kind: "source-facts"`, and `analysis: null` or explicitly approved unranked analysis with every candidate and limitations. Stale analysis is removed independently of current facts. Raw evidence, adapter field paths, uncurated warnings, model payloads and secrets are excluded. Source facts still require the frontend to render plain text safely. Only same-origin/server-to-server HTTP access is configured; Next consumes discovery/search/detail contracts server-to-server; backend URL/configuration stays server-only.
 
 ## Reliability and retained evidence
 
@@ -135,7 +137,7 @@ Responses use `Cache-Control: no-store`. Public DTOs expose curated course facts
 - Each group workflow binds to the accepted course revisions and group definition version. Database locks and digest checks prevent stale jobs or stale publication from promoting older results.
 - Drizzle transactions use pg-boss's transaction adapter: group creation and first job insertion are atomic, as are the deterministic result and its follow-up job. An immutable snapshot per workflow makes re-delivery harmless even when a process dies after commit but before queue completion.
 - Attempt history stays in application tables beyond queue retention; re-delivery marks an unfinished prior attempt interrupted. Operational failure summaries omit payloads/credentials. A crashed attempt remains running until its job is redelivered; deterministic group attempt recovery remains delivery-driven. Ingestion records interrupted attempts on resume/redelivery, and a durable invalidation outbox is drained by workers.
-- Current offers/freshness are projected from source records rather than copied indefinitely from a snapshot. A published group with fewer than two current approved, non-unavailable alternatives returns 404 while retaining its URL identity, snapshot and history. The saved publication is not deleted; after operator reapproval, old retained results may be shown with `stale: true` until the new result is published. A friendly frontend unavailable state is still to be integrated.
+- Current offers/freshness are projected from source records rather than copied indefinitely from a snapshot. A published group with fewer than two current approved, non-unavailable alternatives returns 404 while retaining its URL identity, snapshot and history. The saved publication is not deleted; after operator reapproval, old retained results may be shown with `stale: true` until the new result is published. The frontend provides a friendly unavailable state without fixture fallback.
 
 ## Separate container deployment
 
@@ -167,6 +169,7 @@ bun run lint
 bun run typecheck
 bun run test:utils
 bun run test:backend
+bun run test:web
 bun run test:backend:integration
 # After building dorob-backend:local and dorob-worker:local:
 bun run test:backend:containers
@@ -193,3 +196,10 @@ Milestone 3 local offline acceptance is complete. The full `test:backend:contain
 ## Discovery and assessment operations
 
 See [milestone 4 commands and contracts](group-discovery-assessment.md) for `discovery`, `proposal`, `definition`, `definition-edit/review`, `assessment`, `analysis`, `assessment-review`, `publish-reviewed`, rejection and safe reprocessing. These extend the existing placement queue/model ledger and recovery commands; no visitor request calls a model. Generative work shares the same PostgreSQL slot and budgets as Jev/embeddings. No configured model is selected by default; `GENERATIVE_MODEL_ID`, explicit live enablement/credentials and bounded live budgets are required before authorized live work. Offline transports are test injections only. Factual group workflows remain available when generation fails.
+
+
+## Selected manual refresh (milestone 5)
+
+Read [refresh selection, budgets and recovery](frontend-integration.md#opt-in-refresh-and-review) before enabling `REFRESH_ENABLED` or `LIVE_REFRESH_ENABLED`; both default false. `refresh PATH` retains explicit course/group/provider selection and original source revisions, coalesces repeated keys through PostgreSQL, and atomically hands off existing bounded ingestion collections. `refresh-inspect ID` lists every retained collection/outcome. `collection-cancel ID` advances generation and fences late acceptance/finalization; existing `resume ID` retains attempt budgets and skips accepted selections. No model/publication action is automatic. Offline jobs require injected transports; authorized live refresh additionally needs both flags on operator/worker hosts. Missing model selection does not block factual implementation/tests. No schedules are implemented or enabled; quality/access review and separate authorization precede later enablement.
+
+The full separate-container test also starts an actual local Next development process against the isolated synthetic API, checks factual/reviewed comparisons and stopped-backend behavior, then shuts it down. It requires free loopback port 55436 in addition to DB/API/dashboard test ports. Compilation/types pass but the existing Bun production page-data blocker persists. See [validation](validation.md) for browser acceptance limits.

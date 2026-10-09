@@ -1,3 +1,5 @@
+import { requestRefresh, inspectRefresh } from "@dorob/backend/refresh";
+import { cancelCollection } from "@dorob/backend/ingestion";
 import { reprocessProposal, discoverGroup, inspectProposal, requestDefinition, editDefinition, reviewDefinition, rejectProposal, requestAssessment, inspectAnalysis, reviewAssessment } from "@dorob/backend/group-ai";
 import { seedTaxonomy, reviewTaxonomy, activateTaxonomy, createBudget, requestPlacement, inspectPlacement, resumePlacement, cancelPlacement, reviewPlacement } from "@dorob/backend/placement";
 import { provisionalTaxonomy } from "@dorob/backend/placement-contracts";
@@ -46,6 +48,9 @@ if (!command || command === "--help") {
   retrieval-index PATH JSON { taxonomyVersion, courseIds: [], groupIds: [] }; max 100
   candidates PATH     JSON { documentId, kind: group|unmatched-course, limit, embedding? }
   queue-setup          Explicitly initialize pg-boss schema and queues
+  refresh PATH        Opt-in selected retained courses/groups; bounded and idempotent
+  refresh-inspect ID  Inspect selected input and every collection outcome
+  collection-cancel ID Fence a collection; resume preserves attempts
   collect PATH        Enqueue JSON { providerId, urls: [...] } or { providerId, maxCourses: 1..100 }
   collection ID       Inspect retained discovery, URL outcomes and attempts
   resume ID           Resume interrupted/retryable work without resetting budgets
@@ -59,13 +64,13 @@ Group JSON: { "definition": { "slug", "title", "topic", "targetLevel": null, "cr
 Database credentials authorize these local operator commands. No public write endpoints exist.`);
   process.exit(0);
 }
-if (!["queue-setup", "import", "group", "inspect", "publish", "collect", "collection", "resume", "provider-unpause", "taxonomy-seed", "taxonomy-review", "taxonomy-activate", "model-budget", "model-budget-inspect", "model-budget-cancel", "placement-status", "placement", "placement-inspect", "placement-resume", "placement-cancel", "placement-review", "placement-pending", "retrieval-index", "candidates", "discovery", "proposal", "proposal-reject", "definition", "definition-edit", "definition-review", "assessment", "analysis", "assessment-review", "publish-reviewed", "proposal-reprocess"].includes(command)) throw new Error("Unknown command; use --help");
+if (!["refresh", "refresh-inspect", "collection-cancel", "queue-setup", "import", "group", "inspect", "publish", "collect", "collection", "resume", "provider-unpause", "taxonomy-seed", "taxonomy-review", "taxonomy-activate", "model-budget", "model-budget-inspect", "model-budget-cancel", "placement-status", "placement", "placement-inspect", "placement-resume", "placement-cancel", "placement-review", "placement-pending", "retrieval-index", "candidates", "discovery", "proposal", "proposal-reject", "definition", "definition-edit", "definition-review", "assessment", "analysis", "assessment-review", "publish-reviewed", "proposal-reprocess"].includes(command)) throw new Error("Unknown command; use --help");
 if (command !== "queue-setup" && command !== "placement-pending" && !argument) throw new Error("Command requires an argument");
 const config = readConfig();
 const connection = createDatabase(config.DATABASE_URL, config.DATABASE_POOL_SIZE);
 let boss: ReturnType<typeof createQueue> | undefined;
 try {
-  if (command === "queue-setup" || command === "group" || command === "collect" || command === "resume" || ["placement", "placement-resume", "placement-review", "discovery", "definition", "definition-review", "assessment", "proposal-reprocess"].includes(command)) {
+  if (command === "refresh" || command === "queue-setup" || command === "group" || command === "collect" || command === "resume" || ["placement", "placement-resume", "placement-review", "discovery", "definition", "definition-review", "assessment", "proposal-reprocess"].includes(command)) {
     boss = createQueue(config, command === "queue-setup");
     await boss.start();
   }
@@ -99,6 +104,9 @@ try {
     case "candidates": { const v = z.strictObject({ documentId: z.string(), kind: z.enum(["group", "unmatched-course"]), limit: z.number().int().min(1).max(100), embedding: z.strictObject({ model: z.string(), dimensions: z.number().int().min(1).max(16000), bundleVersion: z.string() }).optional() }).parse(await json()); console.log(await retrieveCandidates(connection.db, v)); break; }
 
     case "queue-setup": await setupQueues(boss!); console.log("Queue schema and queues initialized"); break;
+    case "refresh": console.log(await requestRefresh(connection.db, boss!, JSON.parse(await readFile(argument, "utf8")), { enabled: config.REFRESH_ENABLED, liveEnabled: config.LIVE_REFRESH_ENABLED })); break;
+    case "refresh-inspect": console.log(JSON.stringify(await inspectRefresh(connection.db, argument), null, 2)); break;
+    case "collection-cancel": await cancelCollection(connection.db, argument); break;
     case "collect": console.log(await enqueueCollection(connection.db, boss!, JSON.parse(await readFile(argument, "utf8")))); break;
     case "collection": console.log(JSON.stringify(await inspectCollection(connection.db, argument), null, 2)); break;
     case "resume": await resumeCollection(connection.db, boss!, argument); console.log("Collection resumed"); break;

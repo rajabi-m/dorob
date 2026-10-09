@@ -90,6 +90,8 @@ export const collections = pgTable("ingestion_collections", {
   providerId: text("provider_id").notNull(),
   generation: integer("generation").notNull().default(0),
   maxCourses: integer("max_courses").notNull(),
+  transportMode: text("transport_mode", { enum: ["live", "offline"] }).notNull().default("live"),
+  refreshOptIn: text("refresh_opt_in").notNull().default("no"),
   requestedUrls: jsonb("requested_urls").$type<string[]>().notNull(),
   discoveredUrls: jsonb("discovered_urls").$type<string[]>(),
   state: text("state").notNull().default("queued"),
@@ -225,3 +227,9 @@ export const groupAnalysis = pgTable("group_analysis", {
 export const groupAiSettings = pgTable("group_ai_settings", {
   id: integer("id").primaryKey().default(1), policyVersion: text("policy_version").notNull(),
 }, t => [check("group_ai_singleton", sql`${t.id} = 1`)]);
+
+// Immutable bounded refresh selection and idempotency identity; outcomes live in collection ledger.
+export const refreshRequests = pgTable("refresh_requests", {
+  id: uuid("id").defaultRandom().primaryKey(), requestKey: text("request_key").notNull().unique(), inputDigest: text("input_digest").notNull(),
+  input: jsonb("input").notNull(), collectionIds: jsonb("collection_ids").$type<string[]>().notNull(), operator: text("operator").notNull(), createdAt: time("created_at").defaultNow().notNull(),
+});

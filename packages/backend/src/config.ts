@@ -15,6 +15,8 @@ const configSchema = z.object({
   PROVIDER_CONCURRENCY: z.coerce.number().int().min(1).max(1).default(1),
   JEV_CONCURRENCY: positive.max(1).default(1),
   GENERATIVE_CONCURRENCY: z.coerce.number().int().min(1).max(1).default(1),
+  REFRESH_ENABLED: bool.default(false),
+  LIVE_REFRESH_ENABLED: bool.default(false),
   SCHEDULES_ENABLED: bool.default(false),
   LIVE_MODEL_CALLS_ENABLED: bool.default(false),
   OPENROUTER_API_KEY: optionalText,

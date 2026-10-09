@@ -1,6 +1,6 @@
 # Provider snapshots and collection provenance
 
-These are dated, browser-safe fixtures for the completed phase 2 milestone, separate from the scraper contract. The homepage uses 18 saved courses and editorial groups drawn from those records. The Python prototype uses eight saved Python offerings; see [frontend behavior](frontend.md#python-course-group-prototype). Most design-system samples remain fictional. Collection checks below are historical, not fresh provider verification.
+These are dated, browser-safe fixtures for the completed phase 2 milestone, separate from the scraper contract. Milestone 5 fixture mode projects eight selected saved courses into three editorial groups with explicit sample labeling. Its Python card/detail route has the same three members. Backend mode uses approved publications exclusively. The retained, unrouted historical Python prototype uses eight saved Python offerings; see [frontend behavior](frontend.md#python-course-group-prototype). Most design-system samples remain fictional. Collection checks below are historical, not fresh provider verification.
 
 ## Snapshot fields and source assets
 
@@ -179,3 +179,6 @@ The retained deliverables are:
 Extraction scripts and downloaded HTML lived under `/tmp`; they were not added to the repository and are not a maintained, reproducible scraper. This report describes the actual procedure, but recollecting the data would require recreating or retaining those scripts and checking current page structures. No automated retry/backoff system, catalog pagination, refresh policy, or provider adapter was implemented. Provider robots/access-policy review was not performed as part of this collection; phase 3 ingestion planning still requires that review.
 
 Prices, discounts, counts, ongoing-course lengths, and remote images can change. Signed CDN links can expire. Consumers should show the snapshot date, identify generated summaries, handle missing information and images, and avoid presenting the data as live provider information. Full descriptions, full syllabi, student profiles, reviews, and course media were not included in the JSON.
+
+
+Milestone 5 does not recollect these samples or convert their editorial grouping/order into backend review. Fixture group level is unknown; original provider level labels, dated source prices and URLs remain. Backend DTOs retain full original currency/offer/access facts from immutable version-2 revisions. The snapshot-to-fixture mapping is separate from ingestion; see [data modes and boundaries](frontend-integration.md).

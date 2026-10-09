@@ -1,6 +1,6 @@
 # Frontend: homepage and course groups
 
-Phase 2 is complete for now by owner decision on October 4, 2026. The current homepage uses dated provider snapshots, shared categories/course cards, the selected blue hero, and automatically cycling group covers. Group membership comes from snapshots; the Python route is an eight-offering topic prototype with manual cover selection and labeled editorial analysis. Search/filter state resets on reload. Dedicated results/detail/comparison routes, reconciliation of the Python route with the three-course homepage group, shared extraction of page-local components, and comprehensive accessibility review remain follow-ups. The design history below includes superseded layouts, controls, removed previews, and older build failures; [validation](validation.md) records current checks.
+Phase 2 is complete for now by owner decision on October 4, 2026. Milestone 5 now connects public published groups to Next through explicit server-only backend/fixture modes, with URL search/filter state, reviewed comparisons, source/unknown/stale/partial/unavailable states and consistent three-member offline Python membership. The eight-offering prototype is retained but no longer routed as approved membership. See [current integration contracts and refresh](frontend-integration.md). Automated offline acceptance and desktop/320px keyboard browser review pass; the production Bun build blocker persists. The history below records superseded layouts/routes and is not the current data contract.
 
 ## Homepage design and implementation history
 
@@ -137,7 +137,7 @@ Removed the course-shelf footnote «گزینه‌ها را بررسی کن؛ د�
 
 Updated October 3, 2026 after the owner selected the second card design.
 
-Route: `/groups/python-beginner`. The URL is retained, but this prototype now shows all eight Python offerings found in the saved datasets, with their individual levels and purposes. It is a broad Python topic preview, not a claim that advanced design-pattern and data-science courses are equivalent to introductory Python. The homepage's existing three-course beginner group membership remains unchanged; reconciling topic/level navigation is deferred until the prototype scope is finalized.
+Historical route: `/groups/python-beginner` (superseded by milestone 5 public integration). This retained prototype showed all eight Python offerings found in the saved datasets, with their individual levels and purposes. It is a broad Python topic preview, not a claim that advanced design-pattern and data-science courses are equivalent to introductory Python. The homepage's existing three-course beginner group membership remains unchanged; reconciling topic/level navigation is deferred until the prototype scope is finalized.
 
 ### Selected layout
 

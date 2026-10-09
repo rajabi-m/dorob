@@ -22,7 +22,10 @@ export type PublicCourse = {
   providerLevel: string | null;
   durationMinutes: number | null;
   offers: { id: string; status: "free" | "paid" | "subscription" | "unknown";
-    amount: number | null; unit: "toman"; accessDescription: string | null }[] | null;
+    amount: number | null; unit: "toman"; accessDescription: string | null;
+    type: string; label: string | null; originalAmount: number | null;
+    sourcePrice: { amount: number | null; originalAmount: number | null; unit: "toman" | "rial" | "unknown"; label: string | null };
+    billingPeriod: "monthly" | "yearly" | "other" | null; certificateIncluded: boolean | null }[] | null;
   syllabusCoverage: "complete" | "partial" | "unknown";
   warnings: string[];
 };
@@ -55,7 +58,7 @@ export type GroupSnapshot = {
     limitationsFa: string[];
   };
 };
-export type PublicGroup = GroupSnapshot & { slug: string; generatedAt: string; stale: boolean };
+export type PublicGroup = GroupSnapshot & { slug: string; generatedAt: string; stale: boolean; analysisState: "approved" | "partial" | "stale" | "none" };
 
 export const jobSchema = z.strictObject({
   version: z.literal(1),
@@ -63,3 +66,6 @@ export const jobSchema = z.strictObject({
   groupId: z.uuid(),
 });
 export type GroupJob = z.infer<typeof jobSchema>;
+
+export * from "./discovery";
+export * from "./public-validation";

@@ -35,3 +35,5 @@ Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 m
 - [RTL design skill](../.agents/skills/rtl-design/SKILL.md): Persian/RTL rules and static audit workflow.
 
 Frontend fixtures and standalone scraper exports have different contracts. Production scraping and AI assessment documents describe future work; their presence does not activate phase 3.
+
+- [Frontend integration, public API and selected refresh](frontend-integration.md): current data modes, query contracts, review/recovery boundaries and acceptance limits.

@@ -10,7 +10,8 @@ export function toPublicCourse(course: typeof courses.$inferSelect, revision: ty
     sourceUrl: course.sourceUrl, lastSuccessfulCheck: course.lastSuccessfulCheck!.toISOString(),
     availability: facts.availability, providerLevel: facts.providerLevel, durationMinutes: facts.duration.contentMinutes,
     offers: facts.offers?.map(offer => ({ id: offer.id, status: offer.status, amount: offer.amount,
-      unit: offer.unit, accessDescription: offer.accessDescription })) ?? null,
+      unit: offer.unit, accessDescription: offer.accessDescription, type: offer.type, label: offer.label, originalAmount: offer.originalAmount,
+      sourcePrice: offer.sourcePrice, billingPeriod: offer.billingPeriod, certificateIncluded: offer.certificateIncluded })) ?? null,
     syllabusCoverage: facts.syllabusCoverage.status,
     // Operational warnings and evidence paths remain private; render curated labels.
     warnings: [
@@ -21,8 +22,11 @@ export function toPublicCourse(course: typeof courses.$inferSelect, revision: ty
 }
 
 export async function readGroup(db: Database, slug: string, draft = false): Promise<PublicGroup | null> {
+  return db.transaction(tx => readGroupView(tx, slug, draft), { isolationLevel: "repeatable read", accessMode: "read only" });
+}
+export async function readGroupView(tx: import("@dorob/db").Transaction, slug: string, draft = false): Promise<PublicGroup | null> {
   // A consistent view across groups/members/revisions during simultaneous refreshes.
-  return db.transaction(async tx => {
+
     const [group] = await tx.select().from(groups).where(eq(groups.slug, slug));
     if (!group || (!draft && group.state !== "published")) return null;
     const snapshotId = draft ? group.currentSnapshotId : group.publishedSnapshotId;
@@ -35,11 +39,12 @@ export async function readGroup(db: Database, slug: string, draft = false): Prom
       .innerJoin(revisions, eq(revisions.id, courses.currentRevisionId)).where(eq(memberships.groupId, group.id));
     const eligible = current.filter(({ course, approvedRevisionId, approvedDefinitionRevision, revision }) => approvedDefinitionRevision === group.definitionRevision && course.currentRevisionId === approvedRevisionId && revision.facts.availability !== "unavailable");
     if (!draft && eligible.length < 2) return null; // Stable HTTP 404; no comparative recommendation below minimum.
-    const stale = run.input.definitionRevision !== group.definitionRevision || current.length !== run.input.members.length ||
+    const stale = eligible.length !== current.length || run.input.definitionRevision !== group.definitionRevision || current.length !== run.input.members.length ||
       run.input.members.some(member => !current.some(({ course, approvedRevisionId }) => course.id === member.courseId && course.currentRevisionId === member.revisionId && approvedRevisionId === member.revisionId));
     const analysisValid = !snapshot.data.analysis || (!stale && await (await import("./group-ai.ts")).analysisCurrent(tx, snapshot.data.analysis.analysisId, true));
     // Offers and freshness are read from current facts, independent of retained analysis.
     return { ...snapshot.data, analysis: analysisValid ? snapshot.data.analysis : null, slug: group.slug, generatedAt: snapshot.generatedAt.toISOString(), stale: stale || !analysisValid,
-      courses: current.map(({ course, revision }) => toPublicCourse(course, revision)) };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+      analysisState: !analysisValid || stale && snapshot.data.analysis ? "stale" : snapshot.data.analysis ? (snapshot.data.analysis.candidates.some(c => !c.assessment || c.assessment.status !== "assessed") ? "partial" : "approved") : "none",
+      courses: (draft ? current : eligible).sort((a, b) => a.course.id < b.course.id ? -1 : 1).map(({ course, revision }) => toPublicCourse(course, revision)) };
+
 }

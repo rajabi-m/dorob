@@ -19,6 +19,7 @@ const compose = ["docker", "compose", "--progress", "quiet", "-f", "infra/compos
 const network = "dorob-backend-test_default";
 const suffix = `${Date.now()}`;
 const names: string[] = [];
+let frontend: ReturnType<typeof Bun.spawn> | undefined;
 const connection = createDatabase(hostUrl);
 const boss = createQueue({ DATABASE_URL: hostUrl, PGBOSS_SCHEMA: "pgboss" });
 async function run(command: string[]) {
@@ -71,6 +72,16 @@ try {
   const response = await fetch("http://127.0.0.1:55434/v1/groups/container-python");
   const text = await response.text();
   if (!response.ok || text.includes("CONTAINER_PRIVATE_EVIDENCE") || JSON.parse(text).courses.length !== 2) throw new Error("HTTP publication boundary failed");
+  const discovery = await fetch("http://127.0.0.1:55434/v1/groups?q=پایتون&pageSize=1&category=programming&level=unknown");
+  if (!discovery.ok || (await discovery.json()).items[0]?.slug !== "container-python") throw new Error("Public container discovery contract failed");
+  frontend = Bun.spawn(["bun", "--bun", "node_modules/next/dist/bin/next", "dev", "--port", "55436"], {
+    cwd: "apps/web", env: { ...process.env, DOROB_DATA_MODE: "backend", DOROB_BACKEND_URL: "http://127.0.0.1:55434" }, stdout: "inherit", stderr: "inherit",
+  });
+  await waitUntil(async () => (await fetch("http://127.0.0.1:55436/?q=Python&category=programming&level=unknown")).ok, "Next frontend readiness");
+  const homeHtml = await (await fetch("http://127.0.0.1:55436/?q=Python&category=programming&level=unknown")).text();
+  const groupHtml = await (await fetch("http://127.0.0.1:55436/groups/container-python")).text();
+  if (!homeHtml.includes("container-python") || !groupHtml.includes("مقایسه آزمایشی پایتون") || groupHtml.includes("حالت نمونه آفلاین") || groupHtml.includes("CONTAINER_PRIVATE_EVIDENCE")) throw new Error("Frontend to factual backend journey failed");
+  console.log("PASS: actual Next frontend discovers and renders published synthetic backend facts, without fixture fallback");
   // Stop/restart the separate worker after a real durable workflow has completed.
   await run(["docker", "restart", worker]);
   samples[0].title = "نمونه تازه پس از راه‌اندازی مجدد";
@@ -222,6 +233,9 @@ try {
   const aiResponse = await fetch("http://127.0.0.1:55434/v1/groups/container-group-ai"); const aiText = await aiResponse.text();
   const aiData = JSON.parse(aiText);
   if (!aiResponse.ok || aiData.analysis.candidates.length !== 3 || aiData.analysis.ranking !== "disabled" || aiData.analysis.badges.length || aiText.includes("PRIVATE_GROUP_AUTHOR")) throw new Error("Assessment publication DTO boundary failed");
+  const reviewedHtml = await (await fetch("http://127.0.0.1:55436/groups/container-group-ai")).text();
+  if (!reviewedHtml.includes("تحلیل هوش مصنوعی با بازبینی انسانی") || reviewedHtml.includes("PRIVATE_GROUP_AUTHOR") || reviewedHtml.includes("حالت نمونه آفلاین")) throw new Error("Next reviewed assessment rendering failed");
+  console.log("PASS: actual Next frontend renders approved synthetic analysis and source facts");
   const genCalls = await connection.client`select * from fixture_model_calls where kind = 'generative' and finished_at is not null order by started_at`;
   if (new Set(genCalls.map(c => c.worker)).size !== 2) throw new Error("Generative transports did not execute on both hosts");
   for (let i = 1; i < genCalls.length; i++) if (new Date(genCalls[i].started_at) < new Date(genCalls[i - 1].finished_at)) throw new Error("Generative cross-container admission overlap");
@@ -268,10 +282,26 @@ try {
   if (revisions[0].count !== 2) throw new Error("Unchanged container observations duplicated evidence revisions");
   const counts = await connection.client`select count(*)::int as count from courses where provider_id in ('roocket', 'maktabkhooneh')`;
   if (counts[0].count !== 2) throw new Error("Repeated container ingestion duplicated source courses");
+  const [refreshCourse] = await connection.client`select id from courses where provider_id='roocket'`;
+  const refreshInput = JSON.stringify({ requestKey: "container-refresh", mode: "offline", providers: ["roocket"], courseIds: [refreshCourse.id], maxCourses: 1, operator: "synthetic-container-review" });
+  await run(["docker", "exec", api, "bun", "-e", `await Bun.write('/tmp/refresh.json', ${JSON.stringify(refreshInput)})`]);
+  for (let i=0; i<2; i++) await run(["docker", "exec", "--env", "REFRESH_ENABLED=true", api, "bun", "apps/backend/src/cli.ts", "refresh", "/tmp/refresh.json"]);
+  const refreshRows = await connection.client`select collection_ids from refresh_requests where request_key='container-refresh'`;
+  if (refreshRows.length !== 1 || refreshRows[0].collection_ids.length !== 1) throw new Error("Container refresh coalescing failed");
+  const refreshId = refreshRows[0].collection_ids[0];
+  await waitUntil(async () => (await inspectCollection(connection.db, refreshId)).state === "succeeded", "bounded offline refresh in independent worker");
+  const outcome = await inspectCollection(connection.db, refreshId);
+  if (outcome.transportMode !== "offline" || outcome.selections.length !== 1 || outcome.selections[0].attempts !== 1) throw new Error("Container refresh bounds failed");
+  console.log("PASS: opt-in actual API CLI refresh coalesces and hands off bounded offline selection to independent workers");
   console.log("PASS: actual operator CLI and two independent worker containers ingest both adapters offline, preserve partial outcomes, coordinate provider requests and survive restart");
   }
+  await run(["docker", "stop", "--timeout", "35", api]);
+  const unavailableHtml = await (await fetch("http://127.0.0.1:55436/?q=Python")).text();
+  if (!unavailableHtml.includes("ارتباط با سرویس برقرار نشد") || unavailableHtml.includes("حالت نمونه آفلاین")) throw new Error("Unavailable backend silently fell back in Next");
+  console.log("PASS: stopped backend renders an explicit unavailable state in actual Next, with no samples");
   console.log("PASS: separate API/worker images, explicit migrations, durable job, publication, HTTP boundary and worker restart");
 } finally {
+  if (frontend) { frontend.kill("SIGTERM"); await frontend.exited; }
   await boss.stop();
   await connection.close();
   try {
