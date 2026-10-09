@@ -8,6 +8,8 @@ Status: Phase 1 — Design system is complete and accepted by the owner. The app
 
 ## Product vision
 
+Restart checkpoint — October 9, 2026: `backend-restart` begins at frontend completion commit `22931f2`, before the earlier backend handoff and implementation. The previous backend remains on `main` at `a95f83f`; the owner found that its milestone-based implementation did not fit the product and requested a restart. [Lessons from the previous backend](old-backend.md) preserves useful product decisions, evidence rules, reliability patterns and validation limits. The phase 3 roadmap below is historical planning to revisit through small OpenSpec changes; it does not mandate rebuilding the old pipeline. New backend implementation and OpenSpec setup have not started.
+
 Dorob is a Persian course discovery and comparison product for anyone learning a new skill. It gathers courses from Iranian education providers and organizes comparable courses into shared topic and level groups.
 
 The experience takes inspiration from Torob: search for something to learn, browse a relevant group, compare available courses, and visit the provider to enroll. Dorob should have a modern, polished identity of its own.

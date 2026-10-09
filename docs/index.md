@@ -17,6 +17,8 @@ Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 r
 
 ## Data and future integration
 
+- [Previous backend lessons](../old-backend.md): useful product decisions, reusable evidence/reliability patterns, historical code references and limits for the OpenSpec restart.
+
 - [Utility README](../apps/utils/README.md): adapter/export commands, backend imports, and local dashboard setup.
 - [Provider adapters](provider-adapters.md): merged provider selection and all four provider mappings, feedback coverage, and limitations.
 - [Course data format](course-data-format.md): implemented version-2 golden contract and provenance rules.

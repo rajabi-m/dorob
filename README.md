@@ -6,6 +6,8 @@ A Persian-only RTL course discovery and comparison product. Phase 1's design sys
 
 Start with the [documentation hub](docs/index.md), [project plan](Plan.md), and [contributor instructions](AGENTS.md).
 
+`backend-restart` starts from completed frontend commit `22931f2`. The previous backend is preserved on `main` at `a95f83f`; [old-backend.md](old-backend.md) records useful lessons for a fresh OpenSpec-based iteration. This branch preparation adds documentation only; new backend implementation and OpenSpec setup have not started.
+
 ## Current experience
 
 - `/`: snapshot-backed homepage with Persian search, category/free filtering, shared course cards and details, the selected blue hero, and cycling course-group covers.
