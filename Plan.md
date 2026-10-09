@@ -20,7 +20,7 @@ Examples:
 - n8n courses share a topic destination, with level and scope differences visible.
 - Courses from different providers remain distinct offerings; shared topics do not imply identical content.
 
-AI supports course grouping and factual content comparison. Dorob is not a personal learning agent.
+Groups are defined and assigned manually by the editor. Fixed categories are owned by the shared code registry; AI comparison remains independently deferred. Dorob is not a personal learning agent.
 
 ## Confirmed decisions
 
@@ -38,7 +38,8 @@ The Persian project name is «دورُب», combining «دوره» and «ترب�
 | First provider | Maktabkhooneh; additional Iranian providers to be selected |
 | Backend | JavaScript ecosystem, colocated with the frontend and able to share core code |
 | Phase order | Design system → frontend with mock data → backend and integration |
-| AI scope | Grouping and comparison, without a personal agent |
+| Grouping | Editor-defined groups and explicit many-to-many course assignments; fixed six-category registry |
+| AI scope | Factual comparison remains deferred, without a personal agent |
 
 ## Proposed technical defaults
 
@@ -171,7 +172,7 @@ Suggested first filters are provider, free/paid, price, and level. Add others on
 
 ## Phase 3 — Backend, ingestion, AI, and integration
 
-Status: Local bootstrap implemented and all 12 tracked tasks verified through `introduce-backend-project`. `apps/api` supplies the Persian hello-world, process liveness, bounded real database readiness, locally served Swagger, validated environment configuration, and bounded shutdown. Root Compose supplies persistent loopback-only PostgreSQL; native Bun SQL uses a five-connection pool and server-side query timeout. No product schema, ORM, ingestion pipeline, AI, frontend integration, or deployment is included. Check results and any unfinished verification are recorded in [validation](docs/validation.md).
+Status: Local bootstrap implemented and all 12 tracked tasks verified through `introduce-backend-project`. `apps/api` supplies the Persian hello-world, process liveness, bounded real database readiness, locally served Swagger, validated environment configuration, and bounded shutdown. Root Compose supplies persistent loopback-only PostgreSQL; native Bun SQL uses a five-connection pool and server-side query timeout. The `add-curated-course-groups` change adds fixed shared categories, explicit SQL migrations, minimal provider-course references, and editorial management/public group APIs. Public eligibility requires publication and at least two members. No ORM, ingestion pipeline, AI, frontend API integration, or deployment is included. Check results and any unfinished verification are recorded in [validation](docs/validation.md).
 
 ### Objective
 
@@ -194,16 +195,16 @@ Replace mock data with traceable provider data and connect the existing frontend
 - Add bounded request rates, retries, failure reporting, and a configurable refresh schedule.
 - Retain source and collection timestamps so stale information can be identified in the UI.
 
-### Step 3: Grouping and AI comparison
+### Step 3: Manual grouping and independently deferred AI comparison
 
-- Define a topic and level taxonomy, including groups such as beginner Python.
-- Combine deterministic normalization with AI-assisted grouping based on available course content.
+- Use the six fixed code-owned categories and editor-defined topic groups with optional target levels, including beginner Python.
+- Register minimal course references and assign them explicitly to editor-defined groups; no automated placement or AI grouping.
 - Keep topic membership distinct from an equivalence claim: two Python courses may cover different levels or outcomes.
 - Generate structured comparisons grounded in collected syllabi and metadata.
 - Keep prices and other factual fields tied to source data rather than AI guesses.
-- Track model/prompt versions and source inputs so comparisons can be refreshed and audited.
-- Route uncertain group assignments for review and support manual corrections.
-- Evaluate grouping and comparison quality against a small human-reviewed set before expanding coverage.
+- If AI comparison is later selected, track model/prompt versions and source inputs so comparisons can be refreshed and audited.
+- Preserve editorial control over group scope, membership, and publication.
+- Review manually curated groups; evaluate any future comparison work independently before expanding coverage.
 
 ### Step 4: API and frontend integration
 
@@ -225,7 +226,7 @@ Replace mock data with traceable provider data and connect the existing frontend
 
 - Live course information from at least two providers is searchable and comparable through the frontend.
 - Free and paid courses are represented correctly, including explicit missing-data states.
-- Course grouping and AI comparisons pass review on a representative evaluation set.
+- Editorial groups pass owner review; any separately selected AI comparisons pass evaluation on a representative set.
 - Source attribution, refresh jobs, error reporting, and correction paths work.
 - The agreed discovery-to-provider journey passes end-to-end validation.
 
@@ -245,6 +246,7 @@ Replace mock data with traceable provider data and connect the existing frontend
 
 ## Next steps and remaining work
 
+- The completed `add-curated-course-groups` change is [archived](openspec/changes/archive/2026-10-10-add-curated-course-groups/), with its category and curation contracts synced to main specs. Manual catalog curation is available locally; frontend integration remains a separate next step.
 - Build on the archived local API foundation by agreeing product contracts, hosting, refresh operations, and AI evaluation through further small changes. No production backend, scheduled scraping, or live AI is active.
 - Retain the four standalone version-2 adapters and local read-only data dashboard as owner-authorized groundwork outside the normal phase order. Frontend fixtures remain separate from current scraper exports.
 - Resolve the production build runtime blocker and finish screen-reader, keyboard, and mobile review. Previously reviewed layouts/interactions are recorded in the frontend documentation and history.

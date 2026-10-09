@@ -173,3 +173,7 @@ Production assessment, evidence-backed badge validation, comparative ranking, an
 Frontend lint/type checking and the route RTL detector pass. Workspace lint passes; workspace type checking encounters separate in-progress utility schema/adapter mismatches in Roocket and Sabzlearn, outside this page change. Production compilation and the build TypeScript step pass; page-data collection still fails with the documented Bun CommonJS function-wrapper error.
 
 Firefox desktop review confirmed real covers, the selected layout, and gallery selection; 320px hero/gallery layout was inspected. Further mobile card/focus inspection was interrupted when the browser window became unavailable. Native gallery button semantics and global focus styling are present, but full keyboard and screen-reader review remain pending. No commit was requested at that historical checkpoint.
+
+## Fixed category ownership
+
+`packages/core/src/index.ts` owns the ordered category IDs and Persian labels. Changing categories requires a code change; the API does not provide category administration. `discovery-showcase.tsx` retains a `Record<CategoryId, CategoryPresentation>` for icons, descriptions, and SVG artwork. Artwork lookup uses IDs, never translated labels (`tools` retains the `workflow` artwork). The frontend consumes the shared registry locally and continues to filter saved snapshots; it does not call the categories or catalog API.

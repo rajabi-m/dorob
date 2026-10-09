@@ -43,3 +43,16 @@ test("OpenAPI describes all operations and Swagger uses local assets", async () 
     expect((await response.text()).length).toBeGreaterThan(1000);
   }
 });
+
+test("categories retain exact order and labels during a database outage", async () => {
+  const app = createApp({ ready: async () => { throw new Error("offline"); }, close: async () => {} });
+  const response = await app.handle(new Request("http://localhost/api/v1/categories"));
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ items: [
+    { id: "code", label: "برنامه‌نویسی" }, { id: "design", label: "طراحی" },
+    { id: "data", label: "داده و هوش مصنوعی" }, { id: "business", label: "کسب‌وکار" },
+    { id: "language", label: "زبان‌های خارجی" }, { id: "tools", label: "ابزار و بهره‌وری" },
+  ] });
+  const spec = await (await app.handle(new Request("http://localhost/docs/json"))).json();
+  expect(spec.paths["/api/v1/categories"].get.responses["200"].content["application/json"].schema).toBeDefined();
+});

@@ -28,6 +28,32 @@ After the owner repaired Chrome control, interactive Swagger execution was verif
 
 Archive/commit verification on October 9 reran root lint/typecheck, 72 utility tests, six offline API tests, the API build, and strict main-spec validation successfully. All 12 API integration tests passed with local network access after sandbox restrictions prevented loopback listeners and database access. The web build again compiled and type-checked successfully, then reproduced the known Bun CommonJS failure during page-data collection for `/`. No new browser review or database restart/persistence check was performed during archiving.
 
+## Curated catalog — October 9–10, 2026
+
+Shared-category extraction passed root type checking and the RTL detector (zero errors/warnings in the edited showcase). Chrome desktop review confirmed the six ordered Persian labels and retained SVG artwork/descriptions. Code, data, tools, and language selection returned 13, 2, 3, and 0 snapshot courses respectively; selection focused the results heading and Shift+Tab showed a visible focus outline. Mixed Persian/Latin course titles (HTML, CSS, JavaScript, Agentic AI, n8n) remained readable. Chrome iPhone SE emulation at 375×667 showed all six cards in two columns with wrapping labels, preserved artwork, and the selected language empty state. This is a focused category regression check, not a full accessibility audit.
+
+The `add-curated-course-groups` implementation adds a dependency-free core registry/contracts, explicit native Bun SQL migrations, manual group/reference persistence, local management APIs, and eligible public reads. Frontend fixtures and `/groups/[id]` remain independent.
+
+| Check | Result |
+| --- | --- |
+| Root `bun run lint` / `bun run typecheck` | Pass across web, utilities, and API. Both apps import the shared core package. |
+| `bun run test:api` | Pass: 12 offline tests, 11 explicit integration skips. Includes bounds, input/JSON validation, unknown PATCH rejection, ordering, encoded membership IDs, 404/409/422/503, minimal public references, category outage behavior, and OpenAPI schemas. |
+| `API_INTEGRATION=1 bun run test:api` | Pass: all 23 tests, 263 assertions. Includes unchanged database/readiness and SIGINT/SIGTERM contracts. |
+| Migrations | Initial execution, rerun retaining data, concurrent serialized runners, checksum drift rejection, and failed-DDL rollback pass against isolated PostgreSQL schemas. Root `db:migrate` also passes against the persistent development database, without seeding or startup migration. |
+| SQL/repository | All six category IDs accepted; invalid categories/levels, duplicate slugs/provider identities/memberships, and dangling links rejected. Stable course upserts, group edits, multiple memberships, eight concurrent assignments, repeated removals, conflict/write rollback, counts, stable pages, and publication transitions pass. |
+| Chrome Swagger | All new operations exercised at loopback port 3011: categories, two synthetic registrations, course/group lists, draft creation, group detail with one-item page/total two, PATCH/publication, both assignment/removal methods, public listing/detail, and two-to-one-to-two visibility (200→404→200). Responses use the current origin. |
+| Persistent restart/outage | Synthetic group/course identities, assignments, flag, and public details matched exactly after migration rerun and normal API/database restart. During outage, catalog and readiness returned safe 503s; hello/live/categories/docs JSON stayed 200. Built API startup succeeded. |
+| API production build | Pass. Native SQL ownership remains one shared five-connection pool, closed by existing shutdown. |
+| Web production build | Compilation and TypeScript pass; known Bun 1.3.8 CommonJS wrapper failure recurs during page-data collection for `/`. No runtime/dependency upgrade made. |
+| Lockfile / scope | Offline installation and frozen-lockfile verification pass. Lockfile changes only add the core workspace and its links; pinned dependency versions retained. No AI/ingestion/admin UI, frontend API consumption, generated outputs, or local environment files included. |
+| OpenSpec / whitespace | Strict change validation and `git diff --check` pass. |
+
+Two implementation compatibility issues were reproduced and resolved: Bun 1.3.8 transaction callbacks leaked failed-query rejections, so catalog writes/reads and migration execution use explicit transactions on reserved sessions; rollback is verified. `@elysia/openapi` 1.4.16 emitted invalid 204 `content: { type: "void" }`, breaking Swagger response rendering; the docs JSON hook removes content from 204 responses, with offline and Chrome regression checks. Malformed JSON now returns a safe 422. No dependency upgrades were needed.
+
+Validation removed only its uniquely named Swagger group/two references and isolated schemas, including two abandoned constraint-test schemas verified to contain only the exact test fixtures. The catalog tables and migration ledger remain, and PostgreSQL's named volume was retained. Built API runs locally on `127.0.0.1:3011` for review; the documented default remains 3001. Management remains unauthenticated local development only. Full provider facts, authentication, frontend integration, ingestion, ranking, AI comparison, and production deployment remain deferred; see [catalog workflow](catalog.md).
+
+Commit verification on October 10 reran root lint/typecheck, all 23 API tests with real PostgreSQL (263 assertions), 72 utility tests, the API build, and strict validation of all four main specs successfully. The archived change has all 18 tasks complete, and both new main specs match their deltas with Purpose and scenarios preserved. The web build compiled and type-checked, then reproduced the known Bun CommonJS wrapper failure during page-data collection for `/design-system`. Docker socket inspection was unavailable inside the sandbox; integration tests passed with local access. This commit pass did not repeat the earlier browser review or normal database restart check.
+
 ## Frontend milestone — October 4, 2026
 
 Phase 2 is complete for now by owner decision; this does not imply production readiness. The following records preserve that milestone's checks.

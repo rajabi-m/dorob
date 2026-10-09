@@ -4,14 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { CourseArtwork } from "./course-artwork";
 import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronLeft, Clock, Code2, Database, Globe, Info, Layers, Palette, Play, Search, SlidersHorizontal, Sparkles, TrendingUp, Workflow, X, type LucideIcon } from "lucide-react";
 
-export const categories: { id: string; name: string; description: string; icon: LucideIcon; artwork: "code" | "design" | "data" | "business" | "language" | "workflow" }[] = [
-  { id: "code", name: "برنامه‌نویسی", description: "از اولین خط کد تا ساخت محصول", icon: Code2, artwork: "code" },
-  { id: "design", name: "طراحی", description: "رابط، تجربه‌ی کاربر و تصویر", icon: Palette, artwork: "design" },
-  { id: "data", name: "داده و هوش مصنوعی", description: "تحلیل داده و یادگیری ماشین", icon: Database, artwork: "data" },
-  { id: "business", name: "کسب‌وکار", description: "بازاریابی و رشد کسب‌وکار", icon: TrendingUp, artwork: "business" },
-  { id: "language", name: "زبان‌های خارجی", description: "مکالمه، نوشتن و ارتباط", icon: Globe, artwork: "language" },
-  { id: "tools", name: "ابزار و بهره‌وری", description: "اتوماسیون و مدیریت کارها", icon: Workflow, artwork: "workflow" },
-];
+import { categoryRegistry, type CategoryId } from "@dorob/core";
+
+type CategoryPresentation = { description: string; icon: LucideIcon; artwork: "code" | "design" | "data" | "business" | "language" | "workflow" };
+const categoryPresentation: Record<CategoryId, CategoryPresentation> = {
+  code: { description: "از اولین خط کد تا ساخت محصول", icon: Code2, artwork: "code" },
+  design: { description: "رابط، تجربه‌ی کاربر و تصویر", icon: Palette, artwork: "design" },
+  data: { description: "تحلیل داده و یادگیری ماشین", icon: Database, artwork: "data" },
+  business: { description: "بازاریابی و رشد کسب‌وکار", icon: TrendingUp, artwork: "business" },
+  language: { description: "مکالمه، نوشتن و ارتباط", icon: Globe, artwork: "language" },
+  tools: { description: "اتوماسیون و مدیریت کارها", icon: Workflow, artwork: "workflow" },
+};
+export const categories = categoryRegistry.map(({ id, label }) => ({ id, name: label, ...categoryPresentation[id] }));
 export type Course = { id: string; title: string; category: string; level: string; hours: number; provider: string; price: number | null; before?: number; description: string; lessons: string[] };
 export const courses: Course[] = [
   { id: "python", title: "آموزش پایتون؛ از مبانی تا اولین پروژه", category: "code", level: "مقدماتی", hours: 24, provider: "آموزشگاه نمونه الف", price: 890000, before: 1200000, description: "آشنایی با متغیرها، حلقه‌ها و توابع با تمرین‌های کوتاه و ساخت یک پروژه‌ی ساده.", lessons: ["مبانی زبان و کار با داده‌ها", "حلقه‌ها و توابع", "ساخت پروژه‌ی نمونه"] },

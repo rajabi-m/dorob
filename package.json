@@ -27,6 +27,7 @@
     "scrape:sabzlearn": "bun run apps/utils/scrape-sabzlearn.ts",
     "scrape:roocket": "bun run apps/utils/scrape-roocket.ts",
     "dashboard:aggregate": "bun run apps/utils/aggregate-courses.ts",
-    "dashboard:data": "bun run apps/utils/data-dashboard.ts"
+    "dashboard:data": "bun run apps/utils/data-dashboard.ts",
+    "db:migrate": "bun run --cwd apps/api migrate"
   }
 }

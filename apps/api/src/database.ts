@@ -3,6 +3,7 @@ import { SQL } from "bun";
 export const READINESS_TIMEOUT_MS = 4500;
 
 export interface Database {
+  readonly sql?: SQL;
   ready(): Promise<boolean>;
   close(): Promise<void>;
 }
@@ -36,6 +37,7 @@ export async function checkQuery(query: ReturnType<SQL["unsafe"]>): Promise<bool
 export function createDatabase(url: string): Database {
   const sql = createPool(url);
   return {
+    sql,
     async ready() {
       return checkQuery(sql`SELECT 1`);
     },
