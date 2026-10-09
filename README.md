@@ -6,7 +6,13 @@ A Persian-only RTL course discovery and comparison product. Phase 1's design sys
 
 Start with the [documentation hub](docs/index.md), [project plan](Plan.md), and [contributor instructions](AGENTS.md).
 
-`backend-restart` starts from completed frontend commit `22931f2`. The previous backend is preserved on `main` at `a95f83f`; [old-backend.md](old-backend.md) records useful lessons for a fresh OpenSpec-based iteration. This branch preparation adds documentation only; new backend implementation and OpenSpec setup have not started.
+`backend-restart` starts from completed frontend commit `22931f2`. The previous backend is preserved on `main` at `a95f83f`; [old-backend.md](old-backend.md) records useful lessons for a fresh OpenSpec-based iteration. OpenSpec is initialized for Codex; new backend implementation has not started.
+
+## OpenSpec workflow
+
+OpenSpec CLI 1.14.1 was installed globally with npm on October 9, 2026 (requires Node.js 20.19.0 or higher). Project configuration is in `openspec/config.yaml`, using the `spec-driven` schema; generated Codex skills live in `.agents/skills/openspec-*/`. No changes or specs have been authored yet.
+
+In Codex CLI or IDE, invoke `$openspec-propose "your idea"`. In the Codex desktop app, select `openspec-propose` from Skills in the sidebar; reload the project if newly installed skills are not visible. Review the proposal, design, specs, and tasks before requesting implementation with `$openspec-apply-change`. Keep each change small and grounded in `Plan.md` and `old-backend.md`.
 
 ## Current experience
 
