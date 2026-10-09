@@ -2,15 +2,15 @@
 
 نام فارسی پروژه «دورُب» است؛ ترکیبی از نام‌های «دوره» و «ترب».
 
-A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 architecture and production integration remain pending.
+A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 has begun with an independent local API/PostgreSQL bootstrap; product data and production integration remain pending.
 
 Start with the [documentation hub](docs/index.md), [project plan](Plan.md), and [contributor instructions](AGENTS.md).
 
-`backend-restart` starts from completed frontend commit `22931f2`. The previous backend is preserved on `main` at `a95f83f`; [old-backend.md](old-backend.md) records useful lessons for a fresh OpenSpec-based iteration. OpenSpec is initialized for Codex; new backend implementation has not started.
+`backend-restart` starts from completed frontend commit `22931f2`. The previous backend is preserved on `main` at `a95f83f`; [old-backend.md](old-backend.md) records useful lessons for a fresh OpenSpec-based iteration. OpenSpec is initialized for Codex; `introduce-backend-project` implements the fresh local API foundation.
 
 ## OpenSpec workflow
 
-OpenSpec CLI 1.14.1 was installed globally with npm on October 9, 2026 (requires Node.js 20.19.0 or higher). Project configuration is in `openspec/config.yaml`, using the `spec-driven` schema; generated Codex skills live in `.agents/skills/openspec-*/`. No changes or specs have been authored yet.
+OpenSpec CLI 1.14.1 was installed globally with npm on October 9, 2026 (requires Node.js 20.19.0 or higher). Project configuration is in `openspec/config.yaml`, using the `spec-driven` schema; generated Codex skills live in `.agents/skills/openspec-*/`. The completed `introduce-backend-project` change is archived at [2026-10-09-introduce-backend-project](openspec/changes/archive/2026-10-09-introduce-backend-project/). Its verified behavior contracts are synced to [backend-service](openspec/specs/backend-service/spec.md) and [database-connectivity](openspec/specs/database-connectivity/spec.md).
 
 In Codex CLI or IDE, invoke `$openspec-propose "your idea"`. In the Codex desktop app, select `openspec-propose` from Skills in the sidebar; reload the project if newly installed skills are not visible. Review the proposal, design, specs, and tasks before requesting implementation with `$openspec-apply-change`. Keep each change small and grounded in `Plan.md` and `old-backend.md`.
 
@@ -43,7 +43,68 @@ bun run start
 
 Run `build` successfully before `start`. Lint, type checking, and 72 utility tests pass. Production compilation/types pass, but page-data collection fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`. The experimental Turbopack worker-thread configuration resolves the earlier worker-port failure. The local Homebrew Node executable was previously unable to start because `libllhttp.9.3.dylib` was missing. See [current validation and limitations](docs/validation.md).
 
-No environment variables, database, API keys, or remote fonts are needed. Vazirmatn is bundled locally; its license is included in the installed font package.
+The frontend needs no environment variables, database, API keys, or remote fonts. Vazirmatn is bundled locally; its license is included in the installed font package.
+
+## Backend development
+
+The independent `apps/api` workspace uses Bun 1.3.8 and TypeScript. Root `dev`, `build`, and `start` still run the web app. API commands run with `apps/api` as the working directory; Bun loads `apps/api/.env` automatically for development and built-output startup.
+
+```sh
+bun run db:up
+cp apps/api/.env.example apps/api/.env
+bun run dev:api
+```
+
+`DATABASE_URL` is required and must contain a PostgreSQL host, username, password, and database. `HOST` defaults to `127.0.0.1`; `PORT` defaults to `3001` and accepts integers from 1 to 65535. Invalid configuration exits before listening with a credential-safe diagnostic. Example credentials are for local development only; actual `.env` files are ignored.
+
+```sh
+bun run lint:api
+bun run typecheck:api
+bun run test:api
+bun run build:api
+bun run start:api
+```
+
+Root lint and typecheck also include the API. Build the API before `start:api`; output is ignored under `apps/api/dist`.
+
+Install and start Docker Desktop (or another Docker engine with Compose v2) before `db:up`. Compose runs only PostgreSQL `17.11-alpine3.23`, binds to `127.0.0.1:5432`, waits for `pg_isready`, and stores data in the `postgres_data` named volume. The example uses database/user `dorob` and development password `dorob_dev`. API startup does not require a reachable database.
+
+If port 5432 is occupied, use `POSTGRES_PORT=5433 bun run db:up` and change the port in `apps/api/.env`'s `DATABASE_URL` to 5433. Compose reads `POSTGRES_PORT` from the shell or root `.env`; it does not read the API `.env`. Keep that override on later Compose commands. Change API `PORT` independently if 3001 is occupied.
+
+Normal shutdown preserves data:
+
+```sh
+# Stop API with Ctrl+C, then:
+bun run db:down
+bun run db:up
+```
+
+**Destructive reset — deletes all local database data:** `docker compose down --volumes`. This is separate from normal shutdown and validation; only run it when you intend to discard the development database.
+
+Open [Swagger UI](http://127.0.0.1:3001/docs), expand the greeting, select **Try it out**, then **Execute**. JavaScript/CSS are served by the API, with no CDN requirement. OpenAPI JSON is at `/docs/json`; requests target the current API origin.
+
+```sh
+curl http://127.0.0.1:3001/api/v1/hello
+# 200: {"message":"سلام دنیا"}
+curl http://127.0.0.1:3001/health/live
+# 200: {"status":"ok"}
+curl -i http://127.0.0.1:3001/health/ready
+# 200: {"status":"ok","database":"up"}
+# During a database outage: 503: {"status":"unavailable","database":"down"}
+```
+
+Readiness runs `SELECT 1` for every request, with at most five pooled connections, a two-second connection timeout, a four-second PostgreSQL statement timeout, and cancellation at 4.5 seconds. The overall check stays within five seconds plus normal response overhead. Greeting, liveness, and docs remain usable during outages; readiness recovers when PostgreSQL returns. No credentials or internal database errors are returned or logged.
+
+SIGINT/SIGTERM stop the listener and close the pool; cleanup waits up to five seconds for SQL and has a ten-second forced-exit bound. To run real database and process tests (PostgreSQL must be healthy):
+
+```sh
+API_INTEGRATION=1 bun run test:api
+```
+
+Default API tests run offline; database/signal tests are explicitly skipped unless enabled. To smoke-test recovery without restarting the API, run `bun run db:down`, confirm readiness 503 and greeting/liveness 200, then `bun run db:up` and confirm readiness 200. Repeat endpoint checks after `build:api` / `start:api`. Actual validation, temporary-record persistence results, and remaining limitations are in [validation](docs/validation.md).
+
+This bootstrap has no product tables, ORM/migrations, frontend integration, scraper/AI jobs, accounts, or cloud deployment. Frontend data remains saved fixtures.
+
 
 ## Standalone data utilities
 
@@ -71,13 +132,14 @@ Aggregation expects `apps/utils/output/dashboard-<provider>.json` files by defau
 
 ```text
 apps/web/       Next.js frontend, component showcase, browser-safe snapshots
+apps/api/       Independent Bun/Elysia API, health endpoints, local Swagger
 apps/utils/     Standalone TypeScript adapters, export CLI, local data dashboard
 docs/index.md   Documentation hub
 Plan.md         Current decisions, phase status, and remaining scope
 AGENTS.md       Contributor instructions and commit policy
 ```
 
-The frontend uses Next.js, React, TypeScript, Tailwind CSS, and Lucide icons. Shared tokens live in `apps/web/src/app/globals.css`; components use shared styles and CSS modules. Future API, worker, UI, and core packages will be introduced when needed. Keep scraper/server code and secrets out of browser-safe contracts.
+The frontend uses Next.js, React, TypeScript, Tailwind CSS, and Lucide icons. Shared tokens live in `apps/web/src/app/globals.css`; components use shared styles and CSS modules. Worker, UI, and core packages will be introduced when needed. Keep scraper/server code and secrets out of browser-safe contracts.
 
 ## Contributing
 

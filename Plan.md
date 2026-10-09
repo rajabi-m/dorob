@@ -4,11 +4,11 @@ Created: September 30, 2026
 
 Current checks and build limitations are maintained in [validation](docs/validation.md).
 
-Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 has not started.
+Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 has begun with the owner-selected local backend foundation; product integration remains deferred.
 
 ## Product vision
 
-Restart checkpoint — October 9, 2026: `backend-restart` begins at frontend completion commit `22931f2`, before the earlier backend handoff and implementation. The previous backend remains on `main` at `a95f83f`; the owner found that its milestone-based implementation did not fit the product and requested a restart. [Lessons from the previous backend](old-backend.md) preserves useful product decisions, evidence rules, reliability patterns and validation limits. The phase 3 roadmap below is historical planning to revisit through small OpenSpec changes; it does not mandate rebuilding the old pipeline. OpenSpec CLI 1.14.1 is installed globally and initialized at the repository root for Codex, with the `spec-driven` schema and project-local skills. No OpenSpec changes or specs have been authored, and new backend implementation has not started. See [OpenSpec workflow](README.md#openspec-workflow) for invocation.
+Restart checkpoint — October 9, 2026: `backend-restart` begins at frontend completion commit `22931f2`, before the earlier backend handoff and implementation. The previous backend remains on `main` at `a95f83f`; the owner found that its milestone-based implementation did not fit the product and requested a restart. [Lessons from the previous backend](old-backend.md) preserves useful product decisions, evidence rules, reliability patterns and validation limits. The phase 3 roadmap below is historical planning to revisit through small OpenSpec changes; it does not mandate rebuilding the old pipeline. OpenSpec CLI 1.14.1 is installed globally and initialized at the repository root for Codex, with the `spec-driven` schema and project-local skills. The `introduce-backend-project` OpenSpec change introduces an independent Bun 1.3.8 / TypeScript / Elysia API and local PostgreSQL foundation; all 12 tasks are complete, its behavior contracts are synced to main specs, and the change is archived under `openspec/changes/archive/2026-10-09-introduce-backend-project/`. See [OpenSpec workflow](README.md#openspec-workflow) for invocation.
 
 Dorob is a Persian course discovery and comparison product for anyone learning a new skill. It gathers courses from Iranian education providers and organizes comparable courses into shared topic and level groups.
 
@@ -46,10 +46,10 @@ These defaults make the implementation plan concrete. They are proposals, not ad
 
 - Use TypeScript across frontend, backend, and shared packages. It runs in the JavaScript ecosystem and supports shared typed contracts.
 - Use Next.js App Router for the web application and Tailwind CSS for styling, with semantic CSS custom properties as the source of design tokens.
-- Use a Bun workspace so the web app, future Node.js API, ingestion worker, and shared packages live in one repository. Bun replaces the originally proposed pnpm default for the initial implementation because it is available locally and the machine's Homebrew Node binary cannot start. The backend remains in the JavaScript/TypeScript ecosystem; its runtime decision is deferred to phase 3.
+- Use a Bun workspace so the web app, Bun API, ingestion worker, and shared packages live in one repository. Bun replaces the originally proposed pnpm default for the initial implementation because it is available locally and the machine's Homebrew Node binary cannot start. The backend remains in the JavaScript/TypeScript ecosystem; the bootstrap uses Bun 1.3.8.
 - Build the design-system showcase at `/design-system` in the web app. A separate Storybook setup is not required initially.
 - Keep reusable UI in `packages/ui` and public domain types and validation schemas in `packages/core`.
-- Select the Node.js API framework, database, background-job tools, and AI provider during phase 3 planning. PostgreSQL is a candidate, not a committed dependency.
+- The bootstrap selects Elysia and native Bun SQL with PostgreSQL 17. Background-job tools, hosting, and AI provider remain undecided.
 - Start with a light theme. Use semantic tokens so another theme can be added later without redesigning components.
 
 Proposed eventual structure:
@@ -57,7 +57,7 @@ Proposed eventual structure:
 ```text
 apps/
   web/                 Next.js frontend and component showcase
-  api/                 Node.js backend, introduced in phase 3
+  api/                 Bun/Elysia backend, introduced in phase 3
   worker/              Provider ingestion and AI jobs, introduced in phase 3
 packages/
   ui/                  Design tokens and reusable components
@@ -171,6 +171,8 @@ Suggested first filters are provider, free/paid, price, and level. Add others on
 
 ## Phase 3 — Backend, ingestion, AI, and integration
 
+Status: Local bootstrap implemented and all 12 tracked tasks verified through `introduce-backend-project`. `apps/api` supplies the Persian hello-world, process liveness, bounded real database readiness, locally served Swagger, validated environment configuration, and bounded shutdown. Root Compose supplies persistent loopback-only PostgreSQL; native Bun SQL uses a five-connection pool and server-side query timeout. No product schema, ORM, ingestion pipeline, AI, frontend integration, or deployment is included. Check results and any unfinished verification are recorded in [validation](docs/validation.md).
+
 ### Objective
 
 Replace mock data with traceable provider data and connect the existing frontend to a JavaScript/TypeScript backend.
@@ -243,7 +245,7 @@ Replace mock data with traceable provider data and connect the existing frontend
 
 ## Next steps and remaining work
 
-- Agree phase 3 architecture, database, hosting, refresh operations, and AI evaluation before implementation. No production backend, scheduled scraping, or live AI is active.
+- Build on the archived local API foundation by agreeing product contracts, hosting, refresh operations, and AI evaluation through further small changes. No production backend, scheduled scraping, or live AI is active.
 - Retain the four standalone version-2 adapters and local read-only data dashboard as owner-authorized groundwork outside the normal phase order. Frontend fixtures remain separate from current scraper exports.
 - Resolve the production build runtime blocker and finish screen-reader, keyboard, and mobile review. Previously reviewed layouts/interactions are recorded in the frontend documentation and history.
 - Reconcile the homepage's three-course beginner Python group with the eight-course broad Python prototype, extract its page-local components when scope is agreed, and decide whether dedicated results/detail/comparison routes are needed.

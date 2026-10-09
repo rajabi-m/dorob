@@ -1,6 +1,6 @@
 # Dorob documentation
 
-Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 remains pending. This hub links every maintained project document; dated history is separate from current status.
+Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 begins with the independent local API/PostgreSQL bootstrap; product integration remains pending. This hub links every maintained project document; dated history is separate from current status.
 
 ## Start here
 
@@ -8,6 +8,10 @@ Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 r
 - [Project plan](../Plan.md): phase status, confirmed decisions, roadmap, and follow-ups.
 - [Contributor instructions](../AGENTS.md): scope, commit policy, and required validation.
 - [Validation and limitations](validation.md): current checks, build blocker, and review coverage.
+- [Backend setup](../README.md#backend-development): API, PostgreSQL, local Swagger, configuration, and lifecycle commands.
+
+- [Backend foundation archive](../openspec/changes/archive/2026-10-09-introduce-backend-project/): completed proposal, design, delta specs, and 12 tasks.
+- Main backend contracts: [HTTP service](../openspec/specs/backend-service/spec.md) and [database connectivity](../openspec/specs/database-connectivity/spec.md).
 
 ## Frontend and design
 
