@@ -3,9 +3,17 @@ import { Elysia, t } from "elysia";
 import { openapi } from "@elysia/openapi";
 import { createCatalogRepository, type CatalogRepository } from "./catalog";
 import { catalogRoutes } from "./catalog-routes";
+import { createIngestionRepository, type IngestionRepository } from "./ingestion";
+import { ingestionRoutes } from "./ingestion-routes";
+import { createAssetStore, loadStorageConfig } from "./asset-store";
+import { createRasterProcessor } from "./raster";
+import { createImageDownloader } from "./image-download";
+import { createThumbnailService, type ThumbnailService } from "./thumbnails";
 import type { Database } from "./database";
 
-export function createApp(database: Database, catalog?: CatalogRepository) {
+export function createApp(database: Database, catalog?: CatalogRepository, dependencies: { ingestion?: IngestionRepository; thumbnails?: ThumbnailService } = {}) {
+  const ingestion = dependencies.ingestion ?? (database.sql ? createIngestionRepository(database.sql) : undefined);
+  const thumbnails = dependencies.thumbnails ?? (database.sql && ingestion ? createThumbnailService(ingestion, createAssetStore(loadStorageConfig(process.env)), createRasterProcessor(), createImageDownloader()) : undefined);
   const swaggerPath = import.meta.resolve("swagger-ui-dist/package.json");
   const assetDirectory = new URL(".", swaggerPath);
   return new Elysia({ normalize: false })
@@ -26,6 +34,9 @@ export function createApp(database: Database, catalog?: CatalogRepository) {
       swagger: { cdn: "/docs/assets/swagger-ui-bundle.js", theme: "/docs/assets/swagger-ui.css", validatorUrl: "" },
     }))
     .use(catalogRoutes(catalog ?? (database.sql ? createCatalogRepository(database.sql) : undefined)))
+    .use(ingestionRoutes(ingestion, thumbnails))
+    .onStart(async () => { if (thumbnails) { try { await thumbnails.initialize(); } catch { /* Outage remains inspectable through safe API errors; startup does not require DB. */ } } })
+    .onStop(async () => { await thumbnails?.close(); })
     .get("/docs/assets/swagger-ui-bundle.js", () => Bun.file(new URL("swagger-ui-bundle.js", assetDirectory)), { detail: { hide: true } })
     .get("/docs/assets/swagger-ui.css", () => Bun.file(new URL("swagger-ui.css", assetDirectory)), { detail: { hide: true } })
     .get("/api/v1/categories", () => ({ items: [...categoryRegistry] }), {

@@ -4,7 +4,7 @@ import type { Database } from "./database";
 
 export function startServer(config: Config, database: Database) {
   const app = createApp(database);
-  app.listen({ hostname: config.host, port: config.port });
+  app.listen({ hostname: config.host, port: config.port, maxRequestBodySize: 11 * 1024 * 1024 });
   console.log(`Dorob API listening on ${config.host}:${config.port}`);
 
   let stopping = false;

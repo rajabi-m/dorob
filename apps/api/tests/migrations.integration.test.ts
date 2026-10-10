@@ -15,14 +15,25 @@ describe.skipIf(process.env.API_INTEGRATION !== "1")("catalog migrations", () =>
     await isolatedDatabase(async sql => {
       const migrations = await readMigrations();
       await Promise.all([migrate(sql, migrations), migrate(sql, migrations)]);
-      expect((await sql`SELECT count(*)::int AS n FROM schema_migrations`)[0].n).toBe(1);
+      expect((await sql`SELECT count(*)::int AS n FROM schema_migrations`)[0].n).toBe(migrations.length);
       await sql`INSERT INTO courses(id,provider_id,provider_course_id,title,source_url) VALUES ('test:1','test','1','نمونه','https://example.com/1')`;
       await migrate(sql, migrations);
       expect((await sql`SELECT id FROM courses`)[0].id).toBe("test:1");
-      await expect(migrate(sql, [{ ...migrations[0], source: migrations[0].source + "\n-- drift" }])).rejects.toThrow("checksum");
-      await rejected(migrate(sql, [...migrations, { version: "002_failure.sql", source: "CREATE TABLE failed_write(id int); SELECT 1/0;" }]));
+      await expect(migrate(sql, [...migrations.map((item, index) => index === 0 ? { ...item, source: item.source + "\n-- drift" } : item)])).rejects.toThrow("checksum");
+      await rejected(migrate(sql, [...migrations, { version: "999_failure.sql", source: "CREATE TABLE failed_write(id int); SELECT 1/0;" }]));
       expect((await sql`SELECT to_regclass('failed_write') AS name`)[0].name).toBeNull();
-      expect((await sql`SELECT count(*)::int AS n FROM schema_migrations`)[0].n).toBe(1);
+      expect((await sql`SELECT count(*)::int AS n FROM schema_migrations`)[0].n).toBe(migrations.length);
+    });
+  });
+  test("additive migration preserves existing references and memberships", async () => {
+    await isolatedDatabase(async sql => {
+      const migrations = await readMigrations(); await migrate(sql, migrations.slice(0, 1));
+      await sql`INSERT INTO courses(id,provider_id,provider_course_id,title,source_url) VALUES ('test:1','test','1','نمونه','https://example.com/1')`;
+      const [group] = await sql`INSERT INTO course_groups(slug,title,description,category_id) VALUES ('sample','نمونه','شرح','code') RETURNING id`;
+      await sql`INSERT INTO course_group_courses(group_id,course_id) VALUES (${group.id},'test:1')`;
+      await migrate(sql, migrations); await migrate(sql, migrations);
+      expect((await sql`SELECT current_snapshot_id FROM courses WHERE id='test:1'`)[0].current_snapshot_id).toBeNull();
+      expect((await sql`SELECT course_id FROM course_group_courses WHERE group_id=${group.id}`)[0].course_id).toBe("test:1");
     });
   });
   test("category parity and relational constraints reject invalid writes", async () => {

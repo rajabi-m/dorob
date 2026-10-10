@@ -41,3 +41,4 @@ Thumbs.db
 tmp/
 temp/
 apps/utils/output/
+apps/api/storage/

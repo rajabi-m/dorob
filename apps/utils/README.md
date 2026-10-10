@@ -113,3 +113,13 @@ October 3 sample: 10 selections per provider, 39 successful courses, 84 feedback
 Provider repairs supersede the initial sample's missing prices and identity failure: TopLearn verifies legacy aliases and purchase units; Roocket verifies structured currency and reads public comments; Maktabkhooneh handles numeric and H:MM durations; Sabzlearn retains explicit FAQ educational/access evidence. The public transport accepts a missing robots resource (404), consistent with [RFC 9309 §2.3.1.3](https://www.rfc-editor.org/rfc/rfc9309.html#section-2.3.1.3); denied or unreachable robots and ordinary course 404 responses still fail. Feedback remains a bounded sample.
 
 Refreshed October 3 snapshot: **40 courses, zero errors, 118 feedback items** (36 Maktabkhooneh reviews, 48 Sabzlearn comments, 34 Roocket comments). All 40 have content duration; 39 have explicit free/paid prices and one TopLearn course is subscription-only. TopLearn comments remain unknown because its disclosed public route returns 404. All **72 utility tests**, workspace lint/type checking and whitespace checks pass; the dashboard response serves the refreshed aggregate without raw source evidence. No separate utility build step exists; the previously documented web build runtime limitation remains unchanged.
+
+## Explicit saved-v2 ingestion conversion
+
+`bun run convert:courses --input SAVED_V2.json --output NEW_V3.json` reads a saved
+export and writes validated v3 `submissions`; `--help` prints usage. It makes no
+network requests and never submits or imports records automatically. Existing
+outputs and the input path cannot be overwritten. Nullable facts, source
+locators, selected raw evidence and unknown coverage survive conversion;
+missing or ambiguous evidence requires review. See the [v3 mapping and
+contract](../../docs/course-data-format.md#additive-v3-ingestion-mapping).

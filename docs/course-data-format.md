@@ -96,3 +96,89 @@ Fictional example; calculate the hash in code. All nullable keys shown here must
 ## Implementation checks
 
 Update shared types/validation/hashing and export compatibility, then all four adapters and their documentation. Test real/reduced public fixtures plus explicitly synthetic cases: unknown versus empty, review classification/redaction/deduplication, individual versus aggregate ratings, partial review/syllabus coverage, evidence hashes, and rejection of old checkpoints without overwriting them. Respect robots, existing bounded transport, and access-denial stops; no full-catalog run is needed for this migration. Wider sampling and human-reviewed AI evaluation remain prerequisites for production.
+
+## Additive v3 ingestion mapping
+
+V2 exports and the dashboard keep the contract above. V3 accepts observations separately; the browser-safe types are in `packages/core/src/ingestion.ts`.
+
+| V2 source keys | V3 destination |
+| --- | --- |
+| `schemaVersion`, `id` | Version becomes 3; course ID is generated from provider identity |
+| `providerId`, `providerCourseId`, `title`, `sourceUrl` | Same envelope fields |
+| `description` | `description.data` |
+| `learningOutcomes`, `prerequisites`, `intendedAudience`, `technologies`, `learningSupport`, `duration` | Same keys under `education.data` |
+| `language`, `format`, `providerCategories`, `providerLevel` | Same keys under `classification.data` |
+| `instructors` | `instructors.data` |
+| `offers` | `pricing.data` |
+| `image` | `thumbnail.data` with `kind: "url"` |
+| `syllabus`, `syllabusCoverage`, `lessonCount` | Same keys under `curriculum.data` |
+| `reviews`, `rating`, `studentCount` | Same keys under `feedback.data` |
+| `availability`, `providerStatus`, `ongoing`, `providerUpdatedAt` | Same keys under `providerState.data` |
+| `features`, `raw` | Respective section's `data` |
+| `source.checkedAt`, `source.method`, `source.fieldSources`, `source.warnings` | Same source fields; field-source paths are mapped |
+| `source.parser`, `source.parserVersion` | `source.extractor`, `source.extractorVersion` |
+| `source.contentHash` | Recalculated by server, never trusted |
+| `derived` | Excluded; AI output is not source facts |
+
+V3 adds client `submissionId`, mandatory pricing/thumbnail accountability, per-section coverage, and optional bounded namespaced `providerData`. Server-generated snapshot/current/history responses keep source payloads separate from thumbnail operational state.
+
+### V3 envelope and collection states
+
+Required fields: version 3, nonblank submission ID, provider/course identity, title,
+HTTPS source URL, source checked time (UTC ISO), extractor/version/method,
+field sources and warnings, pricing, and thumbnail. Title, URL and both identity
+fields require source locators. Optional sections may be omitted entirely.
+Each submitted section uses `{ "coverage": { "status": "unknown", "reason": "…" }, "data": null }`.
+Omitted means uninspected, null means unknown, and failed means no asserted facts.
+Partial, unknown and failed require a reason. Complete needs source evidence;
+empty lists require a locator confirming emptiness, even inside a section with
+unknown overall completeness. Nested review/syllabus coverage remains intact.
+Every supplied nested value validates regardless of coverage.
+
+Pricing data is a list of v2 offers; null requires an unavailable reason. Free
+zero requires explicit status evidence. Verified currency is required before
+normalizing a paid amount. Thumbnail data is either
+`{ "kind": "url", "url": "https://example.org/cover.png", "alt": "نمونه" }`
+or `{ "kind": "upload", "uploadId": "OPAQUE_TOKEN", "alt": "نمونه" }`.
+Image bytes do not belong in JSON. Optional raw evidence and namespaced provider
+extensions are bounded to 64 KiB each, reject identity/credential fields and
+wholesale HTML, and are management-only. Whole submissions are capped at 1 MiB.
+
+Minimal synthetic example:
+
+```json
+{
+  "schemaVersion": 3, "submissionId": "synthetic-1",
+  "providerId": "example", "providerCourseId": "101",
+  "title": "دورهٔ نمونه", "sourceUrl": "https://example.org/101",
+  "source": {
+    "checkedAt": "2026-10-10T00:00:00Z", "extractor": "synthetic",
+    "extractorVersion": "1", "method": "public-html",
+    "fieldSources": {"title": "h1", "sourceUrl": "canonical", "providerId": "adapter", "providerCourseId": "page.id"},
+    "warnings": []
+  },
+  "pricing": {"coverage": {"status": "unknown", "reason": "Price not established"}, "data": null},
+  "thumbnail": {"coverage": {"status": "unknown", "reason": "Image not established"}, "data": null}
+}
+```
+
+A rich synthetic example is exported as `rich()` in
+`apps/api/src/ingestion-examples.ts`; it includes multiple offers,
+original rial evidence, description, education, anonymous feedback and a URL
+thumbnail, with section evidence. Both examples are exercised by offline tests.
+Request hashes include provenance and observation time for exact retries. Fact
+hashes exclude submission IDs, observation/transport metadata and raw evidence,
+canonicalize object keys, preserve list order and retain section coverage.
+
+Convert explicitly, without scraping or submitting:
+
+```sh
+bun run convert:courses --input apps/utils/output/example-v2.json --output apps/utils/output/example-v3.json
+bun run convert:courses --help
+```
+
+The output contains `schemaVersion: 3` and `submissions`. The input is unchanged
+and existing output paths are rejected. Missing/ambiguous evidence fails
+conversion for review; do not invent locators to force acceptance. Null offers
+and covers become explicit unknown. Submission IDs are deterministic hashes of
+the saved record including its check time. Existing exporters/dashboard stay v2.

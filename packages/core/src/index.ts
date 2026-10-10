@@ -37,3 +37,5 @@ export interface Page<T> {
 export interface GroupDetail extends CourseGroup {
   courses: Page<CourseReference>;
 }
+
+export type * from "./ingestion";

@@ -14,6 +14,8 @@ OpenSpec CLI 1.14.1 was installed globally with npm on October 9, 2026 (requires
 
 The completed `add-curated-course-groups` change is archived at [2026-10-10-add-curated-course-groups](openspec/changes/archive/2026-10-10-add-curated-course-groups/). Its verified behavior contracts are synced to [course-categories](openspec/specs/course-categories/spec.md) and [course-group-curation](openspec/specs/course-group-curation/spec.md).
 
+The completed `add-course-ingestion-history` change is archived at [2026-10-10-add-course-ingestion-history](openspec/changes/archive/2026-10-10-add-course-ingestion-history/). Its verified behavior contracts are synced to [course-ingestion](openspec/specs/course-ingestion/spec.md) and [course-thumbnails](openspec/specs/course-thumbnails/spec.md).
+
 In Codex CLI or IDE, invoke `$openspec-propose "your idea"`. In the Codex desktop app, select `openspec-propose` from Skills in the sidebar; reload the project if newly installed skills are not visible. Review the proposal, design, specs, and tasks before requesting implementation with `$openspec-apply-change`. Keep each change small and grounded in `Plan.md` and `old-backend.md`.
 
 ## Current experience
@@ -43,7 +45,7 @@ bun run build
 bun run start
 ```
 
-Run `build` successfully before `start`. Lint, type checking, and 72 utility tests pass. Production compilation/types pass, but page-data collection fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`. The experimental Turbopack worker-thread configuration resolves the earlier worker-port failure. The local Homebrew Node executable was previously unable to start because `libllhttp.9.3.dylib` was missing. See [current validation and limitations](docs/validation.md).
+Run `build` successfully before `start`. Lint, type checking, and 75 utility tests pass. Production compilation/types pass, but page-data collection fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`. The experimental Turbopack worker-thread configuration resolves the earlier worker-port failure. The local Homebrew Node executable was previously unable to start because `libllhttp.9.3.dylib` was missing. See [current validation and limitations](docs/validation.md).
 
 The frontend needs no environment variables, database, API keys, or remote fonts. Vazirmatn is bundled locally; its license is included in the installed font package.
 
@@ -105,6 +107,34 @@ API_INTEGRATION=1 bun run test:api
 ```
 
 Default API tests run offline; database/signal tests are explicitly skipped unless enabled. To smoke-test recovery without restarting the API, run `bun run db:down`, confirm readiness 503 and greeting/liveness 200, then `bun run db:up` and confirm readiness 200. Repeat endpoint checks after `build:api` / `start:api`. Actual validation, temporary-record persistence results, and remaining limitations are in [validation](docs/validation.md).
+
+The [archived `add-course-ingestion-history` change](openspec/changes/archive/2026-10-10-add-course-ingestion-history/)
+has all 22 tasks complete and both behavior contracts synced to strictly validated
+main specs. Its implementation adds v3 observation contracts,
+explicit saved-v2 conversion, immutable snapshot history, whole-snapshot current
+detail, explicit URL/upload processing and hosted WebP assets. The built API
+flow verifies history, changed prices/images, retries, reuse and normal restarts.
+Standard HTTPS keeps TLS verification and DNS/redirect preflight checks; the
+owner temporarily accepts SSRF/DNS rebinding risk without IP pinning for internal
+crawler URLs. **TODO:** restore verified IP pinning later. See [catalog setup,
+Swagger walkthrough and storage lifecycle](docs/catalog.md#retained-source-observations-v3)
+and [validation](docs/validation.md#course-ingestion-history--october-10-2026).
+AI, automatic import/scraping, frontend consumption and production integration
+remain deferred. Existing v2 utilities and public curation contracts remain.
+Use `bun run convert:courses --help` for explicit conversion. Keep separate
+persistent asset/staging directories configured by `THUMBNAIL_ASSET_DIR` and
+`THUMBNAIL_STAGING_DIR`; defaults are ignored under `apps/api/storage`. Back up
+permanent images and PostgreSQL together; historical observations/assets are
+retained indefinitely and original images are not archived. Built startup needs
+installed Sharp/native optional dependencies plus both bundled entry points.
+
+Optional built-service verification (requires temporary-database creation
+permission and public httpbin fixture access):
+
+```sh
+bun run build:api
+bun apps/api/tests/built-ingestion-smoke.ts
+```
 
 The local catalog adds explicit SQL migrations, minimal course references, editor-defined groups, and many-to-many assignments. See [catalog setup and workflow](docs/catalog.md). It has no ORM, frontend integration, scraper/AI jobs, authentication, or cloud deployment. Frontend data remains saved fixtures.
 

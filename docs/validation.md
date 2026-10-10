@@ -1,5 +1,62 @@
 # Validation and known limitations
 
+## Course ingestion history — October 10, 2026
+
+`add-course-ingestion-history` has all **22/22 tracked tasks complete** and implements
+local v3 snapshot ingestion, whole-snapshot
+current/history reads, explicit thumbnail processing and retained hosted assets.
+The owner approved a temporary IP-pinning exception for internal crawler image
+URLs. Both main specs are synced and strictly validated; the change is
+[archived](../openspec/changes/archive/2026-10-10-add-course-ingestion-history/).
+The owner requested committing this implementation and its archived specifications.
+No branch change or push was performed.
+
+| Check | Result |
+| --- | --- |
+| Root `bun run lint` / `bun run typecheck` | Pass across web, utilities and API. |
+| `bun run test:utils` | Pass: 75 tests, including sparse/reduced saved-provider conversion and refusal to overwrite source/output. V2 adapters and dashboard contracts unchanged. |
+| `bun run test:api` | Pass: 31 offline tests, 17 explicit integration skips. |
+| `API_INTEGRATION=1 bun run test:api` | Pass: 48 tests, 478 assertions across 14 files, using isolated PostgreSQL schemas. Existing curation/readiness/shutdown checks remain green. |
+| New migration/repositories | Reruns, concurrent runners, transactional DDL failure, old references/memberships, same-course current FK, concurrent observations, replay/conflict, stable IDs, whole-snapshot current, legacy null state and exact/paginated history verified. |
+| Raster dependency | Sharp 0.34.5 pinned; JPEG/PNG/WebP decode and WebP encode pass under Bun 1.3.8 in source and built output. Resize/orientation/no-upscale/metadata removal, invalid/SVG/animation/byte/pixel limits and killable deadline pass. |
+| Upload/assets | Expiry/consumption/replay, compressed staging recovery, content-addressed concurrent reuse, leases, old-snapshot processing, missing/corrupt current files, safe failures, explicit retries, ETag/immutable cache headers and retained historical image access verified. |
+| `bun run build:api` | Pass: API and isolated raster worker bundled; Sharp remains an installed native external dependency. |
+| `bun apps/api/tests/built-ingestion-smoke.ts` | Pass against the default built service: rich/sparse ingestion, changed pricing/images, replay, real HTTPS URL/upload asset reuse, safe private-URL failure, retained memberships/history/assets, migration rerun and normal API restart. The script removes only its temporary database/storage/listener. |
+| OpenAPI/documented flow | Schema/examples and synthetic ingestion/process/history/hosted-image URL/upload flow verified locally. Documented JSON validates; converter help and explicit command are verified. |
+| Web production build | Compilation and TypeScript pass; existing Bun CommonJS wrapper failure recurs during page-data collection (latest run reports `/design-system`). Frontend code unchanged. |
+| OpenSpec / whitespace | Strict change validation, all six main specs and `git diff --check` pass. Both ingestion/thumbnail specs match their deltas; the change is archived with all 22 tasks complete. |
+
+Bun's pinned TLS transport previously failed with
+`UNKNOWN_CERTIFICATE_VERIFICATION_ERROR` while rewriting the request hostname to
+an IP. Per owner decision, further work on that transport stopped. Retrieval now
+uses standard HTTPS with `rejectUnauthorized: true`, manual redirect validation,
+public-address DNS preflight, credential omission, bounded streams, deadlines and
+concurrency. Controlled tests assert these protections and the deliberate absence
+of connection pinning; the built smoke verifies a real public JPEG over TLS.
+
+**Known security risk / TODO:** preflight DNS and HTTPS connection DNS resolve
+independently. An address can change after preflight, allowing SSRF through DNS
+rebinding despite the preflight checks. This risk was accepted temporarily on
+October 10 for URLs supplied by the internal crawler. Restore verified connection
+IP pinning later; TLS verification must remain enabled. See
+[thumbnail retrieval](../apps/api/src/image-download.ts) and the change's thumbnail
+requirements/design for the same exception.
+
+The ingestion smoke restarts the API against the same database/files; it does not
+claim a new PostgreSQL server restart check. Earlier foundation/catalog checks
+verified the named database volume across normal database restarts. History and
+permanent assets are retained; only bounded temporary/unreferenced staging files
+are cleaned. Back up the database and asset directories together. Management
+remains local/unauthenticated, originals are not retained, and AI, automatic
+scraping/import, frontend consumption and production integration remain deferred.
+The lockfile adds the API's pinned Sharp and TypeBox dependencies while preserving
+Next's existing Sharp 0.35.5 and the resolver's existing runtime in nested entries.
+`bun install --frozen-lockfile --offline` passes without changes. Final scope review
+against both capability deltas found no automatic scraping/import/AI execution,
+changes to existing v2 adapters/dashboard or frontend code, secrets, generated
+assets, or destructive history/permanent-asset cleanup in the change.
+
+
 ## Backend foundation — October 9, 2026
 
 The spec-driven `introduce-backend-project` change has all 12 tracked tasks complete and is [archived](../openspec/changes/archive/2026-10-09-introduce-backend-project/) with both main specs synced and strictly validated. It runs on the existing Bun 1.3.8 runtime, with pinned Elysia 1.4.30, `@elysia/openapi` 1.4.16, Swagger UI 5.33.1, and Bun types 1.3.8. Installation and frozen-lockfile verification passed; existing workspace versions were retained.
