@@ -79,7 +79,7 @@ Methods: `initialize()` loads robots rules; `discoverCourses()` reads course sit
 
 - Discovery uses the published sitemap, avoiding disallowed search pages. Requests are sequential with at least 1.5 seconds between starts, or a longer robots crawl delay. Transient errors retry with increasing delays and respect `Retry-After`; 401/403 stops collection.
 - The parser reads `__NUXT_DATA__` JSON without executing JavaScript. It extracts descriptions, prerequisites, teachers, offers, ratings/counts, and ordered chapter/lesson titles. Anonymous public course feedback is retained when identifiable; source-labeled reviews and unverified comments remain distinct. Reviewer identities, video files, and private endpoints are excluded.
-- Only enabled full/content offers are included. Disabled zero slots and upgrade-only offers are excluded. The provider’s `FREE` type explicitly identifies free access. Prices use the toman convention verified during the mock collection; enabled zero amounts require the provider FREE type before being treated as free; original source amounts are retained. Currency/display drift still needs operator review.
+- Only enabled full/content offers are included. Disabled zero slots and upgrade-only offers are excluded. The provider’s current `MAKTAB` type and legacy `FREE` type explicitly identify free access. Prices use the toman convention verified during the mock collection; enabled zero amounts require an explicit free-course type before being treated as free; original source amounts are retained. Currency/display drift still needs operator review.
 - Content duration and study effort remain separate; missing fields are null. Source HTML for descriptions and chapter/lesson effort labels are retained under `raw` for evidence; render the plain-text fields, not untrusted source HTML. Signed image links are preserved but not downloaded or checked for expiry.
 - Unknown Nuxt wrappers, missing required fields, and invalid prices fail extraction rather than inventing data. Source timestamps, field paths, adapter version, and a fact hash accompany each course.
 - This is an ingestion building block. Scheduling, database upserts, stale-data presentation, alerts, backup/recovery, and course-removal decisions belong to the backend. The CLI only checkpoints collection; it does not delete courses or claim failed data is current. A full export does not start scheduled refreshes.
@@ -212,3 +212,9 @@ page returned HTTP 500 before extraction. Keep that collection failure distinct
 from parser/validation or delivery errors; it does not establish a general
 free-course defect. Journals, diagnostics and reports remain private ignored
 output, with the partial checkpoint retained for an explicit later resume.
+
+### Free-course regression fix — October 10, 2026
+
+Parser 3.1.1 supports the current public `MAKTAB` free-course type alongside legacy `FREE`. Disabled or ambiguous zeros without either type remain unknown, and enabled positive prices conflicting with a free type fail extraction. The reduced real LPIC-1 fixture omits unrelated sections and user state.
+
+The former LPIC-1 slug returns HTTP 500; use the provider-linked current URL `https://maktabkhooneh.org/course/آموزش-رایگان-آزمون-lpic1-1555-mk711/`. `bun apps/utils/tests/worker-live.ts` now verifies exactly paid Python and free LPIC-1 in an isolated temporary database, including thumbnail retrieval and checkpoint resume without duplicate history. That check passed; existing dev records and checkpoints were not migrated.

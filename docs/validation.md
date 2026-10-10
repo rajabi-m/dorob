@@ -290,3 +290,49 @@ and whitespace checks passed. Previously recorded API tests/build and isolated
 worker integration remain valid. The existing frontend production Bun/CommonJS
 limitation remains. Live free-course acceptance is still unverified and tracked
 in the `Plan.md` TODO; it was not represented as a passed check.
+
+### Free-course regression fix and live acceptance — October 10, 2026
+
+Chrome confirmed that the previously selected LPIC-1 slug
+`/course/آموزش-رایگان-آزمون-LPIC1-mk711/` still shows the provider's server
+error. Following the provider's Linux listing opened the current URL
+`/course/آموزش-رایگان-آزمون-lpic1-1555-mk711/`, which displays free enrollment.
+A robots-aware scraper request to that current URL returned valid source data:
+provider ID `1555`, slug ID `711`, type `MAKTAB`, disabled full/content sale
+flags and zero price slots. Before the fix, v3 collection succeeded but emitted
+unknown/null pricing because extraction recognized only `FREE`.
+
+The provider's public course rendering asset `/_nuxt/eX17ZAdj.js` corroborated
+`MAKTAB` free enrollment. Parser 3.1.1 now recognizes that type alongside legacy
+`FREE`, preserves type evidence, rejects conflicting enabled positive prices,
+and keeps unrelated disabled/ambiguous zeros unknown. A reduced real Nuxt
+fixture retains only course identity, pricing, published duration and state;
+unrelated sections, reviews and user state are omitted. The regression tests
+failed on unknown pricing before the fix and passed afterward for both native
+v3 and the shared legacy v2 extraction path.
+
+Validation:
+
+- `bun run test:utils`: 96 passed, zero failed.
+- `bun run lint` and `bun run typecheck`: passed across all workspaces.
+- `bun run build:api`: passed.
+- `bun run build`: frontend compilation and TypeScript passed; page-data
+  collection still fails with the previously documented Bun 1.3.8 CommonJS
+  function-wrapper error for `/_not-found`.
+- `bun apps/utils/tests/worker-live.ts`: passed with exactly paid Python
+  `mk346` and current free LPIC-1 `mk711`, no discovery, in an isolated temporary
+  PostgreSQL database/backend/assets. Both observations were accepted once,
+  both hosted WebP thumbnails were fetched with verified byte sizes, and
+  same-checkpoint resume retained one history entry per course.
+- Free LPIC-1 observed at `2026-10-10T20:01:48.119Z` as
+  `maktabkhooneh:1555`, with a zero-amount free offer, `MAKTAB` type evidence,
+  complete pricing coverage and ready thumbnail. Paid prices remained
+  1,169,550 toman FULL and 719,550 toman CONTENT.
+
+Private checkpoint: `apps/utils/output/live-9EeTd5/paid-free.json` (ignored).
+Its temporary database and assets were removed; it cannot resume against that
+removed destination. Existing development records/checkpoints were unchanged.
+The stale URL is not automatically resolved or retried through an alternative
+route; operators should select the current provider-linked URL. This fixes the
+pricing regression and completes the previously deferred live free acceptance;
+it does not establish full-catalog coverage.

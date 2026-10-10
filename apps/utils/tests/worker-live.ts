@@ -1,4 +1,4 @@
-/** Explicit paid-course acceptance. LPIC-1 is deferred by owner; see Plan.md TODO. */
+/** Explicit paid/free acceptance using provider-linked current course URLs. */
 import { SQL } from "bun";
 import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -33,8 +33,9 @@ try {
   const origin = `http://127.0.0.1:${app.server!.port}`;
   const saved = JSON.parse(await readFile(new URL("../../web/src/data/provider-courses.json", import.meta.url), "utf8"));
   const paid = saved.courses.find((c: { id: string }) => c.id === "maktabkhooneh-mk346").sourceUrl;
-  const checkpoint = join(journals, "paid.json"), backend = new HttpBackendClient(origin);
-  const first = await new ScraperWorker(new MaktabkhoonehScraper(), backend).run({ checkpoint, selection: { mode: "urls", urls: [paid], limit: null } });
+  const free = "https://maktabkhooneh.org/course/آموزش-رایگان-آزمون-lpic1-1555-mk711/";
+  const checkpoint = join(journals, "paid-free.json"), backend = new HttpBackendClient(origin);
+  const first = await new ScraperWorker(new MaktabkhoonehScraper(), backend).run({ checkpoint, selection: { mode: "urls", urls: [paid, free], limit: null } });
   console.log(JSON.stringify(first));
   const journal: Journal = JSON.parse(await readFile(checkpoint, "utf8"));
   const counts: number[] = [];
@@ -58,8 +59,11 @@ try {
     }
     console.log("Resume creates no duplicate history: " + JSON.stringify(resumed));
     assert.equal(journal.entries[0].observation?.pricing.data?.some(o => o.status === "paid"), true);
+    assert.equal(journal.entries[1].observation?.providerCourseId, "1555");
+    assert.equal(journal.entries[1].observation?.pricing.data?.some(o => o.status === "free" && o.amount === 0), true);
+    assert.equal(journal.entries[1].observation?.pricing.coverage.status, "complete");
     if (resumed.exitCode) { console.log("Live image acceptance incomplete; retained journal " + checkpoint); process.exitCode = 1; }
-    else console.log("Live paid-course acceptance passed (free-course live check deferred by owner); retained journal " + checkpoint);
+    else console.log("Live paid/free-course acceptance passed; retained journal " + checkpoint);
   }
 } finally {
   await app?.stop(); await sql?.close({ timeout: 0 });

@@ -39,7 +39,7 @@ describe("Maktabkhooneh parsing", () => {
     assert.equal(course.schemaVersion, 2);
     assert.equal(course.derived, null);
     assert.equal(course.source.parser, "maktabkhooneh");
-    assert.equal(course.source.parserVersion, "3.1.0");
+    assert.equal(course.source.parserVersion, "3.1.1");
     assert.equal(course.source.method, "public-html-and-embedded-data");
     assert.equal(course.providerLevel, "مقدماتی تا پیشرفته");
     assert.equal(course.providerStatus, "NORMAL_PUBLISH");

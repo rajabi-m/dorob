@@ -16,7 +16,7 @@ The completed `add-curated-course-groups` change is archived at [2026-10-10-add-
 
 The completed `add-course-ingestion-history` change is archived at [2026-10-10-add-course-ingestion-history](openspec/changes/archive/2026-10-10-add-course-ingestion-history/). Its verified behavior contracts are synced to [course-ingestion](openspec/specs/course-ingestion/spec.md) and [course-thumbnails](openspec/specs/course-thumbnails/spec.md).
 
-The completed `redesign-scraper-pipeline` change is archived at [2026-10-10-redesign-scraper-pipeline](openspec/changes/archive/2026-10-10-redesign-scraper-pipeline/). Its contracts are synced to [provider-course-collection](openspec/specs/provider-course-collection/spec.md) and [scraper-worker](openspec/specs/scraper-worker/spec.md). Live free-course acceptance remains deferred because the selected LPIC-1 page returns HTTP 500.
+The completed `redesign-scraper-pipeline` change is archived at [2026-10-10-redesign-scraper-pipeline](openspec/changes/archive/2026-10-10-redesign-scraper-pipeline/). Its contracts are synced to [provider-course-collection](openspec/specs/provider-course-collection/spec.md) and [scraper-worker](openspec/specs/scraper-worker/spec.md). The subsequent free-course bug fix recognizes the provider's `MAKTAB` free type and uses the current LPIC-1 URL; live paid/free ingestion, thumbnails and checkpoint resume passed. See [validation](docs/validation.md).
 
 In Codex CLI or IDE, invoke `$openspec-propose "your idea"`. In the Codex desktop app, select `openspec-propose` from Skills in the sidebar; reload the project if newly installed skills are not visible. Review the proposal, design, specs, and tasks before requesting implementation with `$openspec-apply-change`. Keep each change small and grounded in `Plan.md` and `old-backend.md`.
 
@@ -69,7 +69,7 @@ bun run build
 bun run start
 ```
 
-Run `build` successfully before `start`. Lint, type checking, and 75 utility tests pass. Production compilation/types pass, but page-data collection fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`. The experimental Turbopack worker-thread configuration resolves the earlier worker-port failure. The local Homebrew Node executable was previously unable to start because `libllhttp.9.3.dylib` was missing. See [current validation and limitations](docs/validation.md).
+Run `build` successfully before `start`. Lint, type checking, and 96 utility tests pass. Production compilation/types pass, but page-data collection fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`. The experimental Turbopack worker-thread configuration resolves the earlier worker-port failure. The local Homebrew Node executable was previously unable to start because `libllhttp.9.3.dylib` was missing. See [current validation and limitations](docs/validation.md).
 
 The frontend needs no environment variables, database, API keys, or remote fonts. Vazirmatn is bundled locally; its license is included in the installed font package.
 

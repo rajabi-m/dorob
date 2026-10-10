@@ -5,7 +5,7 @@ import type { CourseIngestion } from "../../../packages/core/src/ingestion";
 import { AccessDeniedError } from "./public-provider.ts";
 
 export const PROVIDER_URL = "https://maktabkhooneh.org";
-export const ADAPTER_VERSION = "3.1.0";
+export const ADAPTER_VERSION = "3.1.1";
 type Obj = Record<string, unknown>;
 const object = (value: unknown): Obj => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Obj : {};
 const text = (value: unknown): string | null => typeof value === "string" && value.trim() ? value.trim() : null;
@@ -125,6 +125,9 @@ export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new
   const warnings = course.source.warnings, fields = course.source.fieldSources;
   fields.title = "courseDetails.title"; fields.providerCourseId = "courseDetails.id";
   const original = object(details.price), discounted = object(details.discounted_price);
+  // The current public course template uses MAKTAB for free enrollment;
+  // FREE remains supported for older source payloads. Zero alone is not evidence.
+  const freeType = details.type === "FREE" || details.type === "MAKTAB";
   const offers: NonNullable<ProviderCourse["offers"]> = [];
   for (const [type, enabled] of [["FULL", details.full_course_sale], ["CONTENT", details.course_content_sale]] as const) {
     if (enabled !== true) continue;
@@ -132,21 +135,21 @@ export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new
     const current = Object.hasOwn(discounted, type) ? number(discounted[type]) : originalAmount;
     if (current !== null && originalAmount !== null && current > originalAmount) throw new Error(`Invalid ${type} discount`);
     if ((original[type] != null && originalAmount === null) || (discounted[type] != null && current === null)) throw new Error(`Invalid ${type} price`);
-    if (details.type === "FREE" && current !== null && current > 0) throw new Error("Conflicting free and paid course facts");
-    const free = details.type === "FREE" && current === 0;
+    if (freeType && current !== null && current > 0) throw new Error("Conflicting free and paid course facts");
+    const free = freeType && current === 0;
     const amount = current === 0 && !free ? null : current;
-    if (current === 0 && !free) warnings.push(`${type} zero amount has no explicit FREE evidence; normalized price is unknown.`);
+    if (current === 0 && !free) warnings.push(`${type} zero amount has no explicit free-course type evidence; normalized price is unknown.`);
     const id = type.toLowerCase() as "full" | "content";
     offers.push({ id, type: id, label: type, amount, originalAmount: amount !== null && originalAmount !== null && originalAmount > amount ? originalAmount : null,
       unit: "toman", status: free ? "free" : amount === null ? "unknown" : "paid", billingPeriod: null, certificateIncluded: null, accessDescription: null, supportDescription: null,
       sourcePrice: { amount: current, originalAmount: current !== null && originalAmount !== null && originalAmount > current ? originalAmount : null,
         unit: current !== null || originalAmount !== null ? "toman" : "unknown", label: null } });
-    fields[`offers.${id}`] = `courseDetails.price.${type} / discounted_price.${type} / sale flags; toman verified against public display during adapter development`;
+    fields[`offers.${id}`] = `courseDetails.price.${type} / discounted_price.${type} / sale flags / courseDetails.type=${details.type}; toman verified against public display during adapter development`;
   }
-  if (!offers.length && details.type === "FREE") {
-    offers.push({ id: "free", type: "free", label: "FREE", amount: 0, originalAmount: null, unit: "toman", status: "free", billingPeriod: null, certificateIncluded: null, accessDescription: null, supportDescription: null,
-      sourcePrice: { amount: null, originalAmount: null, unit: "unknown", label: "courseDetails.type=FREE" } });
-    fields["offers.free"] = "courseDetails.type=FREE";
+  if (!offers.length && freeType) {
+    offers.push({ id: "free", type: "free", label: String(details.type), amount: 0, originalAmount: null, unit: "toman", status: "free", billingPeriod: null, certificateIncluded: null, accessDescription: null, supportDescription: null,
+      sourcePrice: { amount: null, originalAmount: null, unit: "unknown", label: `courseDetails.type=${details.type}` } });
+    fields["offers.free"] = `courseDetails.type=${details.type}`;
   }
   course.offers = offers.length ? offers : null;
   if (!offers.length) warnings.push("No confirmed purchase offer; price is unknown. Disabled zero slots and upgrade offers are excluded.");

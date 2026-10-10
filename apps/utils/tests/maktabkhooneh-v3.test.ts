@@ -1,11 +1,28 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { MaktabkhoonehScraper, decodeNuxtPayload, parseObservation } from "../scrapers/maktabkhooneh";
+import { MaktabkhoonehScraper, decodeNuxtPayload, parseCoursePage, parseObservation } from "../scrapers/maktabkhooneh";
 import { validateIngestion } from "../../api/src/ingestion-validation";
 const html = readFileSync(new URL("./fixtures/maktabkhooneh-course.html", import.meta.url), "utf8");
 const url = "https://maktabkhooneh.org/course/python-mk346/";
 const checkedAt = "2026-10-10T00:00:00Z";
+const freeUrl = "https://maktabkhooneh.org/course/آموزش-رایگان-آزمون-lpic1-1555-mk711/";
+test("real MAKTAB free-course facts survive native v3 collection and legacy export", async () => {
+  const freeHtml = readFileSync(new URL("./fixtures/maktabkhooneh-free.html", import.meta.url), "utf8");
+  const scraper = new MaktabkhoonehScraper({ delayMs: 0, fetch: (async input => new Response(String(input).endsWith("robots.txt") ? "" : freeHtml)) as typeof fetch });
+  const observation = await scraper.scrapeCourse(freeUrl);
+  assert.equal(observation.providerCourseId, "1555");
+  assert.equal(observation.title, "آمادگی آزمون LPIC-1");
+  assert.equal(observation.pricing.coverage.status, "complete");
+  assert.equal(observation.pricing.data?.length, 1);
+  assert.equal(observation.pricing.data?.[0].status, "free");
+  assert.equal(observation.pricing.data?.[0].amount, 0);
+  assert.equal(observation.pricing.data?.[0].sourcePrice.label, "courseDetails.type=MAKTAB");
+  assert.match(observation.source.fieldSources["pricing.data.0"], /MAKTAB/);
+  const legacy = parseCoursePage(freeHtml, freeUrl, checkedAt);
+  assert.equal(legacy.offers?.[0].status, "free");
+  assert.equal(legacy.offers?.[0].amount, 0);
+});
 function variant(details: Record<string, unknown>, sections: Record<string, unknown> = {}) {
   const payload = decodeNuxtPayload(html);
   const data = payload.data as Record<string, Record<string, unknown>>;
@@ -40,6 +57,13 @@ test("native required pricing preserves paid/free/ambiguous zero and sparse cove
   const observe = (details: Record<string, unknown>, sections = {}) => validateIngestion(parseObservation(variant(details, sections), url, checkedAt, "test"));
   const free = observe({ type: "FREE", full_course_sale: false, course_content_sale: false });
   assert.equal(free.pricing.data?.[0].status, "free");
+  const maktab = observe({ type: "MAKTAB", price: { FULL: 0 }, discounted_price: { FULL: 0 }, full_course_sale: true, course_content_sale: false });
+  assert.equal(maktab.pricing.data?.[0].status, "free");
+  assert.equal(maktab.pricing.data?.[0].sourcePrice.amount, 0);
+  assert.throws(() => observe({ type: "MAKTAB" }), /Conflicting free and paid/);
+  const disabled = observe({ type: "PLUS", full_course_sale: false, course_content_sale: false, price: { FULL: 0, CONTENT: 0 }, discounted_price: { FULL: 0, CONTENT: 0 } });
+  assert.equal(disabled.pricing.data, null);
+  assert.equal(disabled.pricing.coverage.status, "unknown");
   const unknown = observe({ type: "NORMAL", full_course_sale: true, course_content_sale: false, price: { FULL: 0 }, discounted_price: { FULL: 0 }, image_thumbnail_url: null, image: null });
   assert.equal(unknown.pricing.data?.[0].amount, null);
   assert.equal(unknown.pricing.data?.[0].sourcePrice.amount, 0);
