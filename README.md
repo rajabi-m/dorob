@@ -35,7 +35,29 @@ bun install --frozen-lockfile
 bun run dev
 ```
 
-Open `http://localhost:3000`. Stop the server with Ctrl+C. Alternatively use `./run.sh` (or `bash run.sh`); it checks for Bun, installs with the frozen lockfile if Next.js is missing, and starts development. `./run.sh --port 3001` selects another port; the script also works when invoked by its full path from another directory.
+For the whole local app, install/start Docker Desktop and run `./run.sh` (or
+`bash run.sh`). It checks dependencies, starts the Compose dev PostgreSQL database,
+waits for health, applies migrations, and launches the backend and frontend with
+watching enabled. It prints the app and Swagger links. No API `.env` is required
+for the default local database; the launcher supplies the Compose development
+connection URL, overriding any `DATABASE_URL` for this run. Other API settings
+still load from the environment or `apps/api/.env`.
+
+```sh
+./run.sh
+./run.sh --port 3002 --api-port 3003 --db-port 5433
+```
+
+Default ports are frontend 3000, API 3001 and PostgreSQL 5432. `--port` selects the
+frontend port; `--api-port` selects the backend port. `--db-port` overrides Compose's
+`POSTGRES_PORT` (otherwise shell/root `.env` configuration applies). The script
+also works by full path from another directory. Ctrl+C stops both app processes;
+it stops PostgreSQL only if this run started it, preserving its volume and data.
+If either app process exits, the launcher stops the other. Frontend fixtures
+remain separate from the API; launching both does not enable frontend integration.
+
+For frontend-only development, use `bun run dev` and open `http://localhost:3000`.
+Use `bun run dev --port 3002` to select another frontend port.
 
 ```sh
 bun run lint
@@ -59,6 +81,9 @@ cp apps/api/.env.example apps/api/.env
 bun run db:migrate
 bun run dev:api
 ```
+
+Use the [whole-app launcher](#local-development) to automate the local database,
+migrations and both app services, or use the commands above for API-only work.
 
 `DATABASE_URL` is required and must contain a PostgreSQL host, username, password, and database. `HOST` defaults to `127.0.0.1`; `PORT` defaults to `3001` and accepts integers from 1 to 65535. Invalid configuration exits before listening with a credential-safe diagnostic. Example credentials are for local development only; actual `.env` files are ignored.
 

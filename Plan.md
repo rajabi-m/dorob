@@ -246,6 +246,8 @@ Replace mock data with traceable provider data and connect the existing frontend
 
 ## Next steps and remaining work
 
+Local development uses `./run.sh` to start the Compose dev database, apply migrations and launch both frontend and API watchers, with app/Swagger links and configurable ports. Shutdown preserves database data and leaves a previously running database available. Frontend API integration remains deferred.
+
 - `add-course-ingestion-history` implements browser-safe v3 contracts, explicit saved-v2 conversion, additive retained snapshots, whole-snapshot current detail and local URL/upload/WebP lifecycle. The built service verifies URL/upload reuse, rich/sparse observations, changed prices/images, replay, safe partial failures and historical access after migration rerun/API restart. The owner resolved Bun 1.3.8's pinned TLS blocker by temporarily deferring IP pinning; all other checks and TLS verification remain, with SSRF/DNS rebinding risk documented and a TODO for a later fix. No automatic provider collection, AI or frontend integration is enabled. All 22 tasks are complete; both behavior contracts are synced to main specs and strictly validated, and the change is [archived](openspec/changes/archive/2026-10-10-add-course-ingestion-history/). See [validation](docs/validation.md#course-ingestion-history--october-10-2026).
 
 - The completed `add-curated-course-groups` change is [archived](openspec/changes/archive/2026-10-10-add-curated-course-groups/), with its category and curation contracts synced to main specs. Manual catalog curation is available locally; frontend integration remains a separate next step.

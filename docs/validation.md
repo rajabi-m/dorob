@@ -1,5 +1,16 @@
 # Validation and known limitations
 
+## Whole-app development launcher — October 10, 2026
+
+`bash -n run.sh`, help/invalid-port handling and whitespace checks pass. Invoking
+the launcher by absolute path from another directory starts healthy Compose
+PostgreSQL, applies migrations and launches both watchers on overridden frontend/API
+ports. Frontend and Swagger return HTTP 200; API readiness reports database up.
+Ctrl+C stops both app process groups and leaves the already-running PostgreSQL
+service available. Database shutdown when newly started is implemented but was
+not exercised against the existing development container. No database volume
+removal occurs.
+
 ## Course ingestion history — October 10, 2026
 
 `add-course-ingestion-history` has all **22/22 tracked tasks complete** and implements
