@@ -238,3 +238,47 @@ The shared CLI supports `--all`, `--output` and checkpoint `--resume`. Version-1
 Reduced public fixtures preserve free Python/paid Laravel facts, explicit educational headings and UTF-8 RSC body references. New October 3 fixtures retain the actual course-scoped JSON-LD price proof and two anonymized public Laravel comments with first-page metadata; identity/contact/profile data are excluded. Additional cases are explicitly synthetic.
 
 All **18 Roocket tests**, utility lint and type checking pass, covering currency matching/mismatch, v2 fields, anonymous feedback classification/redaction/deduplication, partial coverage, evidence hashing, bounded API transport, robots/denial and checkpoint resume. A bounded live ten-course run exported **10 courses, zero errors, seven paid prices, three explicit free offers and 34 anonymous comments**. All ten courses contain feedback; three have further comment pages. No full-catalog crawl was performed. Source labels, optional missing fields and conservative question filtering still need broader provider-template sampling before production.
+
+## Native v3 collection template
+
+`@dorob/utils/base` exports the server-only abstract `BaseScraper`,
+`BaseScraperOptions` and `CollectionResult`. It owns robots initialization,
+serialized controlled requests, bounded sitemap discovery (100 maps by default),
+canonical deduplication, cancellation and API v3 validation. Discovery defaults
+to ten selections; pass `Infinity` only for an explicitly selected full traversal.
+Read `discoveryIsComplete` and `discoveryWarnings`; partial traversal retains
+available selections and does not establish full provider coverage.
+
+A subclass supplies `providerId`, `extractorVersion`, `canonicalCourseUrl`,
+`courseKey`, `relevantSitemap`, and the pure `extract(body, url, checkedAt, id)`
+hook. See the executable, typechecked [fixture subclass](../apps/utils/tests/base.test.ts).
+Use protected `request` for the main origin or `originClient` for explicitly
+configured additional HTTPS origins. Each client has its own robots and spacing;
+parsers receive fetched bodies instead of unrestricted network functions.
+Inject `fetch`, `sleep`, `clock`, `now`, `id` and `signal` for deterministic tests.
+The stream returns `{ sourceUrl, observation, error }`; fresh successful
+collection gets a fresh ID. Access denial and cancellation stop the stream.
+This abstraction performs no backend writes. Keep it out of browser imports;
+`packages/core` remains dependency-free source contracts.
+
+
+## Maktabkhooneh programmatic v3 migration
+
+`MaktabkhoonehScraper` from `@dorob/utils/maktabkhooneh` now extends
+`BaseScraper`: `scrapeCourse(url)` returns `CourseIngestion` v3 and
+`scrapeCourses(urls)` yields `{ sourceUrl, observation, error }`.
+Native observations have fresh submission IDs, canonical provider identity and
+section coverage from embedded source inspection. Pricing/cover/description
+can be evidenced complete; educational/curriculum/feedback sections retain
+partial or unknown coverage. Invalid optional curriculum records a failed
+section; invalid required identity or pricing fails collection. Anonymous
+feedback remains a bounded page sample.
+
+`LegacyMaktabkhoonehScraper` is the explicit v2 compatibility adapter over
+the same parser and controlled transport. `bun run scrape:maktabkhooneh --help`
+and its existing URL/limit/all/output/resume workflow stay export-only,
+without backend requests. Saved-v2 conversion still uses
+`bun run convert:courses --input SAVED_V2.json --output NEW_V3.json`, with
+unknown coverage and deterministic IDs for replay. Aggregation/dashboard and
+TopLearn, Sabzlearn and Roocket remain v2. Do not pass worker journals as v2
+export checkpoints.

@@ -158,6 +158,135 @@ This documentation/commit pass does not claim a new browser interaction review. 
 
 ## Data boundaries
 
-Frontend course facts are dated saved samples; analytical copy and ordering are labeled editorial/prototype content. Current standalone adapters emit version 2 and return `derived: null`; frontend snapshots are separate browser-safe fixtures. Utility tests run offline with retained and synthetic fixtures. No new live collection or full-catalog crawl was run for this commit. Broader provider-template sampling, freshness operations, deployment monitoring, and evidence-backed AI evaluation remain future work.
+Frontend course facts are dated saved samples; analytical copy and ordering are labeled editorial/prototype content. Standalone export commands emit version 2 and return `derived: null`; the programmatic Maktabkhooneh adapter and explicit ingestion worker emit version 3. Frontend snapshots are separate browser-safe fixtures. Utility tests run offline with retained and synthetic fixtures. Owner-requested live dev samples are recorded below; no full-catalog crawl was performed. Broader provider-template sampling, freshness operations, deployment monitoring, and evidence-backed AI evaluation remain future work.
 
 Generated provider exports/dashboard snapshots stay ignored under `apps/utils/output/`; they are not part of the commit. The local dashboard therefore requires local exports before use. See [utility usage](../apps/utils/README.md).
+
+## Scraper pipeline redesign — October 10, 2026
+
+OpenSpec `redesign-scraper-pipeline` has **21/21 tasks complete** under the
+owner-revised acceptance scope: paid-course live ingestion/image/resume passed;
+free LPIC-1 live acceptance is deferred as a TODO in `Plan.md`. The original
+paid/free attempt and failure investigation below are historical evidence. No frontend integration, other-provider migration, database schema
+change, automatic startup collection, commit or publication was performed.
+
+### Commit verification and dev sampling
+
+The owner subsequently authorized bounded dev ingestion and this commit.
+The first run accepted ten new paid courses with ten verified hosted WebPs.
+The next run selected 99 sitemap URLs plus known free LPIC-1 `mk711`:
+99 observations were accepted (89 new course records and ten refreshes),
+with 99 current snapshot IDs and hosted WebPs verified through the API.
+Pricing was 95 paid and four unknown; LPIC-1 exhausted normal retries on
+provider HTTP 500 before parsing. No delivery or image failures occurred.
+The partial journal retains that collection failure for explicit later resume.
+Final dev totals were 99 Maktabkhooneh courses and 109 retained snapshots,
+each accepted snapshot with a ready thumbnail. Private reports, diagnostics,
+journals and generated assets are excluded from the commit.
+
+Fresh commit checks: workspace lint and type checking passed; 95 utility tests
+and 31 offline API tests passed, with 17 explicitly gated API integration tests
+skipped. The separate isolated worker real-API integration passed, including
+lost-receipt replay, retained/changed history, thumbnail failure/retry/reuse,
+hosted assets and normal restart. API build passed; all eight main OpenSpec
+specifications passed strict validation. Frontend production compilation and
+TypeScript passed, but page-data collection reproduced the existing Bun 1.3.8
+`Expected CommonJS module to have a function wrapper` failure. No UI code
+changed, so no new browser layout review was required. Temporary run/report
+helpers were moved out of the utility source tree after an initial type-check
+failure in a report-only callback; final workspace type checking passed.
+
+### Earlier implementation checks
+
+- Workspace lint/typecheck passed. Utility tests: 95 passed, zero failures.
+- Offline API tests: 31 passed, 17 explicitly gated integration tests skipped,
+  zero failures. The separate worker real-API integration ran successfully.
+- API build passed. Frontend production compilation and TypeScript passed;
+  page-data collection still fails under Bun 1.3.8 with the existing
+  `Expected CommonJS module to have a function wrapper` runtime limitation.
+- Strict OpenSpec validation and `git diff --check` passed.
+- `bun apps/utils/tests/worker-integration.ts` passed against an independently
+  created temporary PostgreSQL database and asset directories. Controlled Nuxt
+  source and PNG fixtures exercised actual HTTP ingestion, lost-response replay,
+  changed fresh observations, retained history, HTTP-200 image failure/retry,
+  content reuse, historical hosted WebP bytes, migration rerun and normal API
+  restart. Its own database/assets/journals were removed; existing data remained.
+  Local database/network execution required sandbox escalation.
+
+`bun apps/utils/tests/worker-live.ts` selected exactly two explicit public
+courses, with no discovery: paid Python `mk346` from the existing snapshot URL
+and free LPIC-1 `mk711` from the provider's public free-course shortlink. Robots
+policy was consulted. It used a temporary isolated backend/database/assets.
+
+- Python collected at `2026-10-10T10:36:41.714Z`, stable source identity
+  `maktabkhooneh:10465`, and was accepted once. FULL price was 1,169,550 toman
+  (original 2,599,000), CONTENT 719,550 (original 1,599,000). Both retained source
+  price/unit evidence. Pricing/thumbnail/description coverage was complete;
+  curriculum, feedback, educational/classification/instructor/provider-state
+  and selected evidence sections retained partial coverage. Its hosted WebP
+  was ready and fetched successfully; history count was one.
+- LPIC-1 failed collection, with no observation or backend acceptance. The
+  credential-safe worker records `collection_failed`; this check did not
+  determine whether request/template/extraction/validation caused it. It does
+  not establish a live free-course result. No new course selection or automatic
+  recollection was attempted after the failure.
+- Same-checkpoint live resume/history verification was not performed because
+  source acceptance was incomplete. Offline and controlled real-API replay
+  verification passed independently; it does not replace live acceptance.
+- Private diagnostic journal retained under ignored
+  `apps/utils/output/live-9O22qj/paid-free.json`. Its temporary backend/database
+  and assets were removed; the journal is evidence of that test and cannot resume
+  against the now-removed destination. The sandbox-failed initial attempt
+  created no database or provider requests.
+
+The initial implementation paused at task 5.2 under the apply workflow's blocker rule; the owner later requested skipping this course (see completion below).
+Investigate the failed selection before claiming the golden example complete;
+any further live run should remain limited to these explicit course selections.
+
+### Free-course failure investigation — October 10, 2026
+
+The owner authorized investigation of the remaining live acceptance failure.
+A diagnostic fetch used `MaktabkhoonehScraper.fetchCoursePage` for the same
+LPIC-1 `mk711` selection, retaining robots, origin, spacing and timeout policy.
+The normal bounded retry sequence exhausted on **HTTP 500** before any page
+body was returned to extraction. A second diagnostic with retries disabled
+confirmed **robots HTTP 200, selected course HTTP 500**. No parser or API
+validation stage was reached, so this failure does not demonstrate an
+extraction defect. No alternative course, catalog discovery or backend
+submission was performed during the investigation.
+
+The remaining task 5.2 is blocked by the selected provider endpoint's server
+error. No implementation fix or access-policy bypass is justified by this
+response. The original worker's partial journal correctly retains the accepted
+paid course and the failed free selection. All previously recorded offline and
+isolated real-API checks remain valid; live free acceptance and same-checkpoint
+live resume remain incomplete. Retry the same explicit selection after the
+provider recovers, using a new isolated test database/journal because the prior
+acceptance destination was temporary and has been removed.
+
+### Owner-authorized completion with LPIC-1 deferred — October 10, 2026
+
+The owner explicitly requested skipping the failed LPIC-1 course, retaining a
+TODO and continuing. Task 5.2 and the change design now reflect that acceptance
+scope. The actual worker still reports failed selections honestly; no automatic
+error suppression or modification of the original partial journal was added.
+
+`bun apps/utils/tests/worker-live.ts` now selects only the same paid Python
+`mk346` course. On the final run, source observation time was
+`2026-10-10T10:43:26.768Z`, course `maktabkhooneh:10465`, snapshot
+`18077bbf-68f7-4343-8830-af24c413951f`. One observation was accepted with the
+same FULL/CONTENT prices recorded above and honest partial section coverage.
+Its hosted WebP fetched successfully. Same-checkpoint resume completed with
+exit zero and history remained exactly one snapshot; observation time and
+snapshot identity were unchanged. No LPIC-1 request or discovery occurred.
+
+Private evidence journal: `apps/utils/output/live-EPz4mp/paid.json`. The isolated
+test database/assets were removed afterward; existing application data was
+unaffected. The journal is retained diagnostic evidence, not resumable against
+that removed temporary destination.
+
+Final workspace lint/typecheck, 95 utility tests, strict OpenSpec validation
+and whitespace checks passed. Previously recorded API tests/build and isolated
+worker integration remain valid. The existing frontend production Bun/CommonJS
+limitation remains. Live free-course acceptance is still unverified and tracked
+in the `Plan.md` TODO; it was not represented as a passed check.

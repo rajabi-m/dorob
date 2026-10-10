@@ -182,3 +182,24 @@ and existing output paths are rejected. Missing/ambiguous evidence fails
 conversion for review; do not invent locators to force acceptance. Null offers
 and covers become explicit unknown. Submission IDs are deterministic hashes of
 the saved record including its check time. Existing exporters/dashboard stay v2.
+
+## Maktabkhooneh programmatic v3 migration
+
+`MaktabkhoonehScraper` from `@dorob/utils/maktabkhooneh` now extends
+`BaseScraper`: `scrapeCourse(url)` returns `CourseIngestion` v3 and
+`scrapeCourses(urls)` yields `{ sourceUrl, observation, error }`.
+Native observations have fresh submission IDs, canonical provider identity and
+section coverage from embedded source inspection. Pricing/cover/description
+can be evidenced complete; educational/curriculum/feedback sections retain
+partial or unknown coverage. Invalid optional curriculum records a failed
+section; invalid required identity or pricing fails collection. Anonymous
+feedback remains a bounded page sample.
+
+`LegacyMaktabkhoonehScraper` is the explicit v2 compatibility adapter over
+the same parser and controlled transport. `bun run scrape:maktabkhooneh --help`
+and its existing URL/limit/all/output/resume workflow stay export-only,
+without backend requests. Saved-v2 conversion still uses
+`bun run convert:courses --input SAVED_V2.json --output NEW_V3.json`, with
+unknown coverage and deterministic IDs for replay. Aggregation/dashboard and
+TopLearn, Sabzlearn and Roocket remain v2. Do not pass worker journals as v2
+export checkpoints.

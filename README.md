@@ -16,6 +16,8 @@ The completed `add-curated-course-groups` change is archived at [2026-10-10-add-
 
 The completed `add-course-ingestion-history` change is archived at [2026-10-10-add-course-ingestion-history](openspec/changes/archive/2026-10-10-add-course-ingestion-history/). Its verified behavior contracts are synced to [course-ingestion](openspec/specs/course-ingestion/spec.md) and [course-thumbnails](openspec/specs/course-thumbnails/spec.md).
 
+The completed `redesign-scraper-pipeline` change is archived at [2026-10-10-redesign-scraper-pipeline](openspec/changes/archive/2026-10-10-redesign-scraper-pipeline/). Its contracts are synced to [provider-course-collection](openspec/specs/provider-course-collection/spec.md) and [scraper-worker](openspec/specs/scraper-worker/spec.md). Live free-course acceptance remains deferred because the selected LPIC-1 page returns HTTP 500.
+
 In Codex CLI or IDE, invoke `$openspec-propose "your idea"`. In the Codex desktop app, select `openspec-propose` from Skills in the sidebar; reload the project if newly installed skills are not visible. Review the proposal, design, specs, and tasks before requesting implementation with `$openspec-apply-change`. Keep each change small and grounded in `Plan.md` and `old-backend.md`.
 
 ## Current experience
@@ -198,10 +200,44 @@ Plan.md         Current decisions, phase status, and remaining scope
 AGENTS.md       Contributor instructions and commit policy
 ```
 
-The frontend uses Next.js, React, TypeScript, Tailwind CSS, and Lucide icons. Shared tokens live in `apps/web/src/app/globals.css`; components use shared styles and CSS modules. The shared core package contains only browser-safe catalog contracts; worker and UI packages remain deferred. Keep scraper/server code and secrets out of browser-safe contracts.
+The frontend uses Next.js, React, TypeScript, Tailwind CSS, and Lucide icons. Shared tokens live in `apps/web/src/app/globals.css`; components use shared styles and CSS modules. The shared core package contains browser-safe catalog and ingestion contracts; the explicitly invoked worker lives in `apps/utils`, while a separate UI package remains deferred. Keep scraper/server code and secrets out of browser-safe contracts.
 
 ## Contributing
 
 Read `AGENTS.md` and `Plan.md` before changing product scope. Use the documented Bun commands and preserve the lockfile. Never commit without explicit confirmation for the current changes; review affected documentation, staged scope, and checks before committing. Pushes, branches, and history rewriting require separate authorization.
 
 Project-local frontend and RTL skills live in `.agents/skills/`. Preserve their supplied license and attribution. Earlier exploration and implementation checkpoints are in [project history](docs/project-history.md).
+
+## Explicit Maktabkhooneh ingestion
+
+The server-only v3 scraper and resumable worker are available through utility
+entry points; the other three providers and every `scrape:*` export command stay
+v2. Start the local API/database and apply existing migrations, then explicitly run:
+
+```sh
+bun run ingest:maktabkhooneh --help
+bun run ingest:maktabkhooneh --url 'https://maktabkhooneh.org/course/python-mk346/' --checkpoint apps/utils/output/python-run.json
+bun run ingest:maktabkhooneh --checkpoint apps/utils/output/python-run.json --resume
+```
+
+Without URL flags, new runs discover at most ten courses. `--limit N` changes
+that bound; `--all` explicitly requests full bounded traversal. Selection flags
+are mutually exclusive. `--backend-url http://127.0.0.1:3001` (or
+`DOROB_BACKEND_URL`) selects a credential-free backend origin. New runs require
+new checkpoint files; resume restores saved selections without rediscovery.
+Finish pending work before fresh refreshes. See [worker transitions, private
+journals and lock recovery](apps/utils/README.md#private-worker-checkpoints-and-crash-locks).
+
+Accepted facts, hosted-image readiness and editorial website publication are
+separate. This command creates retained observations and explicitly processes
+images; it does not publish groups or connect frontend fixtures. API startup,
+migrations and the launcher do not start collection. Schedules, other provider
+migrations, AI and frontend integration remain deferred. Acceptance check
+results are recorded in [validation](docs/validation.md).
+
+October 10 dev sampling: the initial ten courses succeeded. A subsequent
+100-selection run accepted 99 observations (89 new course records and ten
+refreshes), with all 99 hosted thumbnails verified. Pricing was 95 paid and four
+unknown; the known free LPIC-1 selection failed with provider HTTP 500 before
+extraction. This does not establish a general free-course parser defect.
+Private journals and reports remain ignored under `apps/utils/output/`.

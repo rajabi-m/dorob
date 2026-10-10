@@ -51,7 +51,9 @@ export function parseRobots(source: string, agent = "DorobBot") {
     sitemaps,
     delayMs: Math.max(0, ...selected.map(g => g.delay ?? 0)),
     allows(input: string) {
-      const url = new URL(input, "https://robots.invalid"), path = decodeURI(url.pathname + url.search);
+      const url = new URL(input, "https://robots.invalid");
+      let path = url.pathname + url.search;
+      try { path = decodeURI(path); } catch { /* Retain malformed escapes literally. */ }
       const matches = selected.flatMap(g => g.rules).filter(rule => {
         const expression = rule.pattern.split("*").map(part => part.replace(/[.+?^{}()|[\]\\]/g, "\\$&")).join(".*");
         return new RegExp(`^${expression}`).test(path);
@@ -68,7 +70,7 @@ class HttpError extends Error {
 
 export type ScraperOptions = {
   delayMs?: number; timeoutMs?: number; retries?: number; maxResponseBytes?: number;
-  fetch?: typeof fetch; sleep?: (ms: number) => Promise<void>; signal?: AbortSignal;
+  fetch?: typeof fetch; sleep?: (ms: number) => Promise<void>; signal?: AbortSignal; clock?: () => number;
 };
 
 export class PublicProviderClient {
@@ -79,8 +81,8 @@ export class PublicProviderClient {
   private denied = false;
   private options: Required<Omit<ScraperOptions, "signal">> & Pick<ScraperOptions, "signal">;
   constructor(private readonly origin: string, options: ScraperOptions = {}) {
-    if (new URL(origin).origin !== origin || !origin.startsWith("https://")) throw new Error("Expected HTTPS origin");
-    this.options = { delayMs: 1500, timeoutMs: 30000, retries: 3, maxResponseBytes: 20 * 1024 * 1024, fetch: globalThis.fetch, sleep: ms => sleep(ms, undefined, { signal: options.signal }), ...options };
+    if (new URL(origin).origin !== origin || !origin.startsWith("https://") || new URL(origin).username || new URL(origin).password) throw new Error("Expected HTTPS origin");
+    this.options = { delayMs: 1500, timeoutMs: 30000, retries: 3, maxResponseBytes: 20 * 1024 * 1024, fetch: globalThis.fetch, clock: Date.now, sleep: ms => sleep(ms, undefined, { signal: options.signal }), ...options };
     for (const key of ["delayMs", "timeoutMs", "maxResponseBytes", "retries"] as const) {
       const value = this.options[key];
       if (!Number.isSafeInteger(value) || value < (key === "retries" || key === "delayMs" ? 0 : 1)) throw new Error(`Invalid ${key}`);
@@ -93,6 +95,7 @@ export class PublicProviderClient {
       const result = await this.queuedRequest(`${this.origin}/robots.txt`, true);
       this.robots = parseRobots(result.body);
       this.options.delayMs = Math.max(this.options.delayMs, this.robots.delayMs);
+      this.nextRequestAt = Math.max(this.nextRequestAt, this.options.clock() + this.options.delayMs);
     })();
     return this.initialization;
   }
@@ -125,10 +128,10 @@ export class PublicProviderClient {
         let url = initialUrl;
         for (let redirects = 0; redirects <= 5; redirects++) {
           if (!robotsRequest && !this.robots?.allows(url)) throw new AccessDeniedError(`Robots disallows ${url}`);
-          const wait = this.nextRequestAt - Date.now();
+          const wait = this.nextRequestAt - this.options.clock();
           if (wait > 0) await this.wait(wait);
           this.options.signal?.throwIfAborted();
-          this.nextRequestAt = Date.now() + this.options.delayMs;
+          this.nextRequestAt = this.options.clock() + this.options.delayMs;
           const timeout = AbortSignal.timeout(this.options.timeoutMs);
           const signal = this.options.signal ? AbortSignal.any([timeout, this.options.signal]) : timeout;
           const response = await this.options.fetch(url, { redirect: "manual", signal, headers: { "User-Agent": "DorobBot/1.0 (public course catalog)", Accept: robotsRequest ? "text/plain" : "text/html,application/xml,text/xml" } });
@@ -151,7 +154,15 @@ export class PublicProviderClient {
           const decoder = new TextDecoder();
           try {
             while (true) {
-              const { done, value } = await reader.read();
+              signal.throwIfAborted();
+              let onAbort: () => void = () => undefined;
+              const aborted = new Promise<never>((_, reject) => {
+                onAbort = () => { void reader.cancel().catch(() => undefined); reject(signal.reason); };
+                signal.addEventListener("abort", onAbort, { once: true });
+              });
+              const result = await Promise.race([reader.read(), aborted]).finally(() => signal.removeEventListener("abort", onAbort));
+              signal.throwIfAborted();
+              const { done, value } = result;
               if (done) break;
               bytes += value.byteLength;
               if (bytes > this.options.maxResponseBytes) { await reader.cancel(); throw new Error("Response exceeds size limit"); }
@@ -166,9 +177,9 @@ export class PublicProviderClient {
         const transient = error instanceof HttpError ? error.status === 429 || error.status >= 500 : error instanceof TypeError || (error instanceof Error && ["TimeoutError", "AbortError"].includes(error.name));
         if (!transient) throw error;
         const retry = error instanceof HttpError ? error.retryAfter : null;
-        const retryMs = retry ? /^\d+$/.test(retry) ? Number(retry) * 1000 : Math.max(0, Date.parse(retry) - Date.now()) : 0;
+        const retryMs = retry ? /^\d+$/.test(retry) ? Number(retry) * 1000 : Math.max(0, Date.parse(retry) - this.options.clock()) : 0;
         // Persist the wait so future requests respect Retry-After too.
-        this.nextRequestAt = Math.max(this.nextRequestAt, Date.now() + Math.max(1000 * 2 ** attempt + Math.random() * 250, Number.isFinite(retryMs) ? retryMs : 0));
+        this.nextRequestAt = Math.max(this.nextRequestAt, this.options.clock() + Math.max(1000 * 2 ** attempt, Number.isFinite(retryMs) ? retryMs : 0));
         if (attempt === this.options.retries) throw error;
       }
     }

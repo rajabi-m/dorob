@@ -5,8 +5,9 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { main } from "../scrape-maktabkhooneh.ts";
-import { AccessDeniedError, canonicalCourseUrl, decodeNuxtPayload, MaktabkhoonehScraper, parseCoursePage, parseRobots, parseSitemap } from "../scrapers/maktabkhooneh.ts";
+import { AccessDeniedError, canonicalCourseUrl, decodeNuxtPayload, LegacyMaktabkhoonehScraper, parseCoursePage, parseRobots, parseSitemap } from "../scrapers/maktabkhooneh.ts";
 import { createCourse } from "../scrapers/course.ts";
+import { aggregateCourses } from "../aggregate-courses";
 
 const fixture = readFileSync(new URL("./fixtures/maktabkhooneh-course.html", import.meta.url), "utf8");
 const url = "https://maktabkhooneh.org/course/python-mk346/";
@@ -206,7 +207,7 @@ describe("collection behavior", () => {
   });
   test("discovers course-only maps, deduplicates and streams partial failures", async () => {
     const requests: string[] = [];
-    const scraper = new MaktabkhoonehScraper({ delayMs: 0, fetch: transport(input => {
+    const scraper = new LegacyMaktabkhoonehScraper({ delayMs: 0, fetch: transport(input => {
       requests.push(input);
       if (input.endsWith("robots.txt")) return new Response("User-agent: *\nSitemap: https://maktabkhooneh.org/sitemap.xml");
       if (input.endsWith("sitemap.xml")) return new Response('<sitemapindex><sitemap><loc>https://maktabkhooneh.org/sitemap/course.xml</loc></sitemap><sitemap><loc>https://maktabkhooneh.org/sitemap/teacher.xml</loc></sitemap></sitemapindex>');
@@ -225,7 +226,7 @@ describe("collection behavior", () => {
   test("temporary failures retry, robots denial and access denial stop", async () => {
     let attempts = 0;
     const waits: number[] = [];
-    const scraper = new MaktabkhoonehScraper({ delayMs: 0, sleep: async ms => { waits.push(ms); }, fetch: transport(input => {
+    const scraper = new LegacyMaktabkhoonehScraper({ delayMs: 0, sleep: async ms => { waits.push(ms); }, fetch: transport(input => {
       if (input.endsWith("robots.txt")) return new Response("User-agent: *\nDisallow: /course/blocked-mk1/");
       attempts++;
       return attempts === 1 ? new Response("wait", { status: 429, headers: { "Retry-After": "2" } }) : new Response(fixture);
@@ -233,17 +234,17 @@ describe("collection behavior", () => {
     assert.equal((await scraper.scrapeCourse(url)).providerCourseId, "10465");
     assert.equal(attempts, 2); assert.ok(waits[0] >= 1900);
     await assert.rejects(scraper.scrapeCourse("https://maktabkhooneh.org/course/blocked-mk1/"), AccessDeniedError);
-    const denied = new MaktabkhoonehScraper({ delayMs: 0, fetch: transport(input => input.endsWith("robots.txt") ? new Response("User-agent: *") : new Response("denied", { status: 403 })) });
+    const denied = new LegacyMaktabkhoonehScraper({ delayMs: 0, fetch: transport(input => input.endsWith("robots.txt") ? new Response("User-agent: *") : new Response("denied", { status: 403 })) });
     await assert.rejects(denied.scrapeCourse(url), AccessDeniedError);
     await assert.rejects(denied.scrapeCourse(url), /paused/);
   });
   test("blocks cross-host redirects, excessive response bodies and cancellation", async () => {
-    const redirect = new MaktabkhoonehScraper({ delayMs: 0, fetch: transport(() => new Response(null, { status: 302, headers: { Location: "https://127.0.0.1/" } })) });
+    const redirect = new LegacyMaktabkhoonehScraper({ delayMs: 0, fetch: transport(() => new Response(null, { status: 302, headers: { Location: "https://127.0.0.1/" } })) });
     await assert.rejects(redirect.initialize(), /Only HTTPS/);
-    const oversized = new MaktabkhoonehScraper({ delayMs: 0, maxResponseBytes: 5, fetch: transport(() => new Response("0123456789")) });
+    const oversized = new LegacyMaktabkhoonehScraper({ delayMs: 0, maxResponseBytes: 5, fetch: transport(() => new Response("0123456789")) });
     await assert.rejects(oversized.initialize(), /size limit/);
     const signal = AbortSignal.abort();
-    const canceled = new MaktabkhoonehScraper({ signal, fetch: transport(() => { throw new Error("must not fetch"); }) });
+    const canceled = new LegacyMaktabkhoonehScraper({ signal, fetch: transport(() => { throw new Error("must not fetch"); }) });
     await assert.rejects(canceled.initialize(), /abort/i);
   });
 });
@@ -268,6 +269,7 @@ test("CLI checkpoints partial exports, resumes only failed courses, and validate
     const completed = JSON.parse(await readFile(output, "utf8"));
     assert.equal(completed.status, "complete"); assert.equal(completed.courses.length, 2); assert.equal(completed.errors.length, 0);
     assert.equal(completed.fullCatalog, false); assert.equal(firstRequests, 1);
+    assert.equal((await aggregateCourses([output])).courses.length, 2);
     await assert.rejects(main(["--limit", "0"], options), /positive/);
     await assert.rejects(main(["--all", "--limit", "2"], options), /Choose/);
     await assert.rejects(main(["--url", url, "--output", output, "--resume"], options), /same provider/);

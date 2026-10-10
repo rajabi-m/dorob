@@ -11,7 +11,7 @@ export const v2Paths: Record<string, string> = {
   offers: "pricing.data", image: "thumbnail.data", syllabus: "curriculum.data.syllabus", syllabusCoverage: "curriculum.data.syllabusCoverage", lessonCount: "curriculum.data.lessonCount", reviews: "feedback.data.reviews", rating: "feedback.data.rating", studentCount: "feedback.data.studentCount",
   availability: "providerState.data.availability", providerStatus: "providerState.data.providerStatus", ongoing: "providerState.data.ongoing", providerUpdatedAt: "providerState.data.providerUpdatedAt", features: "features.data", raw: "raw.data",
 };
-export function convertCourseV3(input: ProviderCourse): CourseIngestion {
+export function assembleCourseV3(input: ProviderCourse, submissionId: string, coverageReason: string): CourseIngestion {
   const course = finalizeCourse(structuredClone(input));
   const fieldSources = Object.fromEntries(Object.entries(course.source.fieldSources).map(([path, locator]) => {
     const [first, ...rest] = path.split(".");
@@ -25,9 +25,9 @@ export function convertCourseV3(input: ProviderCourse): CourseIngestion {
   fieldSources.sourceUrl ??= "saved-v2 canonical sourceUrl (adapter request context)";
   fieldSources.providerId ??= `saved-v2 adapter ${course.source.parser}`;
   fieldSources.providerCourseId ??= `saved-v2 record ${course.id}`;
-  const section = <T>(data: T | null): Section<T> => ({ coverage: { status: "unknown", reason: "V2 does not establish section completeness." }, data });
+  const section = <T>(data: T | null): Section<T> => ({ coverage: { status: "unknown", reason: coverageReason }, data });
   const converted: CourseIngestion = {
-    schemaVersion: 3, submissionId: `v2-${hash(input)}`, providerId: course.providerId, providerCourseId: course.providerCourseId, title: course.title, sourceUrl: course.sourceUrl,
+    schemaVersion: 3, submissionId, providerId: course.providerId, providerCourseId: course.providerCourseId, title: course.title, sourceUrl: course.sourceUrl,
     source: { checkedAt: course.source.checkedAt, extractor: course.source.parser, extractorVersion: course.source.parserVersion, method: course.source.method, fieldSources, warnings: [...course.source.warnings] },
     pricing: section(course.offers), thumbnail: section(course.image ? { kind: "url" as const, ...course.image } : null),
     description: section(course.description),
@@ -44,7 +44,11 @@ export function convertCourseV3(input: ProviderCourse): CourseIngestion {
   if (course.syllabus?.length === 0 && course.syllabusCoverage.status === "complete") {
     fieldSources["curriculum.data.syllabus"] ??= course.syllabusCoverage.reasons.join("; ");
   }
-  return validateIngestion(converted);
+  return converted;
+}
+
+export function convertCourseV3(input: ProviderCourse): CourseIngestion {
+  return validateIngestion(assembleCourseV3(input, `v2-${hash(input)}`, "V2 does not establish section completeness."));
 }
 
 export async function runConversion(args = process.argv.slice(2)): Promise<void> {

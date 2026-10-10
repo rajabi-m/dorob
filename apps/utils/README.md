@@ -6,7 +6,7 @@ Browse the [documentation hub](../../docs/index.md) and [current validation](../
 
 Read [how the scraper works](../../docs/provider-adapters.md#maktabkhooneh) for a short overview.
 
-[Course data format](../../docs/course-data-format.md) defines the common output. All four adapters emit the version-2 contract, adding anonymous public feedback, syllabus coverage, and richer educational evidence. Version-1 checkpoints cannot be resumed; freshly export without `--resume` and choose a new output path to retain old files.
+[Course data format](../../docs/course-data-format.md) defines the common output. All four standalone export commands emit the version-2 contract, adding anonymous public feedback, syllabus coverage, and richer educational evidence. The programmatic Maktabkhooneh adapter and ingestion worker emit version 3, as described below. Version-1 export checkpoints cannot be resumed; freshly export without `--resume` and choose a new output path to retain old files.
 
 ## Additional provider adapters
 
@@ -68,7 +68,8 @@ import { MaktabkhoonehScraper } from "@dorob/utils/maktabkhooneh";
 const scraper = new MaktabkhoonehScraper();
 const urls = await scraper.discoverCourses();
 for await (const result of scraper.scrapeCourses(urls)) {
-  // Save result.course, or record result.error for retry.
+  // Explicitly deliver result.observation (v3), or record result.error for retry.
+  // Prefer ScraperWorker for durable delivery and thumbnail processing.
 }
 ```
 
@@ -123,3 +124,91 @@ outputs and the input path cannot be overwritten. Nullable facts, source
 locators, selected raw evidence and unknown coverage survive conversion;
 missing or ambiguous evidence requires review. See the [v3 mapping and
 contract](../../docs/course-data-format.md#additive-v3-ingestion-mapping).
+
+## Maktabkhooneh programmatic v3 migration
+
+`MaktabkhoonehScraper` from `@dorob/utils/maktabkhooneh` now extends
+`BaseScraper`: `scrapeCourse(url)` returns `CourseIngestion` v3 and
+`scrapeCourses(urls)` yields `{ sourceUrl, observation, error }`.
+Native observations have fresh submission IDs, canonical provider identity and
+section coverage from embedded source inspection. Pricing/cover/description
+can be evidenced complete; educational/curriculum/feedback sections retain
+partial or unknown coverage. Invalid optional curriculum records a failed
+section; invalid required identity or pricing fails collection. Anonymous
+feedback remains a bounded page sample.
+
+`LegacyMaktabkhoonehScraper` is the explicit v2 compatibility adapter over
+the same parser and controlled transport. `bun run scrape:maktabkhooneh --help`
+and its existing URL/limit/all/output/resume workflow stay export-only,
+without backend requests. Saved-v2 conversion still uses
+`bun run convert:courses --input SAVED_V2.json --output NEW_V3.json`, with
+unknown coverage and deterministic IDs for replay. Aggregation/dashboard and
+TopLearn, Sabzlearn and Roocket remain v2. Do not pass worker journals as v2
+export checkpoints.
+
+## Private worker checkpoints and crash locks
+
+Worker journals are versioned private JSON files under ignored `apps/utils/output/`.
+New runs require a new file. Atomic publication/replacement and a `.lock` file
+protect each journal; resume validates the whole journal and matching provider,
+extractor, selections and backend before network activity or mutation. V2
+exports cannot be resumed here. Keep checkpoints while delivery or images are
+pending; they contain immutable source evidence and are not committed.
+
+After a crash, inspect `CHECKPOINT.json.lock` for its PID/start time and confirm
+that process is gone and no worker uses that checkpoint. Only then manually
+remove that specific lock and resume. Never remove a live writer's lock. Old
+`.tmp` files may be removed after that same check. There is no automatic lock
+stealing. Retain or delete completed journals according to local data policy.
+
+## Explicit worker state and operational ordering
+
+The worker runs sequentially: collect → atomically save immutable observation →
+submit → atomically save backend receipt → process that exact snapshot's
+thumbnail → atomically save image state. Saved observations bypass collection
+on resume; a lost receipt is recovered by replaying the exact payload and ID.
+Accepted selections resume only unresolved image processing. New refreshes use
+a new checkpoint and fresh IDs even for unchanged facts.
+
+Collection errors remain retryable; access denial/cancellation stops new work.
+Transient backend exhaustion leaves delivery pending and stops further fetching.
+409/422 ingestion errors remain terminal and actionable; resume never silently
+changes their payload/ID. Image errors retain accepted facts and retry only on
+explicit resume. Ready images and intentional missing input skip processing.
+Reports separate collection, new acceptance, replay, pending/failed delivery and
+image states, with observed timestamps and returned course/snapshot IDs.
+Partial, pending and interrupted runs exit nonzero. Missing input alone is
+successful, with presentation readiness false. Attempt history survives success
+while resolved error state clears.
+
+Operate only one active run per provider/backend and finish pending delivery
+before starting fresh refreshes. The checkpoint lock protects one file, not
+cross-checkpoint or distributed ordering. Current backend detail follows latest
+acceptance: delivering an older saved observation later can make it current.
+Checkpoints contain source evidence; retain pending journals, keep files private,
+and explicitly clean completed journals. After a crash, inspect the `.lock`
+PID/start time and confirm its owner has stopped before manually removing that
+specific lock. No automatic stealing or deletion occurs.
+
+## Explicit v3 collection and delivery
+
+Use `bun run ingest:maktabkhooneh --help` for the explicitly invoked worker.
+Example: `bun run ingest:maktabkhooneh --limit 2 --checkpoint apps/utils/output/reference-run.json`.
+Resume with `bun run ingest:maktabkhooneh --checkpoint apps/utils/output/reference-run.json --resume`.
+Use repeatable `--url` instead of discovery, or explicitly select `--all`; these
+flags cannot be combined with each other or `--limit`. The default discovery
+limit is ten and `--backend-url`/`DOROB_BACKEND_URL` selects the local backend
+(default `http://127.0.0.1:3001`). Every fresh refresh needs a new journal.
+Accepted facts and hosted-image readiness remain distinct from editorial
+publication. Frontend fixtures are unchanged; other provider migrations,
+scheduling and AI remain deferred. Startup/migrations never invoke the worker.
+See root README and validation for setup and acceptance results.
+
+October 10 owner-requested dev runs saved ten initial courses, then accepted 99
+of 100 selections (89 new records, ten refreshes). All 99 thumbnails were ready
+and fetched through the API. Of the accepted courses, 95 had paid offers and
+four had unknown pricing. The explicitly included known free LPIC-1 `mk711`
+page returned HTTP 500 before extraction. Keep that collection failure distinct
+from parser/validation or delivery errors; it does not establish a general
+free-course defect. Journals, diagnostics and reports remain private ignored
+output, with the partial checkpoint retained for an explicit later resume.
