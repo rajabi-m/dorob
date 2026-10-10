@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Homepage } from "@/components/homepage";
 import "./design-system/preview.css";
 import "./home.css";
+import { createCourseClient } from "@/lib/course-api";
+import { parseCourseQuery } from "@dorob/core";
 
 export const metadata: Metadata = {
   title: "دورُب — کشف و مقایسه‌ی دوره‌های آموزشی",
@@ -9,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <Homepage heroVariant="discovery" />;
+  return <Homepage heroVariant="discovery" realCourses={createCourseClient().list(parseCourseQuery(new URLSearchParams()))} />;
 }

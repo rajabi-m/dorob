@@ -30,6 +30,14 @@ export function createThumbnailService(repository: IngestionRepository, store: A
   }
   return {
     store, initialize: cleanup, inspect,
+    async inspectAvailability(snapshot: CourseSnapshot, storageKey: string) {
+      const asset = snapshot.thumbnail.asset;
+      if (snapshot.thumbnail.status === "ready" && asset && !(await store.available(storageKey, asset.byteSize))) {
+        await repository.invalidate(snapshot.id, asset.id);
+        return false;
+      }
+      return snapshot.presentationReady;
+    },
     async upload(file: Blob) {
       if (!file.size || file.size > INPUT_LIMIT) throw new ImageError("input_limit", 413);
       return bounded(async () => {

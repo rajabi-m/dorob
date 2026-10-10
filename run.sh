@@ -115,7 +115,7 @@ bun run db:migrate
 set -m
 bun run --cwd apps/api dev &
 API_PID=$!
-bun run dev --port "$WEB_PORT" &
+DOROB_API_URL="${SWAGGER_URL%/docs}" bun run dev --port "$WEB_PORT" &
 WEB_PID=$!
 
 printf '\nDorob development services are starting:\n'

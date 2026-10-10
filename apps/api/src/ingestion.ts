@@ -21,19 +21,19 @@ export interface IngestionRepository {
   fail(snapshotId: string, leaseId: string, code: string): Promise<void>;
 }
 const referenceFields = `id,provider_id AS "providerId",provider_course_id AS "providerCourseId",title,source_url AS "sourceUrl"`;
-const projection = `s.id,s.course_id AS "courseId",s.acceptance_order AS "acceptanceOrder",s.received_at::text AS "receivedAt",s.request_hash AS "requestHash",s.fact_hash AS "factHash",s.payload,
+export const snapshotProjection = `s.id,s.course_id AS "courseId",s.acceptance_order AS "acceptanceOrder",s.received_at::text AS "receivedAt",s.request_hash AS "requestHash",s.fact_hash AS "factHash",s.payload,
   a.status,a.failure_code AS "failureCode",f.id AS "assetId",f.hash,f.profile,f.width,f.height,f.byte_size AS "byteSize",f.storage_key AS "storageKey"`;
-const joins = `FROM course_snapshots s JOIN thumbnail_attempts a ON a.snapshot_id=s.id LEFT JOIN thumbnail_assets f ON a.asset_id=f.id`;
-interface SnapshotRow extends Omit<CourseSnapshot, "thumbnail" | "presentationReady"> {
+export const snapshotJoins = `FROM course_snapshots s JOIN thumbnail_attempts a ON a.snapshot_id=s.id LEFT JOIN thumbnail_assets f ON a.asset_id=f.id`;
+export interface SnapshotRow extends Omit<CourseSnapshot, "thumbnail" | "presentationReady"> {
   status: CourseSnapshot["thumbnail"]["status"]; failureCode: string | null; assetId: string | null; hash: string; profile: string; width: number; height: number; byteSize: number;
 }
-function snapshotRow(row: SnapshotRow): CourseSnapshot {
+export function snapshotRow(row: SnapshotRow): CourseSnapshot {
   const asset: ThumbnailAsset | null = row.assetId ? { id: row.assetId, hash: row.hash, profile: row.profile, width: row.width, height: row.height, byteSize: row.byteSize, format: "webp", url: `/assets/thumbnails/${row.assetId}` } : null;
   return { id: row.id, courseId: row.courseId, acceptanceOrder: row.acceptanceOrder, receivedAt: new Date(row.receivedAt).toISOString(), requestHash: row.requestHash, factHash: row.factHash, payload: row.payload,
     thumbnail: { status: row.status, failureCode: row.failureCode, asset }, presentationReady: row.status === "ready" && asset !== null };
 }
 async function readSnapshot(tx: ReservedSQL, courseId: string, id: string) {
-  const rows: SnapshotRow[] = await tx.unsafe(`SELECT ${projection} ${joins} WHERE s.course_id=$1 AND s.id=$2::uuid`, [courseId, id]);
+  const rows: SnapshotRow[] = await tx.unsafe(`SELECT ${snapshotProjection} ${snapshotJoins} WHERE s.course_id=$1 AND s.id=$2::uuid`, [courseId, id]);
   if (!rows.length) throw new CatalogError(404); return snapshotRow(rows[0]);
 }
 const uploadFields = `id,staging_key AS "stagingKey",hash,profile,width,height,byte_size AS "byteSize",expires_at::text AS "expiresAt",consumed_snapshot_id AS "consumedSnapshotId"`;
@@ -75,7 +75,7 @@ export function createIngestionRepository(sql: SQL): IngestionRepository {
     history(courseId, page) {
       return transaction(sql, true, async tx => {
         if (!(await tx`SELECT id FROM courses WHERE id=${courseId}`).length) throw new CatalogError(404);
-        const rows: SnapshotRow[] = await tx.unsafe(`SELECT ${projection} ${joins} WHERE s.course_id=$1 ORDER BY s.acceptance_order DESC LIMIT $2 OFFSET $3`, [courseId, page.limit, page.offset]);
+        const rows: SnapshotRow[] = await tx.unsafe(`SELECT ${snapshotProjection} ${snapshotJoins} WHERE s.course_id=$1 ORDER BY s.acceptance_order DESC LIMIT $2 OFFSET $3`, [courseId, page.limit, page.offset]);
         const [{ total }] = await tx`SELECT count(*)::int AS total FROM course_snapshots WHERE course_id=${courseId}`;
         return { items: rows.map(snapshotRow), total, ...page };
       });

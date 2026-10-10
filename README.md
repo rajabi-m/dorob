@@ -2,7 +2,7 @@
 
 نام فارسی پروژه «دورُب» است؛ ترکیبی از نام‌های «دوره» و «ترب».
 
-A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 includes an independent local API/PostgreSQL foundation and manual curated catalog APIs. Frontend and production integration remain pending.
+A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 includes an independent local API/PostgreSQL foundation and manual curated catalog APIs. The homepage course grid now reads the local public catalog; group routes and surrounding samples remain fixtures. Production deployment remains pending.
 
 Start with the [documentation hub](docs/index.md), [project plan](Plan.md), and [contributor instructions](AGENTS.md).
 
@@ -20,13 +20,15 @@ The completed `redesign-scraper-pipeline` change is archived at [2026-10-10-rede
 
 In Codex CLI or IDE, invoke `$openspec-propose "your idea"`. In the Codex desktop app, select `openspec-propose` from Skills in the sidebar; reload the project if newly installed skills are not visible. Review the proposal, design, specs, and tasks before requesting implementation with `$openspec-apply-change`. Keep each change small and grounded in `Plan.md` and `old-backend.md`.
 
+The completed `connect-homepage-courses` change is archived at [2026-10-11-connect-homepage-courses](openspec/changes/archive/2026-10-11-connect-homepage-courses/). All 20 tasks are complete; its contracts are synced to [homepage-course-catalog](openspec/specs/homepage-course-catalog/spec.md) and [public-course-catalog](openspec/specs/public-course-catalog/spec.md), and all ten main specs pass strict validation.
+
 ## Current experience
 
-- `/`: snapshot-backed homepage with Persian search, category/free filtering, shared course cards and details, the selected blue hero, and cycling course-group covers.
+- `/`: public-catalog course grid with Persian search, editorial category/free filtering, pagination and real-course details; the selected blue hero and cycling course-group covers retain saved samples.
 - `/design-system`: approved سنجش / لاجورد design, the supplied ring-and-cap logo, Vazirmatn, semantic tokens, interactive discovery examples, and component previews. Most examples are fictional; course-card snapshots are dated explicitly.
 - `/groups/[id]`: three topic destinations with course information and comparison interactions. `/groups/python-beginner` uses the selected eight-course Python prototype with real saved facts, a manual cover gallery, and labeled editorial analysis.
 
-The homepage uses 18 dated provider samples; its beginner Python group has three members, while the Python route previews eight offerings across levels. Reconciling that membership and dedicated results/detail/comparison routes remain follow-ups. Search/filter state resets on reload. Prices are snapshots, popularity/order is illustrative, and no live AI, scheduled refresh, or production backend is connected. See [frontend behavior and decisions](docs/frontend.md) and [snapshot provenance](docs/provider-snapshots.md).
+The hero and sample groups retain dated provider samples; its beginner Python group has three members, while the Python route previews eight offerings across levels. Reconciling that membership and dedicated results/detail/comparison routes remain follow-ups. Search/filter state resets on reload. Course prices are retained observations, not current provider quotations. The API orders courses by ingestion time; sample group popularity remains illustrative. No live AI, scheduled refresh or production backend is connected. See [frontend behavior and decisions](docs/frontend.md) and [snapshot provenance](docs/provider-snapshots.md).
 
 ## Local development
 
@@ -56,7 +58,7 @@ frontend port; `--api-port` selects the backend port. `--db-port` overrides Comp
 also works by full path from another directory. Ctrl+C stops both app processes;
 it stops PostgreSQL only if this run started it, preserving its volume and data.
 If either app process exits, the launcher stops the other. Frontend fixtures
-remain separate from the API; launching both does not enable frontend integration.
+retain their samples; the homepage course grid connects to the launched API.
 
 For frontend-only development, use `bun run dev` and open `http://localhost:3000`.
 Use `bun run dev --port 3002` to select another frontend port.
@@ -71,7 +73,7 @@ bun run start
 
 Run `build` successfully before `start`. Lint, type checking, and 96 utility tests pass. Production compilation/types pass, but page-data collection fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`. The experimental Turbopack worker-thread configuration resolves the earlier worker-port failure. The local Homebrew Node executable was previously unable to start because `libllhttp.9.3.dylib` was missing. See [current validation and limitations](docs/validation.md).
 
-The frontend needs no environment variables, database, API keys, or remote fonts. Vazirmatn is bundled locally; its license is included in the installed font package.
+The homepage course grid needs the local API/database; frontend-only development shows a scoped course error with retry. `DOROB_API_URL` is optional when using the default API port. No API keys or remote fonts are required. Vazirmatn is bundled locally; its license is included in the installed font package.
 
 ## Backend development
 
@@ -146,8 +148,7 @@ owner temporarily accepts SSRF/DNS rebinding risk without IP pinning for interna
 crawler URLs. **TODO:** restore verified IP pinning later. See [catalog setup,
 Swagger walkthrough and storage lifecycle](docs/catalog.md#retained-source-observations-v3)
 and [validation](docs/validation.md#course-ingestion-history--october-10-2026).
-AI, automatic import/scraping, frontend consumption and production integration
-remain deferred. Existing v2 utilities and public curation contracts remain.
+AI, scheduled collection and production deployment remain deferred. Homepage course consumption is implemented through the public presentation API. Existing v2 utilities and public curation contracts remain.
 Use `bun run convert:courses --help` for explicit conversion. Keep separate
 persistent asset/staging directories configured by `THUMBNAIL_ASSET_DIR` and
 `THUMBNAIL_STAGING_DIR`; defaults are ignored under `apps/api/storage`. Back up
@@ -163,7 +164,7 @@ bun run build:api
 bun apps/api/tests/built-ingestion-smoke.ts
 ```
 
-The local catalog adds explicit SQL migrations, minimal course references, editor-defined groups, and many-to-many assignments. See [catalog setup and workflow](docs/catalog.md). It has no ORM, frontend integration, scraper/AI jobs, authentication, or cloud deployment. Frontend data remains saved fixtures.
+The local catalog adds explicit SQL migrations, minimal course references, editor-defined groups, and many-to-many assignments. See [catalog setup and workflow](docs/catalog.md). It has no ORM, AI jobs, authentication or cloud deployment. The homepage course section reads eligible current observations; surrounding frontend regions retain saved fixtures.
 
 
 ## Standalone data utilities
@@ -232,7 +233,7 @@ Accepted facts, hosted-image readiness and editorial website publication are
 separate. This command creates retained observations and explicitly processes
 images; it does not publish groups or connect frontend fixtures. API startup,
 migrations and the launcher do not start collection. Schedules, other provider
-migrations, AI and frontend integration remain deferred. Acceptance check
+migrations and AI remain deferred. Homepage course integration is now implemented separately. Acceptance check
 results are recorded in [validation](docs/validation.md).
 
 October 10 dev sampling: the initial ten courses succeeded. A subsequent
@@ -241,3 +242,30 @@ refreshes), with all 99 hosted thumbnails verified. Pricing was 95 paid and four
 unknown; the known free LPIC-1 selection failed with provider HTTP 500 before
 extraction. This does not establish a general free-course parser defect.
 Private journals and reports remain ignored under `apps/utils/output/`.
+
+### Homepage catalog configuration
+
+Only the homepage `#courses` grid and real-course details read the public API.
+The hero shelf/provider strip, topics, sample groups, group routes and design
+system retain their saved samples. Categories use published backend editorial
+group memberships, so ready unassigned courses can be visible unfiltered while
+category results remain empty. Pagination uses offsets and can shift during
+concurrent ingestion. API reads display retained facts; they do not scrape.
+
+`./run.sh` supplies its resolved API origin (including `--api-port`) to the web
+process as server-only `DOROB_API_URL`; wildcard bind hosts map to loopback.
+Standalone web configuration is illustrated in `apps/web/.env.example`:
+
+```sh
+DOROB_API_URL=http://127.0.0.1:3003 bun run dev
+```
+
+The value must be an HTTP(S) origin without credentials, path, query or fragment.
+Default: `http://127.0.0.1:3001`. Browser JSON/image requests use `/api/courses`
+and `/api/thumbnails/:assetId` on the web origin. No public API-origin variable,
+database setting or credentials are sent to the browser. Five-second deadlines,
+validated responses and scoped retry states keep other page regions usable when
+the backend is unavailable. Frontend-only mode therefore shows a course error
+with retry while fixture routes remain usable.
+
+Focused shared/web verification: `bun test packages/core/tests apps/web/tests`.

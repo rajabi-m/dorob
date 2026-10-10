@@ -1,6 +1,6 @@
 # Frontend: homepage and course groups
 
-Phase 2 is complete for now by owner decision on October 4, 2026. The current homepage uses dated provider snapshots, shared categories/course cards, the selected blue hero, and automatically cycling group covers. Group membership comes from snapshots; the Python route is an eight-offering topic prototype with manual cover selection and labeled editorial analysis. Search/filter state resets on reload. Dedicated results/detail/comparison routes, reconciliation of the Python route with the three-course homepage group, shared extraction of page-local components, and comprehensive accessibility review remain follow-ups. The design history below includes superseded layouts, controls, removed previews, and older build failures; [validation](validation.md) records current checks.
+Phase 2 is complete for now by owner decision on October 4, 2026. The homepage course results now read the local public API; surrounding regions retain dated provider samples, shared categories/course cards, the selected blue hero, and automatically cycling group covers. Group membership comes from snapshots; the Python route is an eight-offering topic prototype with manual cover selection and labeled editorial analysis. Search/filter state resets on reload. Dedicated results/detail/comparison routes, reconciliation of the Python route with the three-course homepage group, shared extraction of page-local components, and comprehensive accessibility review remain follow-ups. The design history below includes superseded layouts, controls, removed previews, and older build failures; [validation](validation.md) records current checks.
 
 ## Homepage design and implementation history
 
@@ -176,4 +176,14 @@ Firefox desktop review confirmed real covers, the selected layout, and gallery s
 
 ## Fixed category ownership
 
-`packages/core/src/index.ts` owns the ordered category IDs and Persian labels. Changing categories requires a code change; the API does not provide category administration. `discovery-showcase.tsx` retains a `Record<CategoryId, CategoryPresentation>` for icons, descriptions, and SVG artwork. Artwork lookup uses IDs, never translated labels (`tools` retains the `workflow` artwork). The frontend consumes the shared registry locally and continues to filter saved snapshots; it does not call the categories or catalog API.
+`packages/core/src/categories.ts`, re-exported by `index.ts`, owns the ordered category IDs and Persian labels. Changing categories requires a code change; the API does not provide category administration. `discovery-showcase.tsx` retains a `Record<CategoryId, CategoryPresentation>` for icons, descriptions, and SVG artwork. Artwork lookup uses IDs, never translated labels (`tools` retains the `workflow` artwork). The frontend consumes the category registry locally; homepage course filtering uses the public course API. Saved sample groups retain their editorial fixture categories.
+
+## Homepage public course integration — October 11, 2026
+
+Only `#courses` on `/` opts into the public catalog. Initial results come directly from a server-only module under a scoped Suspense boundary. Browser filtering/paging and details use fixed same-origin handlers; hosted UUID WebP images are proxied with bounded bytes, deadlines and conditional cache support. `DOROB_API_URL` remains server-only.
+
+Cards display actual retained title/provider, known level/duration, selected price and Persian Jalali source date. Missing values remain unknown; failed images show a neutral text/icon placeholder. Free, paid, subscription and unknown summaries are distinct. Real details fetch the latest eligible observation and show missing fields, offers/access terms, syllabus and outbound source links; newer observations are disclosed. Hero samples keep the original sample-detail dialog. Native modal dismissal restores trigger focus, including React development effect replay.
+
+Search, category and free selection reset pagination. Abort signals and active-request guards prevent older responses from replacing a new query. Loading/status/error/retry and empty states affect only the course section. Published backend groups determine category membership; an empty category does not mean no unassigned courses exist. Stable offset paging can still shift if ingestion changes between requests. Reads never scrape or imply fresh provider pricing. The hero/provider strip, topics, group cards/routes, navigation/footer and design-system fixtures retain their prior presentation.
+
+See [validation](validation.md) for measured browser coverage and outstanding checks.

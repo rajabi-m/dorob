@@ -10,12 +10,13 @@
     "typecheck": "bun --bun next typegen && bun --bun tsc --noEmit"
   },
   "dependencies": {
+    "@dorob/core": "workspace:*",
     "@fontsource-variable/vazirmatn": "5.3.0",
     "lucide-react": "1.49.0",
     "next": "16.3.7",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "@dorob/core": "workspace:*"
+    "server-only": "0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
@@ -24,6 +25,7 @@
     "@types/react-dom": "19.3.0",
     "eslint": "9.39.1",
     "eslint-config-next": "16.3.7",
+    "happy-dom": "^20.14.6",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3"
   }

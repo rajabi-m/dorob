@@ -158,7 +158,7 @@ This documentation/commit pass does not claim a new browser interaction review. 
 
 ## Data boundaries
 
-Frontend course facts are dated saved samples; analytical copy and ordering are labeled editorial/prototype content. Standalone export commands emit version 2 and return `derived: null`; the programmatic Maktabkhooneh adapter and explicit ingestion worker emit version 3. Frontend snapshots are separate browser-safe fixtures. Utility tests run offline with retained and synthetic fixtures. Owner-requested live dev samples are recorded below; no full-catalog crawl was performed. Broader provider-template sampling, freshness operations, deployment monitoring, and evidence-backed AI evaluation remain future work.
+Homepage course results and real-course details use retained public catalog observations; surrounding sample course facts are dated fixtures, and analytical copy and ordering are labeled editorial/prototype content. Standalone export commands emit version 2 and return `derived: null`; the programmatic Maktabkhooneh adapter and explicit ingestion worker emit version 3. Frontend snapshots are separate browser-safe fixtures. Utility tests run offline with retained and synthetic fixtures. Owner-requested live dev samples are recorded below; no full-catalog crawl was performed. Broader provider-template sampling, freshness operations, deployment monitoring, and evidence-backed AI evaluation remain future work.
 
 Generated provider exports/dashboard snapshots stay ignored under `apps/utils/output/`; they are not part of the commit. The local dashboard therefore requires local exports before use. See [utility usage](../apps/utils/README.md).
 
@@ -336,3 +336,31 @@ The stale URL is not automatically resolved or retried through an alternative
 route; operators should select the current provider-linked URL. This fixes the
 pricing regression and completes the previously deferred live free acceptance;
 it does not establish full-catalog coverage.
+
+## Homepage public course integration — October 11, 2026
+
+Acceptance scope: the owner explicitly narrowed browser review to the homepage course section on October 11. Other frontend regions remain unchanged and broader review is deferred. No owner course/group records were created, edited or removed for acceptance.
+
+- Chrome desktop (1440px) and iPhone SE emulation (375×667): inspected hosted thumbnails, long Persian titles and the mixed `Retention & Engagement` title, Persian digits/Jalali source dates, discounted/unknown prices, and card actions. No unintended horizontal overflow appeared in the reviewed course section or detail dialog. Maktabkhooneh’s existing local mark now appears beside its name using the shared card logo sizing; unknown providers retain their names without a guessed mark.
+- Existing development catalog: 99 eligible courses, 18 per initial page, six pages. Chrome advanced to page two with updated courses and focus moved to the results heading. Searching «پیش‌بینی» found three courses including a page-two match and reset paging; `Retention` found one mixed-title course. Free-only returned zero honestly (the development samples contain paid/unknown offers); clearing restored 99. The programming category returned zero with the explanation that membership follows published backend editorial groups.
+- Real detail fetched current facts and offers with explicit missing certificate/access/support fields. Chrome followed its source link into a new provider tab at the retained URL. Escape restored the originating card button focus; Tab visibly focused the source action. React development effect replay initially dismissed the dialog; removing cleanup-driven close fixed it. StrictMode DOM regression tests now exercise this lifecycle, as well as 404/error/retry, newer observations, cancellation and focus restoration.
+- Initial server-rendered cards were verified in returned HTML. Stopping the API produced a safe same-origin 503 and a homepage course-only retry state while the page remained HTTP 200; restarting restored the 99-course response. Controlled web tests verify subsequent query failure/retry, stale-response cancellation, neutral image placeholders and malformed-response rejection. No fixture fallback is used.
+- Results/status loading and errors use live status semantics and `aria-busy`; keyboard focus was reviewed in Chrome. This is not a full assistive-technology audit. Browser control intermittently reported unavailable windows/stale app state; completed observations above were obtained after reconnecting.
+- Default API configuration and launcher `--api-port 3013` both served the same 99-course catalog through the web origin. The server-only import guard rejected a temporary client import; the temporary check was removed. Local Swagger executed the list request successfully against an isolated synthetic ready course.
+
+Final checks:
+
+- `bun run lint` and `bun run typecheck`: passed across the workspace. Web lint/types also passed after the provider-mark fix.
+- `bun test packages/core/tests apps/web/tests`: 11 passed, zero failed, 125 assertions. Happy DOM has no CSS layout, so Next Image emits fill-parent layout warnings there; actual card sizing was inspected in Chrome.
+- `bun run test:api`: 32 passed, 18 database integration tests skipped, zero failed.
+- `API_INTEGRATION=1 bun run test:api`: 50 passed, zero failed, 535 assertions against isolated PostgreSQL schemas/storage; cleanup completed.
+- `bun run build:api`: passed (353 bundled modules).
+- `bun run build`: compilation and TypeScript passed; page-data collection failed for `/design-system` with the existing Bun 1.3.8 error `Expected CommonJS module to have a function wrapper`. Production build acceptance remains limited by this documented runtime issue.
+- RTL detector: components (27 files) and homepage CSS, zero errors/warnings. `bash -n run.sh` and `git diff --check` passed.
+- Final diff: course-only opt-in, separate real detail/card components, browser-safe contracts, public API/proxies and configuration/docs. Shared card headings reserve two title lines to align neighboring provider rows; fixture data, hero styles and group implementations retain their existing content. The broader browser comparison was removed from this change’s remaining acceptance at the owner’s request.
+
+Known limits: full eligible candidates are searched in memory for the small local catalog; offsets can shift during concurrent ingestion; source facts and prices retain their observation date. Some source descriptions contain literal encoded HTML entities; they are rendered as text, never injected as HTML. No new collection, AI analysis, group migration or production deployment is included.
+
+### Archive and commit verification — October 11, 2026
+
+All 20 tasks are complete; `connect-homepage-courses` is archived with both contracts synced to main specs. Fresh commit checks passed: workspace lint/typecheck, 11 shared/web tests (125 assertions), 96 utility tests, 50 API tests including isolated PostgreSQL integration (535 assertions), API build, all ten main specs under strict validation, RTL detector (components/homepage CSS), launcher syntax and whitespace checks. The initial sandboxed web run could not bind its temporary loopback server; the same suite passed with local access. Frontend production compilation and TypeScript passed, then page-data collection failed for `/groups/[id]` with the established Bun CommonJS function-wrapper error. This commit pass did not repeat the browser acceptance recorded above.

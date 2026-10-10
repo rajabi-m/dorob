@@ -81,3 +81,14 @@
   .home-footer { flex-wrap: wrap; gap: 14px; }
   .home-footer p { order: 3; inline-size: 100%; }
 }
+
+/* Public catalog only; fixture card/dialog consumers retain their styles. */
+.catalog-source-date { color: var(--ds-muted); margin-block-end: 8px; line-height: 1.9; }
+.catalog-image-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--ds-muted); font-size: 12px; }
+.catalog-image-placeholder svg { inline-size: 28px; block-size: 28px; }
+.catalog-pagination { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; margin-block-start: 24px; }
+.catalog-pagination span { font-size: 13px; line-height: 1.9; }
+.catalog-dialog { overflow-wrap: anywhere; }
+.catalog-price > small { display: block; }
+.catalog-price strong { display: block; overflow-wrap: anywhere; }
+.catalog-dialog li { margin-block-end: 12px; }

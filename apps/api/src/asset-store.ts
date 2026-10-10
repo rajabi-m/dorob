@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir, link, unlink, readFile, readdir, stat } from "node:fs/promises";
+import { mkdir, link, unlink, readFile, readdir, stat, access } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { ImageError, OUTPUT_LIMIT, type ProcessedImage } from "./raster";
 export const byteHash = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
@@ -37,6 +37,19 @@ export function createAssetStore(config: StorageConfig) {
         const bytes = Buffer.from(await file.arrayBuffer());
         if (!bytes.length || byteHash(bytes) !== hash) throw new Error(); return bytes;
       } catch { throw new ImageError("asset_unavailable", 503); }
+    },
+    async available(key: string, byteSize: number) {
+      // Inspect metadata without loading image bytes during catalog discovery.
+      try { await access(config.assetDirectory); }
+      catch { throw new ImageError("asset_unavailable", 503); }
+      try {
+        const target = path(config.assetDirectory, key), info = await stat(target);
+        await access(target, 4);
+        return info.isFile() && info.size === byteSize && info.size > 0 && info.size <= OUTPUT_LIMIT;
+      } catch (error) {
+        if ((error as { code?: string }).code === "ENOENT") return false;
+        throw new ImageError("asset_unavailable", 503);
+      }
     },
     async removeStage(key: string) { await unlink(path(config.stagingDirectory, key)).catch(() => {}); },
     async cleanupOrphanStage(referenced: (key: string) => Promise<boolean>) {

@@ -12,7 +12,8 @@
 .thumbnail > div, .thumbnail svg { inline-size: 100%; block-size: 100%; }
 .body { display: flex; flex: 1; flex-direction: column; padding: 12px 14px; }
 .card .level { position: absolute; inset-block-end: 8px; inset-inline-start: 8px; background: var(--ds-surface); }
-.heading { margin-block: 0 8px; }
+/* Reserve two title lines so provider rows align across neighboring cards. */
+.heading { min-block-size: 54px; margin-block: 0 8px; }
 .card .title { padding: 0; border: 0; background: none; color: var(--ds-ink); text-align: start; font-size: 15px; font-weight: 750; line-height: 1.8; overflow-wrap: anywhere; }
 .card .title:hover { color: var(--ds-primary); }
 .info { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; margin-block-end: 10px; }

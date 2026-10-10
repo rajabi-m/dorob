@@ -272,3 +272,76 @@ Accepted facts and hosted-image readiness remain distinct from editorial
 publication. Frontend fixtures are unchanged; other provider migrations,
 scheduling and AI remain deferred. Startup/migrations never invoke the worker.
 See root README and validation for setup and acceptance results.
+
+## Public course presentation
+
+The additive browser-safe `PublicCourse`, `PublicCourseDetail`, `PriceSummary`,
+`PublicOffer`, and `CourseQuery` contracts live in `packages/core`. List items
+contain stable `id`, current `snapshotId`, provider identity/name, source URL,
+`checkedAt`, hosted thumbnail identity/path/dimensions/alt, nullable level,
+content minutes and instructors, editorial category IDs, and a price summary.
+Details add nullable description, syllabus and purchase offers from that same
+observation. `null` means unavailable; an empty list means a confirmed empty
+section. No previous snapshot or frontend sample fills missing fields.
+Raw evidence, ingestion IDs/hashes/locators and processing diagnostics are omitted.
+
+`checkedAt` is the provider collection time, not the time the browser/API read
+occurred. A public read does not collect new provider facts. Cards/details render
+this time as a Jalali date; a detail response identifies its own observation even
+when ingestion changed it after the card loaded.
+
+Offers preserve type, label, normalized toman amounts, explicit status, billing
+period, certificate/access/support terms. Select an explicitly free one-time
+offer first; otherwise the lowest positive paid one-time toman amount (stable
+lexical offer-ID tie-break); otherwise subscription access; otherwise unknown.
+Multiple one-time options label a selected paid summary as a starting price.
+A discount requires a greater original amount in the same normalized unit.
+Unknown zero is never free; currencies are never guessed. Unknown summary:
+
+```json
+{"status":"unknown","offerId":null,"amount":null,"originalAmount":null,"unit":"toman","startingPrice":false,"billingPeriod":null,"unavailableReason":"not-established"}
+```
+
+Runtime page/detail validators reject malformed identities, pricing, pagination,
+foreign thumbnail paths, leaked extra fields and inconsistent offer selection.
+
+### Public read-only endpoints
+
+```sh
+curl 'http://127.0.0.1:3001/api/v1/courses?limit=18&offset=0'
+curl 'http://127.0.0.1:3001/api/v1/courses?q=پایتون&freeOnly=false'
+curl 'http://127.0.0.1:3001/api/v1/courses?category=code&freeOnly=true'
+# URL-encode the whole canonical ID, including any slash in the provider ID suffix:
+curl 'http://127.0.0.1:3001/api/v1/courses/example%3Aopaque%2Fcourse'
+```
+
+Open `/docs` → **Public catalog** → GET `/api/v1/courses` → **Try it out**.
+The response has `items`, matching `total`, `limit`, and `offset`. Default limit
+is 18 (1–100), default offset 0 (0–2147483647); both must be integers. `q` is
+at most 200 characters, `category` uses the six fixed IDs, and `freeOnly` is
+`true` or `false`. Unknown/repeated query keys are rejected. Details require a
+canonical encoded ID. Invalid inputs return safe 422; missing/ineligible detail
+returns 404; unavailable database or required image storage returns 503.
+
+A current accepted observation with a ready hosted thumbnail is automatically
+eligible, including ungrouped courses and unknown prices. Minimal references,
+pending/missing/failed current images are excluded. Old ready snapshots never
+replace an unready current one. Bounded metadata-only image checks reconcile
+missing files before counting or slicing results; reads never process images.
+A race after the check can still produce an image placeholder in the browser.
+
+Search uses literal normalized substrings across title, provider ID/name and
+instructors: NFKC, Arabic yeh/kaf to Persian equivalents, ZWNJ to space, collapsed
+whitespace and case folding. `%` and `_` retain literal meaning. This local slice
+reads a consistent view of current candidates and editorial memberships, then
+filters normalized text in memory, avoiding SQL wildcard interpretation. It
+inspects at most four files concurrently and does not load their image bytes.
+This is suitable for the small local catalog, not a large-catalog search index.
+
+Categories derive exclusively from published editorial groups with at least two
+members. Duplicate group memberships do not duplicate courses/categories. A
+ready course with no such assignment appears unfiltered and can match search;
+selecting a category may honestly return zero results until curation exists.
+Order is current acceptance time descending, then canonical course ID with `C`
+collation. On unchanged data offset pages are stable; concurrent ingestion can
+shift subsequent pages. Reads provide no frozen multi-request snapshot.
