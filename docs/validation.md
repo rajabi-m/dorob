@@ -1,5 +1,37 @@
 # Validation and known limitations
 
+## Ingestion CLI reporting — October 11, 2026
+
+`improve-ingestion-cli-output` replaces default per-selection JSON stdout with a
+bounded human summary. Explicit `--json` retains the existing full report fields
+and exit semantics; startup failures produce one safe error document. Progress,
+retries and diagnostics stay on stderr in both modes. Optional observers are
+isolated from checkpointing, and saved journals remain version 1.
+
+| Check | Result |
+| --- | --- |
+| `bun run test:utils` | Pass: 112 tests across 15 files, including existing provider regressions and new reporting coverage. |
+| `bun run lint` | Pass across web, utilities and API. |
+| `bun run typecheck` | Pass across web, utilities and API. |
+| `bun run build` | Frontend compilation and TypeScript pass; page-data collection fails with the previously documented Bun CommonJS function-wrapper error (the pre-commit rerun failed at `/icon.svg`; the earlier run failed at `/api/courses/[courseId]`). No frontend code changes are included here. |
+| CLI/worker integration | Offline complete, partial, canceled and resumed runs preserve observation/receipt identity; 1,000 selected URLs stop after one failed delivery with one pending and 999 unattempted selections. Resume uses the original 1,000-selection journal. |
+| Output/privacy/recovery | TTY replacement and ten-second discovery/request liveness, redirected throttling, cancellation/fatal timer cleanup, bounded failure groups, stage-specific guidance, spaces/apostrophes in shell commands, control-character rejection, unsafe exception/body redaction, lock/mismatch protection, terminal rejection review and pre-checkpoint failures are covered. |
+| Machine mode/help | Captured stdout parses as one unchanged report or safe fatal-error document; stderr carries diagnostics. Executable startup-error exit codes and standalone help pass. |
+| Scope/whitespace | Intended changes are utility reporting/request diagnostics, adjacent tests, operator docs and this OpenSpec task tracker. `git diff --check` passes. The separate `refine-homepage-course-cards` planning change is left untouched. |
+
+HTTP error messages remain compatible with legacy exports (`HTTP 404`), and
+request retries/rate limits are unchanged. Historical `transport` codes cannot
+recover previously discarded causes. All reporting verification uses fixtures
+and injected services; it does not crawl the live catalog, resolve the original
+backend outage or claim that the owner's pending live journal completed. No app
+server was started for this change. Its four CLI requirements are synced to the
+main `scraper-worker` spec, all ten main specs pass strict OpenSpec validation,
+and the completed change is archived under
+`openspec/changes/archive/2026-10-11-improve-ingestion-cli-output/`.
+Pre-commit checks repeated the 112-test, lint and type-check passes and the
+existing production-build limitation.
+
+
 ## Whole-app development launcher — October 10, 2026
 
 `bash -n run.sh`, help/invalid-port handling and whitespace checks pass. Invoking

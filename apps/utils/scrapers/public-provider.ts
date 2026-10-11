@@ -1,4 +1,5 @@
 import { setTimeout as sleep } from "node:timers/promises";
+import { diagnosticMessage, observe, type DiagnosticCode, type RetryEvent } from "../diagnostics";
 
 const entities: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", zwnj: "\u200c", zwj: "\u200d", ndash: "–", mdash: "—" };
 export function decodeEntities(value: string): string {
@@ -64,13 +65,16 @@ export function parseRobots(source: string, agent = "DorobBot") {
 }
 
 export class AccessDeniedError extends Error {}
-class HttpError extends Error {
-  constructor(public status: number, public retryAfter: string | null) { super(`HTTP ${status}`); }
+export class ProviderRequestError extends Error {
+  constructor(readonly code: DiagnosticCode) { super(/^http_[1-5]\d\d$/.test(code) ? `HTTP ${code.slice(5)}` : diagnosticMessage(code)); }
+}
+class HttpError extends ProviderRequestError {
+  constructor(public status: number, public retryAfter: string | null) { super(`http_${status}`); }
 }
 
 export type ScraperOptions = {
   delayMs?: number; timeoutMs?: number; retries?: number; maxResponseBytes?: number;
-  fetch?: typeof fetch; sleep?: (ms: number) => Promise<void>; signal?: AbortSignal; clock?: () => number;
+  fetch?: typeof fetch; sleep?: (ms: number) => Promise<void>; signal?: AbortSignal; clock?: () => number; onRetry?: (event: RetryEvent) => void;
 };
 
 export class PublicProviderClient {
@@ -79,7 +83,7 @@ export class PublicProviderClient {
   private nextRequestAt = 0;
   private queue: Promise<unknown> = Promise.resolve();
   private denied = false;
-  private options: Required<Omit<ScraperOptions, "signal">> & Pick<ScraperOptions, "signal">;
+  private options: Required<Omit<ScraperOptions, "signal" | "onRetry">> & Pick<ScraperOptions, "signal" | "onRetry">;
   constructor(private readonly origin: string, options: ScraperOptions = {}) {
     if (new URL(origin).origin !== origin || !origin.startsWith("https://") || new URL(origin).username || new URL(origin).password) throw new Error("Expected HTTPS origin");
     this.options = { delayMs: 1500, timeoutMs: 30000, retries: 3, maxResponseBytes: 20 * 1024 * 1024, fetch: globalThis.fetch, clock: Date.now, sleep: ms => sleep(ms, undefined, { signal: options.signal }), ...options };
@@ -180,7 +184,9 @@ export class PublicProviderClient {
         const retryMs = retry ? /^\d+$/.test(retry) ? Number(retry) * 1000 : Math.max(0, Date.parse(retry) - this.options.clock()) : 0;
         // Persist the wait so future requests respect Retry-After too.
         this.nextRequestAt = Math.max(this.nextRequestAt, this.options.clock() + Math.max(1000 * 2 ** attempt, Number.isFinite(retryMs) ? retryMs : 0));
-        if (attempt === this.options.retries) throw error;
+        const code = error instanceof HttpError ? error.code : error instanceof Error && ["TimeoutError", "AbortError"].includes(error.name) ? "timeout" : "transport";
+        if (attempt === this.options.retries) throw new ProviderRequestError(code);
+        observe(this.options.onRetry, { attempt: attempt + 1, waitMs: Math.max(0, this.nextRequestAt - this.options.clock()), code });
       }
     }
     throw new Error("Request retries exhausted");

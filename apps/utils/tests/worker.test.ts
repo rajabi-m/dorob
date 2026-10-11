@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { ScraperWorker, type Collector } from "../worker/worker";
+import { ScraperWorker, type Collector, type WorkerEvent, summarize } from "../worker/worker";
 import { BackendError, type BackendClient } from "../worker/backend-client";
 import { JournalStore, outputRoot, type Journal } from "../worker/journal";
 import { minimal } from "../../api/src/ingestion-examples";
@@ -31,7 +31,7 @@ async function workspace(run: (path: string) => Promise<void>) {
 test("worker crash before submission resumes the immutable saved observation", async () => workspace(async path => {
   const scraper = collector(), client = backend();
   class Crash extends JournalStore { override async save(j: Journal) { await super.save(j); throw new Error("simulated crash"); } }
-  await assert.rejects(new ScraperWorker(scraper, client, p => new Crash(p)).run({ checkpoint: path }), /crash/);
+  await assert.rejects(new ScraperWorker(scraper, client, p => new Crash(p)).run({ checkpoint: path }), /save failed/);
   assert.equal(client.deliveries.length, 0);
   const saved = JSON.parse(await readFile(path, "utf8"));
   const result = await new ScraperWorker(scraper, client).run({ checkpoint: path, resume: true });
@@ -99,4 +99,76 @@ test("worker terminal rejection retains identity and incompatible legacy never m
   const before = JSON.stringify({ schemaVersion: 2, courses: [] }); await writeFile(path, before);
   await assert.rejects(worker.run({ checkpoint: path, resume: true }));
   assert.equal(await readFile(path, "utf8"), before); assert.equal(scraper.calls, 1);
+}));
+
+test("worker events follow durable saves and throwing observers cannot affect resume or delivery", async () => workspace(async path => {
+  const scraper = collector(), client = backend(), events: WorkerEvent[] = [];
+  client.ingest = async payload => {
+    const saved = JSON.parse(await readFile(path, "utf8")) as Journal;
+    assert.deepEqual(saved.entries[0].observation, payload);
+    client.deliveries.push(payload);
+    return { created: true, snapshot: snapshot(payload) };
+  };
+  const result = await new ScraperWorker(scraper, client).run({ checkpoint: path, onEvent(event) {
+    events.push(event);
+    if (event.type === "stage" && event.status === "done") {
+      assert.ok(event.counts.collected);
+      assert.equal("report" in event, false); assert.equal("payload" in event, false);
+    }
+    throw new Error("observer credentials raw-source");
+  } });
+  assert.equal(result.exitCode, 0);
+  assert.deepEqual(events.map(e => e.type === "stage" ? `${e.phase}:${e.status}` : e.type),
+    ["discovery", "discovery", "selected", "collection:start", "collection:done", "delivery:start", "delivery:done", "complete"]);
+  assert.equal(scraper.calls, 1);
+  assert.equal((await new ScraperWorker(scraper, client).run({ checkpoint: path, resume: true, onEvent() { throw new Error(); } })).exitCode, 0);
+  assert.equal(client.deliveries.length, 1);
+}));
+test("fatal checkpoint and discovery events are safe and never send an unsaved observation", async () => workspace(async path => {
+  const scraper = collector(), client = backend(), events: WorkerEvent[] = [];
+  class Failure extends JournalStore { override async save(): Promise<void> { throw new Error("password=secret source-html"); } }
+  await assert.rejects(new ScraperWorker(scraper, client, p => new Failure(p)).run({ checkpoint: path, onEvent: e => events.push(e) }), /save failed/);
+  assert.equal(client.deliveries.length, 0);
+  assert.ok(events.some(e => e.type === "fatal" && e.code === "checkpoint_save" && e.saved));
+  assert.equal(events.some(e => e.type === "stage" && e.status === "done"), false);
+  assert.doesNotMatch(JSON.stringify(events), /password|source-html/);
+  scraper.discoverCourses = async () => { throw new Error("password=secret"); };
+  events.length = 0;
+  await assert.rejects(new ScraperWorker(scraper, client).run({ checkpoint: path.replace("run.json", "discovery.json"), onEvent: e => events.push(e) }), /Discovery failed/);
+  assert.ok(events.some(e => e.type === "fatal" && e.code === "discovery_failed" && !e.saved));
+}));
+
+test("thousand-selection exhaustion produces bounded summary with one pending and 999 unattempted", async () => workspace(async path => {
+  const scraper = collector(), client = backend();
+  client.ingest = async () => { throw new BackendError("transport", true); };
+  let context: import("../worker/worker").RunSummary | undefined;
+  const urls = Array.from({ length: 1000 }, (_, i) => `https://example.org/${i + 101}`);
+  const result = await new ScraperWorker(scraper, client).run({ checkpoint: path, selection: { mode: "urls", urls, limit: null }, onEvent(event) { if (event.type === "complete") context = event.summary; } });
+  assert.equal(scraper.calls, 1); assert.equal(result.deliveryPending, 1);
+  assert.equal(context?.unattempted, 999); assert.equal(context?.resumable, true);
+  assert.equal(context?.stopReason, "transport"); assert.equal(context?.saved, true);
+  assert.deepEqual(context?.failures, [{ phase: "delivery", code: "transport", terminal: false, count: 1 }]);
+  assert.ok(JSON.stringify(context).length < 500);
+  const journal = JSON.parse(await readFile(path, "utf8")) as Journal;
+  assert.equal(journal.journalVersion, 1);
+  assert.equal(Object.hasOwn(journal, "summary"), false);
+  // Historical generic transport remains generic, even after resume.
+  assert.equal(summarize(journal).failures[0].code, "transport");
+}));
+test("existing-format journals resume unchanged IDs and aggregate collection failures separately", async () => workspace(async path => {
+  const scraper = collector(), client = backend(), payload = minimal();
+  const journal: Journal = { journalVersion: 1, runId: "historical", providerId: "example", extractorVersion: "1", backend: client.origin,
+    selection: { mode: "urls", urls: ["https://example.org/101", "https://example.org/102"], limit: null }, discoveryComplete: false, discoveryWarnings: [],
+    startedAt: "2026-10-10T00:00:00Z", updatedAt: "2026-10-10T00:00:00Z", status: "interrupted", entries: [
+      { url: "https://example.org/101", observation: payload, receipt: null, created: null, image: "unstarted", error: { phase: "delivery", code: "transport", terminal: false }, attempts: [] },
+      { url: "https://example.org/102", observation: null, receipt: null, created: null, image: "unstarted", error: { phase: "collection", code: "old password=SECRET", terminal: false }, attempts: [{ phase: "collection", at: "2026-10-10T00:00:00Z", outcome: "failed", code: "collection_failed" }] }
+    ] };
+  assert.equal(summarize(journal).unattempted, 0);
+  assert.doesNotMatch(JSON.stringify(summarize(journal)), /SECRET|password/);
+  await writeFile(path, JSON.stringify(journal), { mode: 0o600 });
+  const result = await new ScraperWorker(scraper, client).run({ checkpoint: path, resume: true });
+  assert.equal(result.exitCode, 0); assert.equal(scraper.discoveries, 0); assert.equal(scraper.calls, 1);
+  assert.deepEqual(client.deliveries[0], payload);
+  assert.equal(result.observations[0].snapshotId, snapshot(payload).id);
+  assert.deepEqual(Object.keys(result).sort(), ["runId", "status", "selected", "collected", "acceptedNew", "replayed", "collectionFailed", "deliveryPending", "deliveryFailed", "imageProcessingFailed", "images", "presentationReady", "observations", "exitCode"].sort());
 }));

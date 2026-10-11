@@ -1,6 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { CourseIngestion, CourseSnapshot } from "../../../packages/core/src/ingestion";
 import { requestHash, validateIngestion } from "../../api/src/ingestion-validation";
+import { observe, safeCode, type DiagnosticCode } from "../diagnostics";
 
 export class BackendError extends Error {
   constructor(readonly code: string, readonly transient = false, readonly status?: number) { super(`Backend ${code}`); }
@@ -35,13 +36,14 @@ export interface BackendClient {
   ingest(payload: CourseIngestion): Promise<{ snapshot: CourseSnapshot; created: boolean }>;
   processThumbnail(courseId: string, snapshotId: string): Promise<CourseSnapshot>;
 }
-export type BackendClientOptions = { fetch?: typeof fetch; timeoutMs?: number; retries?: number; sleep?: (ms: number) => Promise<void>; signal?: AbortSignal };
+export type BackendRetryEvent = { phase: "delivery" | "image"; attempt: number; waitMs: number; code: DiagnosticCode };
+export type BackendClientOptions = { fetch?: typeof fetch; timeoutMs?: number; retries?: number; sleep?: (ms: number) => Promise<void>; signal?: AbortSignal; onRetry?: (event: BackendRetryEvent) => void };
 export class HttpBackendClient implements BackendClient {
   readonly origin: string;
-  private readonly options: Required<Omit<BackendClientOptions, "signal">> & Pick<BackendClientOptions, "signal">;
+  private readonly options: Required<Omit<BackendClientOptions, "signal" | "onRetry">> & Pick<BackendClientOptions, "signal" | "onRetry">;
   constructor(origin: string, options: BackendClientOptions = {}) {
     this.origin = backendOrigin(origin);
-    this.options = { fetch: globalThis.fetch, timeoutMs: 30000, retries: 3, sleep: ms => sleep(ms, undefined, { signal: options.signal }), ...options };
+    this.options = { fetch: globalThis.fetch, timeoutMs: 30000, retries: 3, sleep: ms => sleep(ms, undefined, { signal: options.signal }), onRetry: undefined, ...options };
     if (!Number.isSafeInteger(this.options.timeoutMs) || this.options.timeoutMs < 1 || !Number.isSafeInteger(this.options.retries) || this.options.retries < 0 || this.options.retries > 3) throw new BackendError("invalid_options");
   }
   private async request(path: string, payload?: CourseIngestion, busy = false) {
@@ -82,7 +84,9 @@ export class HttpBackendClient implements BackendClient {
         this.options.signal?.throwIfAborted();
         const safe = error instanceof BackendError ? error : new BackendError("transport", true);
         if (!safe.transient || attempt >= this.options.retries) throw safe;
-        await this.options.sleep(1000 * 2 ** attempt);
+        const waitMs = 1000 * 2 ** attempt;
+        observe(this.options.onRetry, { phase: path.includes("thumbnail/process") ? "image" : "delivery", attempt: attempt + 1, waitMs, code: safeCode(safe.code, "transport") });
+        await this.options.sleep(waitMs);
       } finally { signal.removeEventListener("abort", onAbort); }
     }
   }

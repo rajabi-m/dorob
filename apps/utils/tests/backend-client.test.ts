@@ -45,3 +45,24 @@ test("backend encodes exact snapshot identifiers and bounds busy processing/time
   const stalled = new HttpBackendClient("http://localhost", { timeoutMs: 20, retries: 0, fetch: transport(() => new Promise(() => {})) });
   await assert.rejects(stalled.ingest(minimal()), /timeout/);
 });
+
+test("backend retry diagnostics expose only safe reasons and preserve bounded attempts", async () => {
+  for (const mode of ["http", "transport", "timeout"] as const) {
+    const events: import("../worker/backend-client").BackendRetryEvent[] = [], waits: number[] = [];
+    let calls = 0;
+    const client = new HttpBackendClient("http://localhost", { timeoutMs: 5, sleep: async ms => { waits.push(ms); },
+      onRetry(event) { events.push(event); throw new Error("observer secret"); },
+      fetch: transport(() => {
+        calls++;
+        if (mode === "http") return new Response("password=SECRET <html>", { status: 503 });
+        if (mode === "timeout") return new Promise(() => {});
+        throw new TypeError("password=SECRET https://user:pass@host <html>\x1b[31m");
+      }) });
+    await assert.rejects(client.ingest(minimal()), new RegExp(mode === "http" ? "http_503" : mode));
+    assert.equal(calls, 4); assert.deepEqual(waits, [1000, 2000, 4000]);
+    assert.deepEqual(events.map(e => e.attempt), [1, 2, 3]);
+    assert.deepEqual(events.map(e => e.waitMs), waits);
+    assert.equal(events[0].phase, "delivery");
+    assert.doesNotMatch(JSON.stringify(events), /SECRET|html|user:pass|observer/);
+  }
+});

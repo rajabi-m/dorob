@@ -226,6 +226,25 @@ that bound; `--all` explicitly requests full bounded traversal. Selection flags
 are mutually exclusive. `--backend-url http://127.0.0.1:3001` (or
 `DOROB_BACKEND_URL`) selects a credential-free backend origin. New runs require
 new checkpoint files; resume restores saved selections without rediscovery.
+
+The command now defaults to human-readable output. Progress, retries, liveness
+and stage failures use stderr; stdout ends with bounded totals, saved checkpoint
+state and recovery guidance. Scripts parsing the former default report must add
+`--json`:
+
+```sh
+bun run ingest:maktabkhooneh --checkpoint apps/utils/output/python-run.json --resume --backend-url http://127.0.0.1:3001 --json > report.json
+```
+
+Machine stdout contains exactly one full report or, before a report exists, a
+safe fatal-error document. Exit status remains zero for complete work and nonzero
+for partial, interrupted or fatal runs. Invoke `--help` alone to print usage.
+For an illustrative first-delivery failure in 1,000 selections, the summary says
+`delivery pending 1` and `Unattempted selections: 999`, identifies the safe stop
+reason, then supplies a quoted command to resume at the matching backend. This
+example does not claim that the pending live run has succeeded. See
+[CLI output and optional observers](apps/utils/README.md#ingestion-cli-output).
+
 Finish pending work before fresh refreshes. See [worker transitions, private
 journals and lock recovery](apps/utils/README.md#private-worker-checkpoints-and-crash-locks).
 

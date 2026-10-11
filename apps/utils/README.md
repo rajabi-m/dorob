@@ -218,3 +218,68 @@ output, with the partial checkpoint retained for an explicit later resume.
 Parser 3.1.1 supports the current public `MAKTAB` free-course type alongside legacy `FREE`. Disabled or ambiguous zeros without either type remain unknown, and enabled positive prices conflicting with a free type fail extraction. The reduced real LPIC-1 fixture omits unrelated sections and user state.
 
 The former LPIC-1 slug returns HTTP 500; use the provider-linked current URL `https://maktabkhooneh.org/course/آموزش-رایگان-آزمون-lpic1-1555-mk711/`. `bun apps/utils/tests/worker-live.ts` now verifies exactly paid Python and free LPIC-1 in an isolated temporary database, including thumbnail retrieval and checkpoint resume without duplicate history. That check passed; existing dev records and checkpoints were not migrated.
+
+## Ingestion CLI output
+
+The ingestion CLI prints bounded human progress and a compact completion summary
+by default. Progress and stage failures go to stderr; the summary goes to stdout.
+Use `--json` to keep stdout machine-readable: it contains one existing full
+worker report, while human diagnostics stay on stderr. Startup failures in JSON
+mode produce one safe `{ "error": { "code": "missing_checkpoint", "message": "…" }, "exitCode": 1 }`
+document. For pending delivery or retryable collection/image work, the summary
+includes a shell-quoted resume command with checkpoint and backend destination.
+Terminal delivery rejections require operator review.
+
+Illustrative human output for a first-delivery failure (not a live-run result):
+
+```text
+Ingestion interrupted; 12s elapsed.
+Selected 1000; collected 1; accepted new 0; replayed 0.
+Collection failed 0; delivery pending 1; terminal delivery failed 0; image processing failed 0.
+Images: 0 ready, 0 missing input, 0 pending, 0 failed, 1000 unstarted.
+Unattempted selections: 999.
+Stop reason (transport): Unknown transport failure; check destination availability and connectivity. The exact connection cause is not known.
+Unresolved: delivery/transport 1.
+Saved checkpoint: …/apps/utils/output/pending.json
+Resume uses saved observations and receipts; only unresolved work is retried.
+Resume: bun run ingest:maktabkhooneh --checkpoint '…/apps/utils/output/pending.json' --backend-url 'http://127.0.0.1:3001' --resume
+```
+
+The actual resume command includes the full checkpoint path, quoted for the
+shell even when it contains spaces/apostrophes. Control characters in checkpoint
+paths are rejected. Discovery/init errors without a confirmed saved journal
+never claim saved progress or invent a resume command. Lock/configuration errors
+need review; no lock or saved work is automatically removed. Use `--json` for
+scripts consuming the former default per-selection report. `--help` alone prints
+usage; `--help --json` produces a safe invocation error instead of mixed stdout.
+
+The worker and request clients accept optional runtime observers. They emit
+allowlisted codes and bounded course identities, never payloads, raw exceptions,
+response bodies or receipt records. Stage completion follows successful journal
+saves; observer exceptions cannot interrupt persistence, delivery or resume.
+
+```ts
+const scraper = new MaktabkhoonehScraper({
+  onRetry: event => console.error(event.code, event.attempt, event.waitMs),
+});
+const backend = new HttpBackendClient("http://127.0.0.1:3001", {
+  onRetry: event => console.error(event.phase, event.code, event.attempt, event.waitMs),
+});
+const result = await new ScraperWorker(scraper, backend).run({
+  checkpoint: "apps/utils/output/example.json",
+  onEvent(event) {
+    if (event.type === "stage") console.error(event.phase, event.index, event.total, event.status);
+    if (event.type === "complete") console.error(event.summary.unattempted, event.summary.resumable);
+  },
+});
+```
+
+`onEvent` uses the exported `WorkerEvent` union; `complete.summary` provides
+aggregate failure categories, saved-progress state, stop reason and unattempted
+count separately from the unchanged `RunReport`. Backend `onRetry` adds
+`phase` (`delivery` or `image`); provider `onRetry` carries `code`, `attempt`
+and `waitMs`. They are optional and silent when omitted. Import
+`HttpBackendClient` from `@dorob/utils/backend-client` and `ScraperWorker` from
+`@dorob/utils/worker`. Historical `transport` journal codes cannot recover the
+discarded underlying cause; diagnostics report an unknown transport failure
+rather than claiming a verified outage or connection cause.

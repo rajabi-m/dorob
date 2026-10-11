@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import type { CourseIngestion, CourseSnapshot } from "../../../packages/core/src/ingestion";
 import { requestHash, validateIngestion } from "../../api/src/ingestion-validation";
 import { backendOrigin, validateSnapshot } from "./backend-client";
+import { DiagnosticError } from "../diagnostics";
 
 export type Selection = { mode: "urls" | "limit" | "all"; urls: string[]; limit: number | null };
 export type Attempt = { phase: "collection" | "delivery" | "image"; at: string; outcome: "ok" | "failed"; code: string | null };
@@ -13,7 +14,7 @@ export type Entry = { url: string; observation: CourseIngestion | null; receipt:
 export type Journal = { journalVersion: 1; runId: string; providerId: string; extractorVersion: string; backend: string; selection: Selection;
   discoveryComplete: boolean; discoveryWarnings: string[]; entries: Entry[]; startedAt: string; updatedAt: string; status: "running" | "complete" | "partial" | "interrupted" };
 export const outputRoot = fileURLToPath(new URL("../output/", import.meta.url));
-const fail = () => { throw new Error("Invalid or incompatible worker checkpoint"); };
+const fail = () => { throw new DiagnosticError("checkpoint_invalid"); };
 function exact(value: unknown, keys: string[]) {
   if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).sort().join() !== keys.sort().join()) fail();
 }
@@ -60,7 +61,7 @@ export function validateJournal(value: unknown): Journal {
 }
 export function checkpointPath(input: string): string {
   const path = resolve(input), rel = relative(outputRoot, path);
-  if (!rel || rel.startsWith("..") || rel.startsWith("/") || !path.endsWith(".json")) throw new Error("Checkpoint must be a .json file beneath apps/utils/output");
+  if (!rel || rel.startsWith("..") || rel.startsWith("/") || !path.endsWith(".json") || path.length > 4096 || /[\u0000-\u001f\u007f-\u009f\u2028-\u202e\u2066-\u2069]/.test(path)) throw new DiagnosticError("checkpoint_path");
   return path;
 }
 async function exists(path: string) { try { return await lstat(path); } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return null; throw error; } }
@@ -71,9 +72,11 @@ export class JournalStore {
   constructor(path: string) { this.path = checkpointPath(path); }
   async preflight(resume: boolean): Promise<Journal | null> {
     const stat = await exists(this.path);
-    if (!resume) { if (stat) throw new Error("Checkpoint already exists; choose a new file or resume"); return null; }
-    if (!stat?.isFile() || stat.isSymbolicLink() || stat.size > 256 * 1024 * 1024 || (stat.mode & 0o077) !== 0) throw new Error("Checkpoint must be an existing private regular file");
-    const journal = validateJournal(JSON.parse(await readFile(this.path, "utf8")));
+    if (!resume) { if (stat) throw new DiagnosticError("checkpoint_exists"); return null; }
+    if (!stat?.isFile() || stat.isSymbolicLink() || stat.size > 256 * 1024 * 1024 || (stat.mode & 0o077) !== 0) throw new DiagnosticError("checkpoint_invalid");
+    let journal: Journal;
+    try { journal = validateJournal(JSON.parse(await readFile(this.path, "utf8"))); }
+    catch { throw new DiagnosticError("checkpoint_invalid"); }
     for (const e of journal.entries) if (e.observation) this.previous.set(e.url, requestHash(e.observation));
     return journal;
   }
@@ -81,10 +84,10 @@ export class JournalStore {
     await mkdir(dirname(this.path), { recursive: true, mode: 0o700 });
     const root = await realpath(outputRoot), parent = await realpath(dirname(this.path));
     const rel = relative(root, parent);
-    if (rel.startsWith("..") || rel.startsWith("/")) throw new Error("Checkpoint directory escapes output root");
+    if (rel.startsWith("..") || rel.startsWith("/")) throw new DiagnosticError("checkpoint_path");
     let lock;
     try { lock = await open(this.path + ".lock", "wx", 0o600); }
-    catch { throw new Error("Checkpoint lock exists; inspect its owner and recover only after confirming it has stopped"); }
+    catch (error) { throw new DiagnosticError((error as NodeJS.ErrnoException).code === "EEXIST" ? "checkpoint_locked" : "checkpoint_io"); }
     try { await lock.writeFile(JSON.stringify({ pid: process.pid, token: randomUUID(), startedAt: new Date().toISOString() })); await lock.sync(); this.locked = true; }
     finally { await lock.close(); }
   }
