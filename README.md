@@ -288,3 +288,7 @@ the backend is unavailable. Frontend-only mode therefore shows a course error
 with retry while fixture routes remain usable.
 
 Focused shared/web verification: `bun test packages/core/tests apps/web/tests`.
+
+Real homepage cards now summarize source instructors below their titles and expose the retained Jalali collection date through the price button. «مشاهده دوره» continues to open the existing details dialog. Prices remain observations, not current provider quotations. Chrome acceptance for this refinement passed at mobile and desktop widths; see [validation](docs/validation.md#homepage-card-refinement--october-11-2026).
+
+The homepage card refinement is [archived](openspec/changes/archive/2026-10-11-refine-homepage-course-cards/) with its instructor, alignment, provenance and details-action contracts synced to the [homepage catalog spec](openspec/specs/homepage-course-catalog/spec.md).
