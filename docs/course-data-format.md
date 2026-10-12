@@ -1,6 +1,6 @@
 # Course data: golden format
 
-Version **2**, October 3, 2026. All four utility adapters now emit this owner-authorized contract. Implementation lives in `apps/utils/scrapers/course.ts`. Frontend fixtures remain separate. Version-1 exports/checkpoints require a fresh export without `--resume`; retain old files by choosing a new output path.
+Historical version **2** contract, October 3, 2026; currently retained only by the Maktabkhooneh export command. Native v3 ingestion below is used by all four collectors. Implementation lives in `apps/utils/scrapers/course.ts`. Frontend fixtures remain separate. Version-1 exports/checkpoints require a fresh export without `--resume`; retain old files by choosing a new output path.
 
 ## What to collect
 
@@ -99,7 +99,7 @@ Update shared types/validation/hashing and export compatibility, then all four a
 
 ## Additive v3 ingestion mapping
 
-V2 exports and the dashboard keep the contract above. V3 accepts observations separately; the browser-safe types are in `packages/core/src/ingestion.ts`.
+The retained Maktabkhooneh v2 export keeps the contract above; the dashboard is retired. V3 accepts observations separately; the browser-safe types are in `packages/core/src/ingestion.ts`.
 
 | V2 source keys | V3 destination |
 | --- | --- |
@@ -181,7 +181,7 @@ The output contains `schemaVersion: 3` and `submissions`. The input is unchanged
 and existing output paths are rejected. Missing/ambiguous evidence fails
 conversion for review; do not invent locators to force acceptance. Null offers
 and covers become explicit unknown. Submission IDs are deterministic hashes of
-the saved record including its check time. Existing exporters/dashboard stay v2.
+the saved record including its check time. The Maktabkhooneh exporter stays v2; the dashboard is retired.
 
 ## Maktabkhooneh programmatic v3 migration
 
@@ -200,6 +200,6 @@ the same parser and controlled transport. `bun run scrape:maktabkhooneh --help`
 and its existing URL/limit/all/output/resume workflow stay export-only,
 without backend requests. Saved-v2 conversion still uses
 `bun run convert:courses --input SAVED_V2.json --output NEW_V3.json`, with
-unknown coverage and deterministic IDs for replay. Aggregation/dashboard and
-TopLearn, Sabzlearn and Roocket remain v2. Do not pass worker journals as v2
+unknown coverage and deterministic IDs for replay. The dashboard is retired;
+TopLearn, Sabzlearn and Roocket are native v3-only. Do not pass worker journals as v2
 export checkpoints.

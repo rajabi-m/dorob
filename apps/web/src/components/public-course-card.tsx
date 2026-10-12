@@ -4,8 +4,9 @@ import Image from 'next/image';
 import { Clock, ImageOff } from 'lucide-react';
 import type { PriceSummary, PublicCourse } from '@dorob/core';
 import styles from './course-card.module.css';
-const providerMarks:Record<string,string>={maktabkhooneh:'/providers/maktabkhooneh.svg',toplearn:'/providers/toplearn.svg',quera:'/providers/quera.svg'};
+const providerMarks:Record<string,string>={maktabkhooneh:'/providers/maktabkhooneh.svg',toplearn:'/providers/toplearn.svg',quera:'/providers/quera.svg',sabzlearn:'/providers/sabzlearn.svg',roocket:'/providers/roocket.svg'};
 export const persianNumber=(n:number)=>n.toLocaleString('fa-IR');
+export const courseDuration=(minutes:number|null)=>minutes === null ? 'مدت ثبت نشده' : `${persianNumber(Math.round(minutes))} دقیقه`;
 export const sourceDate=(date:string)=>new Intl.DateTimeFormat('fa-IR-u-ca-persian',{ year:'numeric',month:'long',day:'numeric',timeZone:'Asia/Tehran' }).format(new Date(date));
 export function PublicPrice({ price,inline=false }: { price:PriceSummary;inline?:boolean }) {
   const Container=inline?'span':'div';
@@ -62,7 +63,7 @@ export function PublicCourseCard({ course,onDetails }: { course:PublicCourse;onD
           {course.instructors && course.instructors.length > 2 && <span className={styles.moreInstructors}>و {persianNumber(course.instructors.length - 2)} نفر دیگر</span>}
         </p>
       </div>
-      <div className={styles.info}><div className={styles.provider}>{providerMark && !failedLogo && <Image src={providerMark} alt="" width={32} height={32} className={styles.logo} onError={()=>setFailedLogo(true)} />}<bdi>{course.provider.name}</bdi></div><div className={styles.metadata}><Clock size={15} aria-hidden="true" /><span>{course.contentMinutes !== null ? `${persianNumber(course.contentMinutes)} دقیقه` : 'مدت ثبت نشده'}</span></div></div>
+      <div className={styles.info}><div className={styles.provider}>{providerMark && !failedLogo && <Image src={providerMark} alt="" width={32} height={32} className={styles.logo} onError={()=>setFailedLogo(true)} />}<bdi>{course.provider.name}</bdi></div><div className={styles.metadata}><Clock size={15} aria-hidden="true" /><span>{courseDuration(course.contentMinutes)}</span></div></div>
       <div className={styles.footer}><PriceProvenance course={course} /><button className={`ds-button ds-secondary ${styles.action} ${styles.realAction}`} aria-label={`مشاهده دوره ${course.title}`} onClick={e=>onDetails(course,e.currentTarget)}>مشاهده دوره</button></div>
     </div>
   </article>;

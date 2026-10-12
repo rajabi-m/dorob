@@ -56,6 +56,8 @@ Provider marks are local, unmodified copies of assets linked by the official sit
 - [Maktabkhooneh mark](https://statics.maktabkhooneh.org/front/images/maktabkhooneh/new-logo-mobile.svg) → `apps/web/public/providers/maktabkhooneh.svg`
 - [TopLearn mark](https://toplearn.com/Site/images/logo.svg?v=2) → `apps/web/public/providers/toplearn.svg`
 - [Quera mark](https://quera.org/static/images/logo/logo-q.svg) → `apps/web/public/providers/quera.svg`
+- [Sabzlearn mark](https://sabzlearn.ir/logo.svg) → `apps/web/public/providers/sabzlearn.svg` (public homepage header; October 12, 2026)
+- [Roocket mark](https://roocket.ir/img/logo-mark.svg) → `apps/web/public/providers/roocket.svg` (public homepage header; October 12, 2026)
 
 Provider names remain visible if a logo fails. Remote course covers fall back to decorative artwork. The design-system examples use the same component as the homepage; snapshot dates and AI-summary labels remain visible.
 

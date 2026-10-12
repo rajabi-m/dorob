@@ -1,6 +1,9 @@
-import { anonymizeReviewText, reviewContentId, createCourse, finalizeCourse, type ProviderCourse } from "./course.ts";
-import { AccessDeniedError, PublicProviderClient, parseSitemap, plainText, type ScraperOptions } from "./public-provider.ts";
-export { AccessDeniedError, type ScraperOptions } from "./public-provider.ts";
+import { randomUUID } from "node:crypto";
+import type { CourseIngestion, CourseReview } from "../../../packages/core/src/ingestion";
+import { BaseScraper, type BaseScraperOptions } from "./base";
+import { anonymizeReviewText, reviewContentId, nativeObservation, section, evidenceTree, FeedbackAccumulator, feedbackSettings, type FeedbackSettings, type Education, type Curriculum, type Offers } from "./native-v3";
+import { AccessDeniedError, plainText } from "./public-provider";
+export { AccessDeniedError } from "./public-provider";
 const ORIGIN = "https://roocket.ir";
 type ObjectValue = Record<string, unknown>;
 const object = (value: unknown): ObjectValue => value !== null && typeof value === "object" && !Array.isArray(value) ? value as ObjectValue : {};
@@ -86,243 +89,221 @@ function verifiedDisplayUnit(html: string, sourceUrl: string, original: number |
   }
   return false;
 }
-/** First public comments page; comments do not establish enrollment or satisfaction. */
-export function applyPublicComments(course: ProviderCourse, payload: unknown, sourceUrl: string): ProviderCourse {
-  const endpoint = new URL(sourceUrl), slug = new URL(course.sourceUrl).pathname.split("/")[2];
-  if (endpoint.origin !== "https://api.roocket.ir" || endpoint.username || endpoint.password || endpoint.pathname !== `/api/v1/series/${slug}/comments/` || endpoint.search !== "?page=1") throw new Error("Mismatched Roocket comments source");
-  const data = object(object(payload).data), meta = object(data.meta);
-  if (!Array.isArray(data.comments) || meta.current_page !== 1 || !Number.isSafeInteger(meta.last_page) || Number(meta.last_page) < 1) throw new Error("Invalid Roocket public comments payload");
-  const candidates = data.comments.map(object);
-  const authors = course.instructors?.map(item => item.name) ?? [];
-  const collectNames = (items: ObjectValue[], depth = 0): void => {
-    for (const item of items) {
-      for (const value of [text(item.name), text(object(item.author).name), text(object(item.author).username)]) if (value) authors.push(value);
-      if (depth < 10 && Array.isArray(item.replies)) collectNames(item.replies.map(object), depth + 1);
-    }
-  };
-  collectNames(candidates);
-  const instructorNames = course.instructors?.map(item => item.name) ?? [];
-  const items: NonNullable<ProviderCourse["reviews"]["items"]> = [], seen = new Set<string>();
-  let omittedCount = 0;
-  for (const [index, item] of candidates.entries()) {
-    const body = plainText(item.body_html), author = object(item.author);
-    const isQuestion = !!body && /[؟?]/.test(body);
-    if (item.parent_id !== 0 || !body || isQuestion || item.is_admin === true || item.is_instructor === true || author.is_admin === true || author.is_instructor === true || instructorNames.includes(String(author.name ?? item.name))) { omittedCount++; continue; }
-    const anonymous = anonymizeReviewText(body, authors);
-    if (!anonymous.text) { omittedCount++; continue; }
-    const publishedDateText = text(item.created_at), id = reviewContentId(anonymous.text, publishedDateText, null);
-    if (seen.has(id)) { omittedCount++; continue; } seen.add(id);
-    const sourceLocator = `data.comments[${index}]`;
-    items.push({ id, sourceType: "comment", text: anonymous.text, rating: null, publishedAt: null, publishedDateText, verifiedEnrollment: null, sourceUrl, sourceLocator, redacted: anonymous.redacted });
-    course.source.fieldSources[`reviews.items.${items.length - 1}`] = `${sourceUrl} ${sourceLocator}`;
-  }
-  const hasMore = typeof meta.has_more === "boolean" ? meta.has_more : Number(meta.last_page) > 1;
-  course.reviews = { items, collection: { status: hasMore || omittedCount > 0 ? "partial" : "complete", publishedCount: null, collectedCount: items.length,
-    selection: "First public top-level comment page in provider order; sort not disclosed; questions, replies and known instructor/staff excluded", pagesRead: 1, hasMore, omittedCount,
-    stopReason: hasMore ? "Bounded first-page sample; further public comment pages exist." : "All published top-level comment pages read; mixed thread total is not a review count." } };
-  course.source.method = "public-html-and-public-api";
-  course.source.checkedAt = new Date().toISOString();
-  course.source.fieldSources.reviews = `${sourceUrl} data.comments / data.meta`;
-  course.source.warnings = course.source.warnings.filter(warning => !warning.startsWith("Public course comments may load separately"));
-  course.source.warnings.push("Unverified public comments; no enrollment evidence or individual ratings. Questions with question marks excluded conservatively; mixed thread total not used.");
-  return finalizeCourse(course);
-}
-/** Only standards-based reviews explicitly attached to this course; dynamic comments are unknown. */
-function extractPublicReviews(html: string, course: ProviderCourse): void {
-  const candidates: { value: ObjectValue; locator: string }[] = [];
-  let recognized = false, confirmedEmpty = false;
-  for (const [scriptIndex, match] of [...html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)].entries()) {
-    let parsed: unknown;
-    try { parsed = JSON.parse(match[1]); } catch { course.source.warnings.push("Invalid JSON-LD ignored while collecting public course reviews."); continue; }
-    const rootPath = Array.isArray(parsed) ? "$" : Array.isArray(object(parsed)["@graph"]) ? "$.@graph" : null;
-    const nodes = Array.isArray(parsed) ? parsed : Array.isArray(object(parsed)["@graph"]) ? object(parsed)["@graph"] as unknown[] : [parsed];
-    for (const [nodeIndex, node] of nodes.entries()) {
-      const item = object(node), types = Array.isArray(item["@type"]) ? item["@type"] : [item["@type"]];
-      if (!types.includes("Course") || !text(item.url)) continue;
-      try { if (canonicalCourseUrl(item.url as string) !== course.sourceUrl) continue; } catch { continue; }
-      if (!Object.hasOwn(item, "review")) continue;
-      const list = Array.isArray(item.review) ? item.review : item.review === null ? null : [item.review];
-      if (!list) continue;
-      recognized = true; if (Array.isArray(item.review) && list.length === 0) confirmedEmpty = true;
-      for (const [reviewIndex, value] of list.entries()) candidates.push({ value: object(value), locator: `JSON-LD script[${scriptIndex}] ${rootPath ? `${rootPath}[${nodeIndex}]` : "$"}.review${Array.isArray(item.review) ? `[${reviewIndex}]` : ""}` });
-    }
-  }
-  if (!recognized) {
-    course.reviews.collection.stopReason = "No public course review payload identified; dynamically loaded comments were not fetched.";
-    course.source.warnings.push("Public course comments may load separately; mixed comment_count is not a review total.");
-    return;
-  }
-  const authors = candidates.flatMap(({ value }) => (Array.isArray(value.author) ? value.author : [value.author])
-    .flatMap(author => [text(object(author).name), text(object(author).alternateName), text(author)])).filter((value): value is string => !!value);
-  const items: NonNullable<ProviderCourse["reviews"]["items"]> = [], ids = new Set<string>();
-  let omittedCount = 0;
-  for (const { value, locator } of candidates) {
-    const body = plainText(value.reviewBody);
-    const types = Array.isArray(value["@type"]) ? value["@type"] : [value["@type"]];
-    let mismatched = false;
-    const reviewed = object(value.itemReviewed), reviewedUrl = text(reviewed.url ?? reviewed["@id"]) ?? text(value.itemReviewed);
-    if (reviewedUrl) { try { mismatched = canonicalCourseUrl(reviewedUrl) !== course.sourceUrl; } catch { mismatched = true; } }
-    if (!types.includes("Review") || types.includes("Question") || !body || value.parentItem != null || value.inReplyTo != null || mismatched) { omittedCount++; continue; }
-    const anonymous = anonymizeReviewText(body, authors);
-    if (!anonymous.text) { omittedCount++; continue; }
-    const sourceRating = object(value.reviewRating), valueRating = number(sourceRating.ratingValue), scale = number(sourceRating.bestRating);
-    const rating = valueRating !== null && scale !== null && valueRating >= 0 && scale > 0 && valueRating <= scale ? { value: valueRating, scale } : null;
-    const publishedDateText = text(value.datePublished);
-    const publishedAt = publishedDateText && /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(publishedDateText) && Number.isFinite(Date.parse(publishedDateText)) ? new Date(publishedDateText).toISOString() : null;
-    const id = reviewContentId(anonymous.text, publishedDateText, rating);
-    if (ids.has(id)) { omittedCount++; continue; }
-    ids.add(id);
-    items.push({ id, sourceType: "review", text: anonymous.text, rating, publishedAt, publishedDateText, verifiedEnrollment: null,
-      sourceUrl: course.sourceUrl, sourceLocator: locator, redacted: anonymous.redacted });
-    course.source.fieldSources[`reviews.items.${items.length - 1}`] = locator;
-  }
-  const safeItems = items.length || (confirmedEmpty && candidates.length === 0) ? items : null;
-  course.reviews = { items: safeItems, collection: { status: "unknown", publishedCount: null, collectedCount: safeItems?.length ?? null,
-    selection: "Embedded JSON-LD reviews in course-page order; no published sort/filter established", pagesRead: 1, hasMore: null, omittedCount,
-    stopReason: "Course page only; review total and pagination completeness not established." } };
-  course.source.fieldSources.reviews = "Course-scoped JSON-LD review[]";
-}
-export function parseCoursePage(html: string, input: string, checkedAt = new Date().toISOString()): ProviderCourse {
+export const EXTRACTOR_VERSION = "3.0.0";
+const count = (value: unknown): number | null => { const n = number(value); if (value != null && n === null) throw new Error("Invalid count"); if (n !== null && (!Number.isSafeInteger(n) || n < 0)) throw new Error("Invalid count"); return n; };
+/** Native source parsing: no saved export or legacy course record is involved. */
+export function parseCoursePage(html: string, input: string, checkedAt = new Date().toISOString(), submissionId: string = randomUUID(), settings: FeedbackSettings = feedbackSettings()): CourseIngestion {
   const sourceUrl = canonicalCourseUrl(input), data = decodeCourseData(html), details = object(data.course);
   if (!Number.isSafeInteger(details.id) || Number(details.id) < 1 || !text(details.title) || !text(details.path) || canonicalCourseUrl(details.path as string) !== sourceUrl || details.slug !== new URL(sourceUrl).pathname.split("/")[2]) throw new Error("Invalid or mismatching Roocket course identity");
-  const course = createCourse("roocket", String(details.id), plainText(details.title)!, sourceUrl, checkedAt, "public-html-and-embedded-data");
-  course.source.parserVersion = "2.1.0";
-  const fields = course.source.fieldSources;
-  fields.providerCourseId = "RSC data.course.id"; fields.title = "RSC data.course.title"; fields.sourceUrl = "RSC data.course.path / slug";
-  course.description = plainText(details.description_full ?? details.description);
-  if (course.description) fields.description = "RSC data.course.description_full / description";
-  const body = text(details.body_html);
+  const title = plainText(details.title)!, warnings: string[] = [], fields: Record<string, string> = { providerId: "Roocket public course origin", providerCourseId: "RSC data.course.id", title: "RSC data.course.title", sourceUrl: "RSC data.course.path / slug" };
+  let optionalCountFailed = false;
+  const optionalCount = (value: unknown, locator: string): number | null => {
+    try { return count(value); } catch { optionalCountFailed = true; warnings.push(`Malformed optional count at ${locator}; value omitted and independent facts retained.`); return null; }
+  };
+  const original = price(details.price), final = price(details.final_price), free = details.is_free === true && details.type === "free";
+  if (original !== null && final !== null && final > original) throw new Error("Invalid Roocket discount");
+  if (free && ((original !== null && original !== 0) || (final !== null && final !== 0))) throw new Error("Conflicting Roocket free price evidence");
+  const unit = verifiedDisplayUnit(html, sourceUrl, original), amount = free ? 0 : final ?? original;
+  const offers: Offers | null = details.is_inactive === true ? [] : details.is_coming_soon === true ? null : [{ id: "course", type: free ? "free" : "full", label: plainText(details.type_label), amount: free ? 0 : unit ? amount : null, originalAmount: unit && original !== null && amount !== null && original > amount ? original : null, unit: "toman", status: free ? "free" : unit && amount !== null && amount > 0 ? "paid" : "unknown", billingPeriod: null, certificateIncluded: null, accessDescription: null, supportDescription: null, sourcePrice: { amount, originalAmount: original !== null && amount !== null && original > amount ? original : null, unit: unit ? "toman" : "unknown", label: text(details.final_price_formatted ?? details.price_formatted ?? details.type_label) } }];
+  if (!free && !unit) warnings.push("Course-specific price currency unverified; normalized amounts unknown.");
+  const education: Education = { learningOutcomes: null, prerequisites: null, intendedAudience: null, technologies: null, learningSupport: { practiceDescription: null, assessmentDescription: null, supportDescription: null }, duration: { contentMinutes: null, effortHours: null, completionWindowDays: null } };
+  try { education.duration.contentMinutes = minutes(details.time); } catch { warnings.push("Invalid optional content duration omitted."); }
+  const body = text(details.body_html), description = plainText(body ?? details.description_full ?? details.description);
   if (body) {
-    course.description = plainText(body); fields.description = "RSC data.course.body_html (resolved text reference)";
     const headings = [...body.matchAll(/<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/gi)];
     for (const [index, heading] of headings.entries()) {
-      const label = plainText(heading[1]) ?? "", section = body.slice(heading.index! + heading[0].length, headings[index + 1]?.index), content = plainText(section);
+      const label = plainText(heading[1]) ?? "", contentHtml = body.slice(heading.index! + heading[0].length, headings[index + 1]?.index), content = plainText(contentHtml);
       if (!content) continue;
-      if (/پیش.?نیاز|برای آموزش .+ باید چه چیزهایی را بدانیم/.test(label)) { course.prerequisites = content; fields.prerequisites = `RSC course.body_html heading: ${label}`; }
-      if (/ویژه چه کسانی|مخاطب|مناسب چه کسانی/.test(label)) { course.intendedAudience = content; fields.intendedAudience = `RSC course.body_html heading: ${label}`; }
-      if (/در این دوره.+(?:موضوعات|یاد)|چه چیزهایی یاد|اهداف یادگیری/.test(label)) {
-        const outcomes = [...section.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)].map(item => plainText(item[1])).filter((item): item is string => !!item);
-        if (outcomes.length) { course.learningOutcomes = outcomes; fields.learningOutcomes = `RSC course.body_html heading: ${label}, li[]`; }
-      }
-      for (const [key, pattern] of [["practiceDescription", /^(?:تمرین|پروژه|تکالیف)(?:‌|\s|های|ها|$)/], ["assessmentDescription", /^(?:ارزیابی|آزمون|بازخورد)(?:‌|\s|$)/], ["supportDescription", /^(?:پشتیبانی)(?:‌|\s|$)/]] as const) {
-        if (pattern.test(label)) { course.learningSupport[key] = content; fields[`learningSupport.${key}`] = `RSC course.body_html heading: ${label}`; }
-      }
+      if (/پیش.?نیاز|برای آموزش .+ باید چه چیزهایی را بدانیم/.test(label)) education.prerequisites = content;
+      if (/ویژه چه کسانی|مخاطب|مناسب چه کسانی/.test(label)) education.intendedAudience = content;
+      if (/در این دوره.+(?:موضوعات|یاد)|چه چیزهایی یاد|اهداف یادگیری/.test(label)) { const outcomes = [...contentHtml.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)].map(item => plainText(item[1])).filter((item): item is string => !!item); if (outcomes.length) education.learningOutcomes = outcomes; }
+      for (const [key, pattern] of [["practiceDescription", /^(?:تمرین|پروژه|تکالیف)(?:‌|\s|های|ها|$)/], ["assessmentDescription", /^(?:ارزیابی|آزمون|بازخورد)(?:‌|\s|$)/], ["supportDescription", /^(?:پشتیبانی)(?:‌|\s|$)/]] as const) if (pattern.test(label)) education.learningSupport[key] = content;
     }
   }
+  const teacherValues = Array.isArray(details.instructors) ? details.instructors : details.instructor ? [details.instructor] : [];
+  const instructors = teacherValues.map(object).flatMap(item => plainText(item.name) ? [{ name: plainText(item.name)!, role: plainText(item.role_label) }] : []);
+  const lessonCount = optionalCount(details.episodes_count, "RSC data.course.episodes_count");
+  let curriculum: Curriculum = { syllabus: null, lessonCount, syllabusCoverage: { status: "unknown", publishedLessonCount: lessonCount, extractedLessonCount: null, reasons: ["Embedded curriculum traversal completeness unverified."] } }, curriculumFailed = false;
+  try {
+    const lesson = (value: unknown, index: number) => { const item = object(value), title = plainText(item.title); if (!title || !Number.isSafeInteger(item.id)) throw new Error("Invalid lesson"); return { id: String(item.id), order: index + 1, title, description: plainText(item.description), type: "video" as const, providerType: plainText(item.type_label), contentMinutes: minutes(item.time) }; };
+    if (Array.isArray(data.sections) && data.sections.length) curriculum.syllabus = data.sections.map((value, index) => { const item = object(value), title = plainText(item.section_name); if (!title || !Number.isSafeInteger(item.section_num)) throw new Error("Invalid section"); return { id: String(item.section_num), order: index + 1, title, description: plainText(item.description), lessons: Array.isArray(item.episodes) ? item.episodes.map(lesson) : null }; });
+    else if (Array.isArray(data.episodes)) curriculum.syllabus = data.episodes.length ? [{ id: null, order: 1, title, description: null, lessons: data.episodes.map(lesson) }] : [];
+    const extracted = curriculum.syllabus === null || curriculum.syllabus.some(item => item.lessons === null) ? null : curriculum.syllabus.reduce((sum, item) => sum + (item.lessons?.length ?? 0), 0);
+    const partial = curriculum.syllabus?.some(item => item.lessons === null) || (extracted !== null && lessonCount !== null && extracted !== lessonCount);
+    curriculum.syllabusCoverage = { status: partial ? "partial" : "unknown", publishedLessonCount: lessonCount, extractedLessonCount: extracted, reasons: [partial ? "Published count or missing section lists indicates incomplete extraction." : "Counts alone do not establish traversal completeness."] };
+  } catch { curriculumFailed = true; curriculum = { ...curriculum, syllabus: null }; warnings.push("Optional curriculum malformed; independent source facts retained."); }
+  const rates = object(details.rates), ratingValue = number(rates.avg), scale = number(rates.max);
+  const rating = ratingValue !== null && scale !== null && scale > 0 && ratingValue >= 0 && ratingValue <= scale ? { value: ratingValue, scale, count: optionalCount(rates.count, "RSC data.course.rates.count") } : null;
   const image = httpsImage(details.image);
-  if (image) { course.image = { url: image, alt: course.title }; fields.image = "RSC data.course.image"; }
-  const instructor = object(details.instructor);
-  if (text(instructor.name)) { course.instructors = [{ name: plainText(instructor.name)!, role: null }]; fields.instructors = "RSC data.course.instructor.name"; }
-  course.duration.contentMinutes = minutes(details.time);
-  if (course.duration.contentMinutes !== null) { fields["duration.contentMinutes"] = "RSC data.course.time (HH:MM:SS published video content)"; course.format = "recorded-video"; fields.format = "RSC course.time and episodes[].time"; }
-  course.providerStatus = plainText(details.status_label);
-  if (course.providerStatus) fields.providerStatus = "RSC data.course.status_label";
-  if (["complete", "uncomplete"].includes(String(details.status))) { course.ongoing = details.status === "uncomplete"; fields.ongoing = "RSC data.course.status"; }
-  // Account-specific cart eligibility/certificate state is deliberately ignored.
-  if (details.is_inactive === true || details.is_coming_soon === true) { course.availability = "unavailable"; fields.availability = "RSC data.course.is_inactive / is_coming_soon"; }
-  else if (details.is_inactive === false && details.is_coming_soon === false) { course.availability = "available"; fields.availability = "RSC data.course.is_inactive / is_coming_soon"; }
-  if (text(details.updated_at) && Number.isFinite(Date.parse(details.updated_at as string))) { course.providerUpdatedAt = new Date(details.updated_at as string).toISOString(); fields.providerUpdatedAt = "RSC data.course.updated_at"; }
-  course.studentCount = number(details.learning_count); course.lessonCount = number(details.episodes_count);
-  if (course.studentCount !== null) fields.studentCount = "RSC data.course.learning_count";
-  if (course.lessonCount !== null) fields.lessonCount = "RSC data.course.episodes_count";
-  const rates = object(details.rates);
-  if (number(rates.avg) !== null && number(rates.max) !== null && Number(rates.max) > 0) { course.rating = { value: Number(rates.avg), scale: Number(rates.max), count: number(rates.count) }; fields.rating = "RSC data.course.rates.avg / max / count"; }
-  const original = price(details.price), final = price(details.final_price);
-  if (original !== null && final !== null && final > original) throw new Error("Invalid Roocket discount");
-  const free = details.is_free === true && details.type === "free";
-  if (free && ((original !== null && original !== 0) || (final !== null && final !== 0))) throw new Error("Conflicting Roocket free price evidence");
-  if (details.is_inactive === true) {
-    course.offers = []; fields.offers = "RSC data.course.is_inactive=true";
-    course.source.warnings.push("Inactive course: disabled purchase option excluded; source prices retained in raw.");
-  } else if (details.is_coming_soon === true) {
-    course.source.warnings.push("Coming-soon course: purchase eligibility not established, offers remain null.");
-  } else if (details.is_free !== undefined || original !== null || final !== null) {
-    // Resolve units only through amount-consistent, course-scoped currency evidence.
-    const amount = free ? 0 : final ?? original;
-    const verified = verifiedDisplayUnit(html, sourceUrl, original);
-    course.offers = [{ id: "course", type: free ? "free" : "full", label: plainText(details.type_label), amount: free ? 0 : verified ? amount : null, originalAmount: verified && original !== null && amount !== null && original > amount ? original : null, unit: "toman", status: free ? "free" : verified && amount !== null && amount > 0 ? "paid" : "unknown", billingPeriod: null, certificateIncluded: null, accessDescription: null, supportDescription: null, sourcePrice: { amount, originalAmount: original !== null && amount !== null && original > amount ? original : null, unit: verified ? "toman" : "unknown", label: free ? plainText(details.type_label) : text(details.final_price_formatted ?? details.price_formatted) } }];
-    fields["offers.course"] = "RSC data.course.is_free / type / type_label / price / final_price / *_formatted";
-    if (verified) fields["offers.course.currency"] = "Course JSON-LD offers.priceCurrency=IRR and offers.price equals RSC course.price × 10; display amounts are toman";
-    if (!free && !verified) course.source.warnings.push("Paid price currency is a graphic glyph without verified machine-readable unit; normalized amounts remain null.");
-  }
-  const lesson = (value: unknown, index: number) => {
-    const item = object(value), title = plainText(item.title);
-    if (!title || !Number.isSafeInteger(item.id)) throw new Error("Invalid Roocket lesson");
-    return { id: String(item.id), order: index + 1, title, description: plainText(item.description), type: "video" as const, providerType: null, contentMinutes: minutes(item.time) };
+  const publishedEpisodeValues = Array.isArray(data.episodes) ? data.episodes : Array.isArray(data.sections) ? data.sections.flatMap(item => Array.isArray(object(item).episodes) ? object(item).episodes as unknown[] : []) : [];
+  if (publishedEpisodeValues.length > 500) warnings.push("Supplementary episode-state metadata limited to first 500 items; omitted count retained in providerData.");
+  const observation: Omit<CourseIngestion, "schemaVersion"> = {
+    submissionId, providerId: "roocket", providerCourseId: String(details.id), title, sourceUrl,
+    source: { checkedAt, extractor: "roocket-public", extractorVersion: EXTRACTOR_VERSION, method: "public-html-and-embedded-data", fieldSources: fields, warnings },
+    pricing: section(offers, offers === null ? "unknown" : "complete", offers === null ? "Coming-soon purchase eligibility unverified" : null), thumbnail: section(image ? { kind: "url", url: image, alt: title } : null, image ? "complete" : "unknown", image ? null : "No public image"),
+    description: section(description, description ? "complete" : "unknown", description ? null : "No published description"), education: section(education, "partial", "Only explicitly labeled educational metadata retained"),
+    classification: section({ providerCategories: null, providerLevel: null, language: null, format: ((Array.isArray(data.episodes) && data.episodes.some(item => text(object(item).time))) || (Array.isArray(data.sections) && data.sections.some(item => Array.isArray(object(item).episodes) && (object(item).episodes as unknown[]).some(episode => text(object(episode).time))))) ? "recorded-video" : null }), instructors: section(instructors.length ? instructors : null),
+    curriculum: section<Curriculum>(curriculumFailed ? null : curriculum, curriculumFailed ? "failed" : curriculum.syllabusCoverage.status, curriculumFailed ? "Malformed optional curriculum" : curriculum.syllabusCoverage.reasons[0]),
+    feedback: section({ rating, studentCount: optionalCount(details.learning_count, "RSC data.course.learning_count"), reviews: embeddedReviews(html, sourceUrl, settings) }),
+    providerState: section({ availability: details.is_inactive === true || details.is_coming_soon === true ? "unavailable" : details.is_inactive === false && details.is_coming_soon === false ? "available" : "unknown", providerStatus: plainText(details.status_label), ongoing: ["complete", "uncomplete"].includes(String(details.status)) ? details.status === "uncomplete" : null, providerUpdatedAt: text(details.updated_at) && Number.isFinite(Date.parse(details.updated_at as string)) ? new Date(details.updated_at as string).toISOString() : null }),
+    providerData: section({ "roocket.course": { slug: details.slug, status: text(details.status), price: original, final_price: final, structuredCurrency: unit ? "IRR" : null, structuredOriginalAmount: unit && original !== null ? original * 10 : null, type: text(details.type), is_free: typeof details.is_free === "boolean" ? details.is_free : null,
+      showWarranty: typeof data.show_warranty === "boolean" ? data.show_warranty : null,
+      accessibilityDeaf: typeof details.deaf === "boolean" ? details.deaf : null,
+      likesCount: optionalCount(details.likes_count, "RSC data.course.likes_count"), mixedCommentThreadCount: optionalCount(details.comment_count, "RSC data.course.comment_count"),
+      createdAtText: text(details.created_at), lastUpdatedText: text(details.last_updated_ago),
+      episodeMetadataOmittedCount: Math.max(0, publishedEpisodeValues.length - 500),
+      publishedEpisodes: publishedEpisodeValues.slice(0, 500).map(value => { const item = object(value); return { id: String(item.id), episodeNumber: optionalCount(item.episode_number, "RSC episodes[].episode_number"), published: typeof item.is_published === "boolean" ? item.is_published : null, publishedAtText: text(item.published_at), comingSoon: typeof item.is_soon === "boolean" ? item.is_soon : null, hasAttachments: typeof item.has_attachments === "boolean" ? item.has_attachments : null }; }),
+    } }),
   };
-  if (Array.isArray(data.sections) && data.sections.length) {
-    course.syllabus = data.sections.map((value, index) => {
-      const section = object(value), title = plainText(section.section_name);
-      if (!title || !Number.isSafeInteger(section.section_num)) throw new Error("Invalid Roocket section");
-      return { id: String(section.section_num), order: index + 1, title, description: plainText(section.description), lessons: Array.isArray(section.episodes) ? section.episodes.map(lesson) : null };
-    });
-    fields.syllabus = "RSC data.sections[].section_num / section_name / episodes[]";
-  } else if (Array.isArray(data.episodes)) {
-    course.syllabus = data.episodes.length ? [{ id: null, order: 1, title: course.title, description: null, lessons: data.episodes.map(lesson) }] : [];
-    fields.syllabus = "RSC data.episodes[] (flat provider list, course title used as container)";
-    if (data.episodes.length) course.source.warnings.push("Provider publishes a flat lesson list; course title is used as its single container, not an inferred chapter.");
-  } else course.source.warnings.push("No published syllabus array found.");
-  const extractedCount = course.syllabus === null || (course.syllabus.length > 0 && course.syllabus.every(chapter => chapter.lessons === null)) ? null : course.syllabus.reduce((sum, chapter) => sum + (chapter.lessons?.length ?? 0), 0);
-  const incomplete = course.syllabus?.some(chapter => chapter.lessons === null) || (extractedCount !== null && course.lessonCount !== null && extractedCount !== course.lessonCount);
-  course.syllabusCoverage = { status: incomplete ? "partial" : "unknown", publishedLessonCount: course.lessonCount, extractedLessonCount: extractedCount,
-    reasons: [incomplete ? "Published lesson count or section lists indicate incomplete extraction." : "Embedded public list extracted; full traversal/pagination completeness is not independently established."] };
-  fields.syllabusCoverage = "RSC sections / episodes / course.episodes_count";
-  extractPublicReviews(html, course);
-  course.source.warnings.push("Unknown educational/access labels remain null; general prose is not treated as labeled metadata.");
-  course.raw = { slug: details.slug, status: details.status, price: original, final_price: final, price_formatted: details.price_formatted ?? null, final_price_formatted: details.final_price_formatted ?? null, type: details.type, is_free: details.is_free, time: details.time ?? null };
-  return finalizeCourse(course);
-}
-export type RoocketCourse = ProviderCourse;
-export class RoocketScraper {
-  private client: PublicProviderClient;
-  private commentsClient: PublicProviderClient;
-  discoveryIsComplete = false;
-  constructor(private options: ScraperOptions = {}) { this.client = new PublicProviderClient(ORIGIN, options); this.commentsClient = new PublicProviderClient("https://api.roocket.ir", options); }
-  initialize(): Promise<void> { return this.client.initialize(); }
-  async fetchCoursePage(input: string): Promise<{ html: string; sourceUrl: string }> { const page = await this.client.request(canonicalCourseUrl(input)); return { html: page.body, sourceUrl: canonicalCourseUrl(page.url) }; }
-  async scrapeCourse(input: string): Promise<ProviderCourse> {
-    const page = await this.fetchCoursePage(input), course = parseCoursePage(page.html, page.sourceUrl);
-    // This GET route and API host are disclosed by the course page's public fetchSeriesComments script.
-    const slug = new URL(page.sourceUrl).pathname.split("/")[2], url = `https://api.roocket.ir/api/v1/series/${slug}/comments/?page=1`;
-    try {
-      const response = await this.commentsClient.request(url);
-      return applyPublicComments(course, JSON.parse(response.body), response.url);
-    } catch (error) {
-      if (error instanceof AccessDeniedError || this.options.signal?.aborted) throw error;
-      course.reviews.collection.stopReason = `Public comments collection failed: ${error instanceof Error ? error.message : String(error)}`;
-      course.source.warnings.push(course.reviews.collection.stopReason);
-      return finalizeCourse(course);
+  // Whole-subtree evidence is sufficient for populated facts. Record empty arrays
+  // separately because validation requires evidence of confirmed absence.
+  const locators = {
+    pricing: "RSC data.course.price/final_price/is_free/type/type_label/*_formatted; matching Course JSON-LD offers.priceCurrency/price",
+    thumbnail: "RSC data.course.image / title", description: "RSC data.course.body_html resolved UTF-8 text, fallback description_full/description",
+    education: "RSC data.course.body_html explicitly labeled educational headings/li[]; course.time",
+    classification: "RSC data.episodes[].time or data.sections[].episodes[].time (published video media)",
+    instructors: "RSC data.course.instructors[].name/role_label or instructor.name/role_label",
+    curriculum: "RSC data.sections[].section_num/section_name/description/episodes[] or data.episodes[]; course.episodes_count",
+    feedback: "RSC data.course.rates.avg/max/count; course.learning_count; exact Course JSON-LD review[]",
+    providerState: "RSC data.course.is_inactive/is_coming_soon/status/status_label/updated_at",
+    providerData: "RSC data.course price/state/count/time fields; data.show_warranty; data.episodes[] or sections[].episodes[] public publication/attachment fields",
+  };
+  for (const key of Object.keys(locators) as (keyof typeof locators)[]) compactEvidence(observation[key]?.data, `${key}.data`, locators[key], fields);
+  offers?.forEach((_, index) => { fields[`pricing.data.${index}`] = locators.pricing; });
+  if (optionalCountFailed) observation.feedback!.coverage = { status: "partial", reason: "Malformed optional count omitted; see source warnings" };
+  const reviews = observation.feedback!.data!.reviews;
+  if (reviews.items) fields["feedback.data.reviews.items"] = "Course-scoped JSON-LD review[]";
+  reviews.items?.forEach((item, index) => {
+    for (const key of Object.keys(fields)) if (key === `feedback.data.reviews.items.${index}` || key.startsWith(`feedback.data.reviews.items.${index}.`)) delete fields[key];
+    fields[`feedback.data.reviews.items.${index}`] = `${sourceUrl} ${item.sourceLocator}`;
+  });
+  if (Buffer.byteLength(JSON.stringify(observation)) > 950000 && observation.feedback!.data!.reviews.items?.length) {
+    const reviews = observation.feedback!.data!.reviews, originalItems = reviews.items!;
+    reviews.items = [];
+    let remaining = Math.max(0, 900000 - Buffer.byteLength(JSON.stringify(observation))), omitted = 0;
+    for (const item of originalItems) {
+      const cost = Buffer.byteLength(JSON.stringify(item)) + Buffer.byteLength(JSON.stringify(`${item.sourceUrl} ${item.sourceLocator}`)) + 150;
+      if (cost > remaining) { omitted++; continue; }
+      remaining -= cost; reviews.items.push(item);
+    }
+    if (omitted) {
+      reviews.collection = { ...reviews.collection, collectedCount: reviews.items.length, omittedCount: reviews.collection.omittedCount + omitted, status: "partial", stopReason: "observation-payload-budget-limit" };
+      observation.source.warnings.push("Embedded reviews retained within existing ingestion payload budget; omissions explicitly counted.");
+      for (const key of Object.keys(fields)) if (key.startsWith("feedback.data.reviews.items.")) delete fields[key];
+      reviews.items.forEach((item, index) => { fields[`feedback.data.reviews.items.${index}`] = `${item.sourceUrl} ${item.sourceLocator}`; });
     }
   }
-  async discoverCourses(): Promise<string[]> {
-    await this.initialize(); this.discoveryIsComplete = false;
-    const pending = this.client.sitemapUrls.filter(url => !/sitemap-(article|video|discuss|podcasts)/.test(new URL(url).pathname));
-    if (!pending.length) pending.push(`${ORIGIN}/sitemap/`);
-    const visited = new Set<string>(), courses = new Set<string>();
-    while (pending.length) {
-      const url = this.client.canonicalUrl(pending.shift()!);
-      if (visited.has(url)) continue;
-      if (visited.size >= 100) throw new Error("Sitemap traversal limit exceeded");
-      visited.add(url);
-      const map = parseSitemap((await this.client.request(url)).body);
-      if (map.kind === "index") pending.push(...map.urls.filter(link => /sitemap-courses|\/sitemap\/?$/.test(new URL(link).pathname)));
-      else for (const link of map.urls) {
-        if (!/^\/series\/[a-z\d-]+\/?$/i.test(new URL(link).pathname)) continue;
-        const canonical = canonicalCourseUrl(link);
-        if (this.client.allows(canonical)) courses.add(canonical);
+  return nativeObservation(observation);
+}
+/** Decode one evidenced course-specific public API page without retaining author identities. */
+export function parsePublicComments(payload: unknown, sourceUrl: string, courseUrl: string, instructorNames: string[] = []): { items: CourseReview[]; hasMore: boolean; excluded: number; page: number } {
+  const endpoint = new URL(sourceUrl), slug = new URL(canonicalCourseUrl(courseUrl)).pathname.split("/")[2], page = Number(endpoint.searchParams.get("page"));
+  if (endpoint.origin !== "https://api.roocket.ir" || endpoint.username || endpoint.password || endpoint.pathname !== `/api/v1/series/${slug}/comments/` || !Number.isSafeInteger(page) || page < 1 || [...endpoint.searchParams.keys()].some(key => key !== "page")) throw new Error("Mismatched comments source");
+  const data = object(object(payload).data), meta = object(data.meta);
+  if (!Array.isArray(data.comments) || meta.current_page !== page || !Number.isSafeInteger(meta.last_page) || Number(meta.last_page) < page) throw new Error("Invalid comments payload");
+  const candidates = data.comments.map(object), names = [...instructorNames];
+  const collectNames = (items: ObjectValue[], depth = 0): void => { for (const item of items) { for (const value of [text(item.name), text(object(item.author).name), text(object(item.author).username)]) if (value) names.push(value); if (depth < 10 && Array.isArray(item.replies)) collectNames(item.replies.map(object), depth + 1); } };
+  collectNames(candidates);
+  const items: CourseReview[] = []; let excluded = 0;
+  for (const [index, item] of candidates.entries()) {
+    const body = plainText(item.body_html), author = object(item.author);
+    if (item.parent_id !== 0 || !body || /[؟?]/.test(body) || item.is_admin === true || item.is_instructor === true || author.is_admin === true || author.is_instructor === true || instructorNames.includes(String(author.name ?? item.name))) { excluded++; continue; }
+    const anonymous = anonymizeReviewText(body, names), publishedDateText = text(item.created_at);
+    if (!anonymous.text) { excluded++; continue; }
+    items.push({ id: reviewContentId(anonymous.text, publishedDateText, null), sourceType: "comment", ...anonymous, rating: null, publishedAt: null, publishedDateText, verifiedEnrollment: null, sourceUrl, sourceLocator: `data.comments[${index}]` });
+  }
+  return { items, excluded, page, hasMore: typeof meta.has_more === "boolean" ? meta.has_more : Number(meta.last_page) > page };
+}
+export type RoocketCourse = CourseIngestion;
+export type RoocketOptions = BaseScraperOptions & Partial<FeedbackSettings>;
+export class RoocketScraper extends BaseScraper {
+  readonly providerId = "roocket";
+  readonly extractorVersion = EXTRACTOR_VERSION;
+  private readonly settings: FeedbackSettings;
+  constructor(options: RoocketOptions = {}) { super(ORIGIN, options); this.settings = feedbackSettings({ ...(options.feedbackPages === undefined ? {} : { feedbackPages: options.feedbackPages }), ...(options.feedbackItems === undefined ? {} : { feedbackItems: options.feedbackItems }) }); }
+  canonicalCourseUrl(input: string): string { return canonicalCourseUrl(input); }
+  courseKey(url: string): string { return new URL(canonicalCourseUrl(url)).pathname; }
+  protected relevantSitemap(url: string): boolean { return /^\/(?:sitemap\/?|sitemap-courses\/?)$/.test(new URL(url).pathname); }
+  protected async extract(body: string, sourceUrl: string, checkedAt: string, submissionId: string): Promise<CourseIngestion> {
+    const observation = parseCoursePage(body, sourceUrl, checkedAt, submissionId, this.settings);
+    const evidenceCapacity = Math.max(1, 4000 - Object.keys(observation.source.fieldSources).length - 30);
+    const accumulator = new FeedbackAccumulator({ ...this.settings, feedbackItems: Math.min(this.settings.feedbackItems, evidenceCapacity) });
+    if (evidenceCapacity < this.settings.feedbackItems) observation.source.warnings.push("Feedback item bound reduced to preserve the existing 4000 field-evidence limit; any stopping limit is recorded.");
+    const embedded = observation.feedback!.data!.reviews;
+    if (embedded.collection.pagesRead) accumulator.addPage(embedded.items ?? [], null, embedded.collection.omittedCount);
+    const slug = new URL(sourceUrl).pathname.split("/")[2], instructors = observation.instructors?.data?.map(item => item.name) ?? [];
+    let page = 1, payloadRemaining = Math.max(0, 900000 - Buffer.byteLength(JSON.stringify(observation)));
+    try {
+      while (accumulator.canRead()) {
+        this.signal?.throwIfAborted();
+        const endpoint = `https://api.roocket.ir/api/v1/series/${slug}/comments/?page=${page}`;
+        const response = await this.originClient("https://api.roocket.ir").request(endpoint);
+        const parsed = parsePublicComments(JSON.parse(response.body), response.url, sourceUrl, instructors);
+        const retained: CourseReview[] = []; let budgetOmitted = 0;
+        for (const item of parsed.items) {
+          const cost = Buffer.byteLength(JSON.stringify(item)) + Buffer.byteLength(JSON.stringify(`${item.sourceUrl} ${item.sourceLocator}`)) + 150;
+          if (cost > payloadRemaining) { budgetOmitted++; continue; }
+          payloadRemaining -= cost; retained.push(item);
+        }
+        accumulator.addPage(retained, parsed.hasMore, parsed.excluded + budgetOmitted);
+        if (budgetOmitted) { accumulator.fail("observation-payload-budget-limit"); observation.source.warnings.push("Feedback retained within the existing 1MiB ingestion payload limit; omitted item count recorded."); break; }
+        if (!parsed.hasMore) break;
+        page++;
+      }
+    } catch (error) { if (error instanceof AccessDeniedError || this.signal?.aborted) throw error; accumulator.fail("public-comments-request-or-payload-failed"); observation.source.warnings.push("Optional public comments unavailable; independent rating, instructors and curriculum retained."); }
+    observation.source.warnings.push("Public comments are unverified; replies, known staff and question-mark items are excluded conservatively, including possible rhetorical feedback. Mixed thread totals are not review or rating counts.");
+    const reviews = accumulator.result();
+    if (evidenceCapacity < this.settings.feedbackItems && reviews.collection.stopReason === "item-limit") reviews.collection.stopReason = "field-evidence-budget-limit";
+    const previous = observation.feedback!.data!;
+    observation.feedback = section({ ...previous, reviews }, observation.feedback!.coverage.status === "partial" ? "partial" : reviews.collection.status, observation.feedback!.coverage.status === "partial" ? observation.feedback!.coverage.reason : reviews.collection.stopReason);
+    observation.source.method = reviews.collection.pagesRead ? "public-html-and-public-api" : "public-html-and-embedded-data";
+    const fields = observation.source.fieldSources;
+    // Review evidence points at the actual page/item rather than course-page data.
+    evidenceTree(reviews.collection, "feedback.data.reviews.collection", "Public comments API pagination meta; bounded anonymous selection", fields);
+    if (reviews.items) fields["feedback.data.reviews.items"] = "Public comments API data.comments[]";
+    reviews.items?.forEach((item, index) => { fields[`feedback.data.reviews.items.${index}`] = `${item.sourceUrl} ${item.sourceLocator}`; });
+    return nativeObservation(observation);
+  }
+}
+/** Standards-based reviews must be attached to this exact Course node. */
+function embeddedReviews(html: string, sourceUrl: string, settings: FeedbackSettings) {
+  const accumulator = new FeedbackAccumulator(settings);
+  const items: CourseReview[] = []; let recognized = false, excluded = 0;
+  for (const [scriptIndex, match] of [...html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)].entries()) {
+    let root: unknown; try { root = JSON.parse(match[1]); } catch { continue; }
+    const nodes = Array.isArray(root) ? root : Array.isArray(object(root)["@graph"]) ? object(root)["@graph"] as unknown[] : [root];
+    for (const [nodeIndex, node] of nodes.entries()) {
+      const course = object(node); if (!(Array.isArray(course["@type"]) ? course["@type"] : [course["@type"]]).includes("Course") || !text(course.url)) continue;
+      try { if (canonicalCourseUrl(course.url as string) !== sourceUrl) continue; } catch { continue; }
+      if (!Object.hasOwn(course, "review") || course.review === null) continue;
+      recognized = true;
+      const reviews = Array.isArray(course.review) ? course.review : [course.review];
+      const names = reviews.flatMap(value => { const author = object(value).author; return (Array.isArray(author) ? author : [author]).flatMap(item => [text(object(item).name), text(object(item).alternateName), text(item)]); }).filter((item): item is string => !!item);
+      for (const [index, value] of reviews.entries()) {
+        const item = object(value), body = plainText(item.reviewBody), types = Array.isArray(item["@type"]) ? item["@type"] : [item["@type"]];
+        let mismatch = false; const subject = text(object(item.itemReviewed).url ?? object(item.itemReviewed)["@id"]) ?? text(item.itemReviewed);
+        if (subject) { try { mismatch = canonicalCourseUrl(subject) !== sourceUrl; } catch { mismatch = true; } }
+        if (!types.includes("Review") || types.includes("Question") || !body || item.parentItem != null || item.inReplyTo != null || mismatch) { excluded++; continue; }
+        const anonymous = anonymizeReviewText(body, names), rawRating = object(item.reviewRating), valueRating = number(rawRating.ratingValue), scale = number(rawRating.bestRating);
+        const rating = valueRating !== null && scale !== null && scale > 0 && valueRating >= 0 && valueRating <= scale ? { value: valueRating, scale } : null;
+        const publishedDateText = text(item.datePublished), publishedAt = publishedDateText && /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(publishedDateText) && Number.isFinite(Date.parse(publishedDateText)) ? new Date(publishedDateText).toISOString() : null;
+        items.push({ id: reviewContentId(anonymous.text, publishedDateText, rating), sourceType: "review", ...anonymous, rating, publishedAt, publishedDateText, verifiedEnrollment: null, sourceUrl, sourceLocator: `JSON-LD script[${scriptIndex}] node[${nodeIndex}].review[${index}]` });
       }
     }
-    if (!courses.size) throw new Error("No Roocket courses discovered; sitemap drift");
-    this.discoveryIsComplete = true;
-    return [...courses];
   }
-  async *scrapeCourses(urls: Iterable<string>): AsyncGenerator<{ sourceUrl: string; course: ProviderCourse | null; error: string | null }> {
-    const seen = new Set<string>();
-    for (const input of urls) {
-      this.options.signal?.throwIfAborted(); const sourceUrl = canonicalCourseUrl(input);
-      if (seen.has(sourceUrl)) continue; seen.add(sourceUrl);
-      try { yield { sourceUrl, course: await this.scrapeCourse(sourceUrl), error: null }; }
-      catch (error) { if (error instanceof AccessDeniedError || this.options.signal?.aborted) throw error; yield { sourceUrl, course: null, error: error instanceof Error ? error.message : String(error) }; }
-    }
-  }
+  if (recognized) accumulator.addPage(items, null, excluded);
+  return accumulator.result();
+}
+
+/** Bounded source-subtree evidence without duplicating each scalar lesson fact. */
+function compactEvidence(value: unknown, path: string, locator: string, fields: Record<string, string>): void {
+  if (value == null) return;
+  fields[path] = locator;
+  const emptyArrays = (item: unknown, itemPath: string): void => {
+    if (Array.isArray(item)) {
+      if (!item.length) fields[itemPath] = `${locator} (explicit empty array)`;
+      else item.forEach((child, index) => emptyArrays(child, `${itemPath}.${index}`));
+    } else if (item && typeof item === "object") for (const [key, child] of Object.entries(item)) emptyArrays(child, `${itemPath}.${key}`);
+  };
+  emptyArrays(value, path);
 }

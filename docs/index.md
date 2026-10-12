@@ -25,7 +25,8 @@ Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 i
 
 - [Previous backend lessons](../old-backend.md): useful product decisions, reusable evidence/reliability patterns, historical code references and limits for the OpenSpec restart.
 
-- [Utility README](../apps/utils/README.md): adapter/export commands, backend imports, and local dashboard setup.
+- [Utility README](../apps/utils/README.md): collector/export commands, backend imports and explicit ingestion.
+- [Provider field audits](provider-audits/): current native v3 evidence and source/live limitations for TopLearn, Sabzlearn and Roocket.
 - [Provider adapters](provider-adapters.md): merged provider selection and all four provider mappings, feedback coverage, and limitations.
 - [Course data format](course-data-format.md): implemented version-2 golden contract and provenance rules.
 - [Course group assessment](course-group-ai-assessment.md): proposed analyzer inputs/outputs, ranking, badges, and evidence policies.

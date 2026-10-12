@@ -7,12 +7,14 @@ import { requestHash, validateIngestion } from "../../api/src/ingestion-validati
 import { backendOrigin, validateSnapshot } from "./backend-client";
 import { DiagnosticError } from "../diagnostics";
 
+import { feedbackSettings, type FeedbackSettings } from "../scrapers/native-v3";
+
 export type Selection = { mode: "urls" | "limit" | "all"; urls: string[]; limit: number | null };
 export type Attempt = { phase: "collection" | "delivery" | "image"; at: string; outcome: "ok" | "failed"; code: string | null };
 export type Entry = { url: string; observation: CourseIngestion | null; receipt: CourseSnapshot | null; created: boolean | null;
   image: "unstarted" | "pending" | "missing" | "failed" | "ready"; error: { phase: Attempt["phase"]; code: string; terminal: boolean } | null; attempts: Attempt[] };
 export type Journal = { journalVersion: 1; runId: string; providerId: string; extractorVersion: string; backend: string; selection: Selection;
-  discoveryComplete: boolean; discoveryWarnings: string[]; entries: Entry[]; startedAt: string; updatedAt: string; status: "running" | "complete" | "partial" | "interrupted" };
+  collectionSettings?: FeedbackSettings; discoveryComplete: boolean; discoveryWarnings: string[]; entries: Entry[]; startedAt: string; updatedAt: string; status: "running" | "complete" | "partial" | "interrupted" };
 export const outputRoot = fileURLToPath(new URL("../output/", import.meta.url));
 const fail = () => { throw new DiagnosticError("checkpoint_invalid"); };
 function exact(value: unknown, keys: string[]) {
@@ -22,8 +24,12 @@ const nonblank = (v: unknown): v is string => typeof v === "string" && !!v.trim(
 const date = (v: unknown) => typeof v === "string" && /^\d{4}-\d\d-\d\dT.*Z$/.test(v) && Number.isFinite(Date.parse(v));
 export function validateJournal(value: unknown): Journal {
   try {
-    exact(value, ["journalVersion", "runId", "providerId", "extractorVersion", "backend", "selection", "discoveryComplete", "discoveryWarnings", "entries", "startedAt", "updatedAt", "status"]);
+    exact(value, ["journalVersion", "runId", "providerId", "extractorVersion", "backend", "selection", "discoveryComplete", "discoveryWarnings", "entries", "startedAt", "updatedAt", "status", ...(Object.hasOwn(value as object, "collectionSettings") ? ["collectionSettings"] : [])]);
     const v = value as Journal;
+    if (v.collectionSettings !== undefined) {
+      exact(v.collectionSettings, ["feedbackPages", "feedbackItems"]);
+      feedbackSettings(v.collectionSettings);
+    }
     if (v.journalVersion !== 1 || !nonblank(v.runId) || !nonblank(v.providerId) || !nonblank(v.extractorVersion) || backendOrigin(v.backend) !== v.backend || !date(v.startedAt) || !date(v.updatedAt) || !["running", "complete", "partial", "interrupted"].includes(v.status) || typeof v.discoveryComplete !== "boolean" || !Array.isArray(v.discoveryWarnings) || !v.discoveryWarnings.every(nonblank)) fail();
     exact(v.selection, ["mode", "urls", "limit"]);
     const selection = v.selection;

@@ -33,7 +33,7 @@ export abstract class BaseScraper {
   abstract canonicalCourseUrl(input: string): string;
   abstract courseKey(url: string): string;
   protected abstract relevantSitemap(url: string): boolean;
-  protected abstract extract(body: string, sourceUrl: string, checkedAt: string, submissionId: string): CourseIngestion;
+  protected abstract extract(body: string, sourceUrl: string, checkedAt: string, submissionId: string): CourseIngestion | Promise<CourseIngestion>;
 
   async fetchCoursePage(input: string): Promise<{ html: string; sourceUrl: string }> {
     this.signal?.throwIfAborted();
@@ -43,7 +43,8 @@ export abstract class BaseScraper {
   async scrapeCourse(input: string): Promise<CourseIngestion> {
     const page = await this.fetchCoursePage(input);
     this.signal?.throwIfAborted();
-    const observation = validateIngestion(this.extract(page.html, page.sourceUrl, (this.options.now?.() ?? new Date()).toISOString(), this.options.id?.() ?? randomUUID()));
+    const observation = validateIngestion(await this.extract(page.html, page.sourceUrl, (this.options.now?.() ?? new Date()).toISOString(), this.options.id?.() ?? randomUUID()));
+    this.signal?.throwIfAborted();
     if (observation.providerId !== this.providerId || observation.source.extractorVersion !== this.extractorVersion) throw new Error("Collector identity mismatch");
     return observation;
   }

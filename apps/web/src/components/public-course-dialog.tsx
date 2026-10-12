@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import type { PublicCourse,PublicCourseDetail } from '@dorob/core';
 import { browserCourses } from '@/lib/browser-courses';
 import type { CourseResult } from '@/lib/course-result';
-import { PublicPrice,persianNumber,sourceDate } from './public-course-card';
+import { PublicPrice,courseDuration,sourceDate } from './public-course-card';
 export function PublicCourseDialog({ course,trigger,onClose,onRefresh }: { course:PublicCourse;trigger:HTMLButtonElement;onClose:()=>void;onRefresh:()=>void }) {
   const dialog=useRef<HTMLDialogElement>(null);
   const [result,setResult]=useState<CourseResult<PublicCourseDetail>|null>(null);
@@ -25,7 +25,7 @@ export function PublicCourseDialog({ course,trigger,onClose,onRefresh }: { cours
         {c.snapshotId!==course.snapshotId&&<p role="status">اطلاعات منبع از زمان نمایش کارت تازه‌تر شده است.</p>}
         <p>گردآوری از منبع: <time dateTime={c.checkedAt}>{sourceDate(c.checkedAt)}</time></p>
         <p dir="auto">{c.description ?? 'توضیحات در منبع ثبت نشده است.'}</p>
-        <div className="discovery-course-metadata"><bdi>{c.provider.name}</bdi><bdi>{c.level ?? 'سطح ثبت نشده'}</bdi><span>{c.contentMinutes!==null?`${persianNumber(c.contentMinutes)} دقیقه`:'مدت ثبت نشده'}</span></div>
+        <div className="discovery-course-metadata"><bdi>{c.provider.name}</bdi><bdi>{c.level ?? 'سطح ثبت نشده'}</bdi><span>{courseDuration(c.contentMinutes)}</span></div>
         <p>مدرس یا تیم دوره: {c.instructors===null?'ثبت نشده':c.instructors.length===0?'بدون مدرس ثبت‌شده':c.instructors.map((i,n)=><span key={n}>{n>0&&'، '}<bdi>{i.name}</bdi>{i.role&&<> (<bdi>{i.role}</bdi>)</>}</span>)}</p>
         <h4>سرفصل‌ها</h4>{c.syllabus===null?<p>سرفصل‌ها ثبت نشده است.</p>:c.syllabus.length===0?<p>سرفصلی در منبع ارائه نشده است.</p>:<ol>{c.syllabus.map((s,i)=><li key={i}><strong dir="auto">{s.title}</strong>{s.description&&<p dir="auto">{s.description}</p>}{s.lessons===null?<p>درس‌ها ثبت نشده است.</p>:s.lessons.length===0?<p>درسی ارائه نشده است.</p>:<ul>{s.lessons.map((l,n)=><li key={n}><bdi>{l.title}</bdi>{l.description&&<p dir="auto">{l.description}</p>}</li>)}</ul>}</li>)}</ol>}
         <h4>گزینه‌های دسترسی و خرید</h4>{c.offers===null?<p>گزینه‌های خرید ثبت نشده است.</p>:c.offers.length===0?<p>گزینه‌ای در منبع ارائه نشده است.</p>:<ul>{c.offers.map(o=><li key={o.id}><strong dir="auto">{o.label ?? ({full:'دسترسی کامل',content:'محتوا',subscription:'اشتراک',free:'دسترسی رایگان',other:'گزینهٔ دیگر'}[o.type])}</strong><PublicPrice price={{status:o.status,offerId:o.status==='unknown'?null:o.id,amount:o.status==='unknown'?null:o.amount,originalAmount:o.status==='unknown'?null:o.originalAmount,unit:'toman',startingPrice:false,billingPeriod:o.billingPeriod,unavailableReason:o.status==='unknown'?'not-established':null}} /><p>گواهی: {o.certificateIncluded===null?'نامشخص':o.certificateIncluded?'دارد':'ندارد'}</p><p dir="auto">دسترسی: {o.accessDescription ?? 'ثبت نشده'}</p><p dir="auto">پشتیبانی: {o.supportDescription ?? 'ثبت نشده'}</p></li>)}</ul>}

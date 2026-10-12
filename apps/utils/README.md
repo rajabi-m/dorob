@@ -1,35 +1,114 @@
 # Dorob utilities
 
-Reusable server-side TypeScript tools, run locally with Bun. Standalone adapters collect Maktabkhooneh, TopLearn, Sabzlearn, and Roocket into JSON. They do not update the frontend fixture or run a scheduled backend.
+Reusable server-side TypeScript tools, run locally with Bun. Native v3 collectors and explicitly invoked ingestion commands support Maktabkhooneh, TopLearn, Sabzlearn and Roocket. Maktabkhooneh also retains its unchanged export-only v2 command. No command runs automatically or rewrites frontend fixtures.
 
-Browse the [documentation hub](../../docs/index.md) and [current validation](../../docs/validation.md). Phase 2 is complete for now; these utilities remain standalone groundwork.
+Browse the [documentation hub](../../docs/index.md) and [current validation](../../docs/validation.md). Phase 3 includes local ingestion and the existing homepage public catalog.
 
 Read [how the scraper works](../../docs/provider-adapters.md#maktabkhooneh) for a short overview.
 
-[Course data format](../../docs/course-data-format.md) defines the common output. All four standalone export commands emit the version-2 contract, adding anonymous public feedback, syllabus coverage, and richer educational evidence. The programmatic Maktabkhooneh adapter and ingestion worker emit version 3, as described below. Version-1 export checkpoints cannot be resumed; freshly export without `--resume` and choose a new output path to retain old files.
+[Course data format](../../docs/course-data-format.md) defines the common output. Only the retained `scrape:maktabkhooneh` export command emits version 2. All four programmatic collectors and ingestion commands emit version 3; the migrated providers have no v2 adapter. Version-1 export checkpoints cannot be resumed; freshly export without `--resume` and choose a new output path to retain old files.
 
 ## Additional provider adapters
 
+The `migrate-remaining-providers-v3` implementation and bounded acceptance are complete. Each migrated provider passed native v3 tests, actual paid/free ingestion, hosted WebP/public identity checks, duplicate-free checkpoint resume and desktop/mobile keyboard acceptance. Final combined checks: 134 utility tests, workspace lint/types, 15 core/web tests and API build pass. API tests: 32 pass, 18 database integration tests skipped by the default command. Web compilation/types pass, but page-data collection retains the documented Bun CommonJS function-wrapper error. Dashboard/aggregation commands are retired; the owner approved retaining the pure aggregation helper for the unchanged Maktabkhooneh regression test. Existing local output/data is preserved.
+
+### Shared migration interface (foundation)
+
+`scrapers/native-v3.ts` supplies `nativeObservation(input)` (strict validation of
+native v3 sections), `section(data, status, reason)`, `evidenceTree(value, path,
+locator, evidence)`, `SectionData<K>`, and the `Offers`, `Education`, `Curriculum`
+and `Feedback` aliases. It creates no v2 records and imports no conversion code.
+`anonymizeReviewText` and `reviewContentId` provide anonymous text/contact
+redaction and content identity without author identifiers.
+
+`FeedbackSettings` contains `feedbackPages` and `feedbackItems`;
+`feedbackSettings(partial)` defaults to 10/500 and rejects nonpositive or unsafe
+integers and item limits above the existing 2,000-item API bound.
+`FeedbackAccumulator(settings)` exposes `canRead()`,
+`addPage(items, hasMore, excluded = 0)`, `fail(reason)` and
+`result(publishedCount = null)`. Providers decode sources, exclude questions,
+replies/staff and supply evidenced next-page URLs. Embedded pages count toward
+the page limit. Duplicate IDs retain source order; omissions, limits and failures
+keep coverage partial/unknown. Aggregate rating/vote counts remain independent.
+Field evidence is bounded at 4,000 entries; exceeding that bound fails rather
+than silently truncating. Final native observations must also fit the existing
+payload/evidence limits. Ordinary optional failures may preserve other sections;
+access denial and cancellation must propagate.
+
+`BaseScraper.extract(body, sourceUrl, checkedAt, submissionId)` now accepts
+`CourseIngestion | Promise<CourseIngestion>`. Use protected `request(url)` or
+`originClient(origin).request(url)` for enrichment, preserving robots, redirects,
+rate/size/time limits, retries and cancellation per origin. The base awaits and
+validates extraction and verifies provider/extractor identity. Existing synchronous
+subclasses remain supported.
+
+`ingest-provider.ts` exports `main(provider, args, dependencies)` and
+`execute(provider, args, dependencies)`. A `ProviderDefinition` contains
+`providerId: "toplearn" | "sabzlearn" | "roocket"` and
+`create(options: FeedbackSettings & { signal; onRetry }): Collector`.
+Thin provider executables invoke `execute` and set `process.exitCode`.
+The shared CLI adds `--feedback-pages`/`--feedback-items` to URL/limit/all,
+checkpoint/resume/backend, human/JSON and help options. Private journals persist
+effective limits; omitted resume flags restore them, conflicting flags or v2
+exports fail before collector/backend construction or checkpoint mutation.
+Saved-observation replay keeps exact IDs; image-only resume does not enrich facts.
+Maktabkhooneh's entry point is untouched and old journals need no new settings.
+
+The coordinator owns shared helpers, worker/CLI/journal/reporter and their tests,
+package registration, shared docs, task status and any permitted logo assets.
+Provider agents own only their scraper, thin entry point, retired export entry
+point, prefixed tests/fixtures and `docs/provider-audits/<provider>.md`. They must
+request shared changes, preserve Maktabkhooneh and frontend files, and must not
+delegate further. Delegation waits for foundation tasks 1.1–1.6 to pass.
+The coordinator supplies the local API/database/web services and serializes
+browser/live acceptance slots; offline provider tests may run concurrently.
+Use private provider-specific journals and one active worker per provider/backend.
+Browser acceptance requires real accepted ready snapshots, existing homepage
+search/pagination with category/free filters cleared, mobile/desktop layouts,
+details and keyboard focus; fixtures/API-only checks cannot substitute for it.
+
 ```sh
-bun run scrape:toplearn --limit 2
-bun run scrape:sabzlearn --limit 2
-bun run scrape:roocket --limit 2
-# Each supports --url URL (repeatable), --all, --resume, --output PATH and --help.
+bun run ingest:toplearn --limit 2 --checkpoint apps/utils/output/toplearn-run.json
+bun run ingest:sabzlearn --limit 2 --checkpoint apps/utils/output/sabzlearn-run.json
+bun run ingest:roocket --limit 2 --checkpoint apps/utils/output/roocket-run.json
+bun run ingest:sabzlearn --checkpoint apps/utils/output/sabzlearn-run.json --resume
 ```
 
-Default exports are ignored `apps/utils/output/<provider>.json` files. Requests obey current robots rules, safe same-host redirects, bounded response sizes/timeouts, cancellation, sequential rate limits and retries. The shared CLI atomically checkpoints results and reports failures with a nonzero status. It records requested URLs separately from canonical course URLs so aliases resume correctly. An invalid resume does not overwrite the existing checkpoint. `fullCatalog` means every URL in successfully traversed advertised course maps was exported, not that unlisted offerings were discovered.
+Use `--help` for each command. Repeat `--url URL` to select source courses,
+`--limit N` for bounded discovery (default ten) or `--all` for explicit full
+bounded traversal. These selection modes are exclusive. The local API/database
+must be running with existing migrations applied; `--backend-url` or
+`DOROB_BACKEND_URL` chooses its origin. `--feedback-pages N` and
+`--feedback-items N` default to 10/500. Limits, exclusions and optional failures
+remain explicit; rating votes and published/collected comment counts are separate.
+Ordinary supplementary failures preserve independent facts, while denial and
+cancellation stop collection. `--json` produces one machine report; default
+stdout is a human summary and progress/diagnostics use stderr.
+
+Private journals are ignored under `apps/utils/output/`. New runs require new
+files. Resume restores saved selection/settings, replays exact observation IDs
+and retries only unresolved delivery/images. Conflicting settings, provider or
+backend and legacy exports are rejected before network/mutation. Completed
+observations do not recollect; improving partial source facts requires a fresh
+checkpoint. Existing exports and journals are not converted or removed.
 
 ```ts
 import { SabzlearnScraper } from "@dorob/utils/sabzlearn";
-import type { ProviderCourse } from "@dorob/utils/course";
 const scraper = new SabzlearnScraper({ signal: abortController.signal });
 for await (const result of scraper.scrapeCourses(await scraper.discoverCourses())) {
-  if (result.course) await saveCourse(result.course as ProviderCourse);
+  if (result.observation) await deliverObservation(result.observation);
   else await recordFailure(result.sourceUrl, result.error);
 }
+// Prefer ScraperWorker for durable observation delivery and image processing.
 ```
 
-`ToplearnScraper` and `RoocketScraper` are available through their corresponding package exports. These are server-side source exports intended for a TypeScript/Bun backend; do not import the adapters or raw source evidence into browser code. No credentials, database, LLM, scheduling, or frontend integration is introduced.
+`ToplearnScraper` and `RoocketScraper` use the corresponding package exports.
+Keep server-only collectors/evidence out of browser bundles. No AI, scheduling
+or editorial group assignment is included. Paid/free samples, source limitations
+and field-by-field evidence are recorded in
+[TopLearn](../../docs/provider-audits/toplearn.md),
+[Sabzlearn](../../docs/provider-audits/sabzlearn.md) and
+[Roocket](../../docs/provider-audits/roocket.md) audits for field coverage, live snapshot identities and browser evidence.
 
 Provider-specific mappings, observations, and limitations: [TopLearn](../../docs/provider-adapters.md#toplearn), [Sabzlearn](../../docs/provider-adapters.md#sabzlearn), [Roocket](../../docs/provider-adapters.md#roocket). The [implementation plan](../../docs/provider-adapters.md#provider-selection-and-implementation-groundwork) records the selection and agent rules. Quera was excluded at the owner's request; Faradars was deferred after public access/detail-page assessment. Unknown price units or conflicting purchase amounts leave normalized amounts null. Explicit matching purchase labels can outweigh generic SEO currency; course-scoped structured currency can establish the display unit when amounts match. Raw observations and discrepancy warnings remain available. These adapters need broader sampling before deployment.
 
@@ -105,15 +184,14 @@ Feedback is an initial public-page sample, not a full review crawl. A course com
 
 Final migration checks: all **62 utility tests**, workspace lint/type checking, and whitespace checks pass. Production compilation/types pass, but page-data collection still fails with the existing Bun CommonJS runtime bug. No full-catalog crawl or commit was performed.
 
-## Local data dashboard
+## Retired local dashboard
 
-Run `bun run dashboard:aggregate` to combine the four `output/dashboard-<provider>.json` exports into ignored `output/course-dashboard.json`, then `bun run dashboard:data` to browse at http://127.0.0.1:8787. Use `--file PATH --port N` for another snapshot/port. Aggregation accepts repeatable `--input PATH` and `--output PATH`. The read-only local dashboard supports search, provider/data filters, syllabus, anonymous feedback, warnings, provenance and JSON download. Raw HTML evidence stays in the local file and is omitted from browser responses. Refresh rereads the snapshot; it does not scrape.
-
-October 3 sample: 10 selections per provider, 39 successful courses, 84 feedback items and one recorded TopLearn canonical-identity failure. This is a bounded sample, not full-catalog collection. Workspace lint/type checking pass; Firefox desktop and 320px layout and RTL keyboard tabs were reviewed.
-
-Provider repairs supersede the initial sample's missing prices and identity failure: TopLearn verifies legacy aliases and purchase units; Roocket verifies structured currency and reads public comments; Maktabkhooneh handles numeric and H:MM durations; Sabzlearn retains explicit FAQ educational/access evidence. The public transport accepts a missing robots resource (404), consistent with [RFC 9309 §2.3.1.3](https://www.rfc-editor.org/rfc/rfc9309.html#section-2.3.1.3); denied or unreachable robots and ordinary course 404 responses still fail. Feedback remains a bounded sample.
-
-Refreshed October 3 snapshot: **40 courses, zero errors, 118 feedback items** (36 Maktabkhooneh reviews, 48 Sabzlearn comments, 34 Roocket comments). All 40 have content duration; 39 have explicit free/paid prices and one TopLearn course is subscription-only. TopLearn comments remain unknown because its disclosed public route returns 404. All **72 utility tests**, workspace lint/type checking and whitespace checks pass; the dashboard response serves the refreshed aggregate without raw source evidence. No separate utility build step exists; the previously documented web build runtime limitation remains unchanged.
+`dashboard:data` and `dashboard:aggregate`, the HTTP dashboard and its browser
+assets are retired. The owner approved retaining the pure `aggregateCourses`
+helper solely because the protected Maktabkhooneh regression test imports it.
+The helper has no executable CLI or import-time work. Existing ignored local
+exports, aggregate snapshots and private journals remain untouched. Historical
+sampling and browser evidence are retained in `docs/project-history.md`.
 
 ## Explicit saved-v2 ingestion conversion
 
@@ -142,8 +220,8 @@ the same parser and controlled transport. `bun run scrape:maktabkhooneh --help`
 and its existing URL/limit/all/output/resume workflow stay export-only,
 without backend requests. Saved-v2 conversion still uses
 `bun run convert:courses --input SAVED_V2.json --output NEW_V3.json`, with
-unknown coverage and deterministic IDs for replay. Aggregation/dashboard and
-TopLearn, Sabzlearn and Roocket remain v2. Do not pass worker journals as v2
+unknown coverage and deterministic IDs for replay. The dashboard is retired;
+TopLearn, Sabzlearn and Roocket are native v3-only. Do not pass worker journals as v2
 export checkpoints.
 
 ## Private worker checkpoints and crash locks
@@ -200,8 +278,8 @@ flags cannot be combined with each other or `--limit`. The default discovery
 limit is ten and `--backend-url`/`DOROB_BACKEND_URL` selects the local backend
 (default `http://127.0.0.1:3001`). Every fresh refresh needs a new journal.
 Accepted facts and hosted-image readiness remain distinct from editorial
-publication. Frontend fixtures are unchanged; other provider migrations,
-scheduling and AI remain deferred. Startup/migrations never invoke the worker.
+publication. Frontend fixtures remain separate; the three provider migrations use the same
+worker lifecycle. Scheduling and AI remain deferred. Startup/migrations never invoke the worker.
 See root README and validation for setup and acceptance results.
 
 October 10 owner-requested dev runs saved ten initial courses, then accepted 99

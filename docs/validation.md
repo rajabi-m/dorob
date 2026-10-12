@@ -192,7 +192,7 @@ This documentation/commit pass does not claim a new browser interaction review. 
 
 Homepage course results and real-course details use retained public catalog observations; surrounding sample course facts are dated fixtures, and analytical copy and ordering are labeled editorial/prototype content. Standalone export commands emit version 2 and return `derived: null`; the programmatic Maktabkhooneh adapter and explicit ingestion worker emit version 3. Frontend snapshots are separate browser-safe fixtures. Utility tests run offline with retained and synthetic fixtures. Owner-requested live dev samples are recorded below; no full-catalog crawl was performed. Broader provider-template sampling, freshness operations, deployment monitoring, and evidence-backed AI evaluation remain future work.
 
-Generated provider exports/dashboard snapshots stay ignored under `apps/utils/output/`; they are not part of the commit. The local dashboard therefore requires local exports before use. See [utility usage](../apps/utils/README.md).
+Generated provider exports/dashboard snapshots stay ignored under `apps/utils/output/`; they are not part of the commit. The dashboard has since been retired; those saved files remain preserved. See [utility usage](../apps/utils/README.md).
 
 ## Scraper pipeline redesign — October 10, 2026
 
@@ -410,3 +410,44 @@ Implemented instructor summaries, scoped pale-blue «مشاهده دوره» act
 - The real details action opened the existing dialog with the full long title and all four instructors; Escape closed it and returned focus to the originating action. Sample-card and shared outlined-button appearance remained unchanged in mobile/desktop review. Backend-off thumbnail failures in the synthetic route were expected; image-service acceptance was outside this change. The temporary route was removed and its preview server stopped after review. Tasks 1.2, 2.3 and 3.2 are now verified.
 
 Implementation and browser acceptance made no new branch, commits, merges, collection or backend changes. The owner subsequently authorized sync, archive and a scoped commit on the existing branch. The change is archived at `openspec/changes/archive/2026-10-11-refine-homepage-course-cards/`; all five delta requirement blocks match the main homepage catalog spec, and all ten main specs pass strict validation.
+
+## Remaining-provider migration foundation — October 12, 2026
+
+At the foundation checkpoint, tasks 1.1–1.4 of `migrate-remaining-providers-v3` were implemented. All 123 utility
+tests, utility lint/type checking and `git diff --check` pass. Checks include
+native rich/sparse validation, async supplementary enrichment/failure/denial/
+cancellation, each new-provider CLI identity and recovery, saved-limit conflicts,
+lost-response/crash replay and image-only resume. Existing Maktabkhooneh native,
+legacy, CLI and journal tests ran unchanged. No live collection/browser acceptance
+had been attempted at that checkpoint; final acceptance is recorded below.
+
+Workspace lint/type checking and the API production build also pass. The web
+build compiles and passes TypeScript, then fails during page-data collection with
+the already documented Bun 1.3.8 `Expected CommonJS module to have a function
+wrapper` error (this run reports `/icon.svg`). The lockfile is unchanged.
+
+Owner clarification resolves task 1.5: keep the pure `aggregateCourses` helper
+for the unchanged Maktabkhooneh test, remove its executable CLI, dashboard commands,
+HTTP server and browser assets. Existing local output/data is preserved. See the
+[foundation interface](../apps/utils/README.md#shared-migration-interface-foundation).
+
+## Remaining-provider migration acceptance — October 12, 2026
+
+`migrate-remaining-providers-v3` completes native v3-only TopLearn/Sabzlearn/Roocket collection, controlled supplementary feedback, configured 10-page/500-item defaults, durable settings/recovery, new explicit ingestion commands and dashboard/aggregation CLI retirement. The owner approved retaining the pure aggregation helper used by the protected Maktabkhooneh regression. Maktabkhooneh command definitions, collector/legacy adapter, converter, fixtures/tests and local outputs are unchanged. No dependencies or lockfile edits, database/schema changes, fixture insertion, editorial assignment, automatic collection or AI were added.
+
+- `bun run test:utils`: 134 passed, zero failed; unchanged Maktabkhooneh native/legacy/CLI/journal recovery checks included. Provider focused counts: TopLearn 20, Sabzlearn 13, Roocket 20. Large-curriculum/feedback tests preserve independent facts with explicit evidence/payload limits.
+- `bun test packages/core/tests apps/web/tests`: 15 passed, 197 assertions. Local loopback access was required by the deadline test; expected Happy DOM zero-layout Next Image warnings do not establish browser geometry.
+- `bun run test:api`: 32 passed, 18 database integration tests skipped by default, zero failed. No API implementation changed; actual ingestion/thumbnail/public reads additionally exercised the existing local API/database.
+- Workspace `bun run lint` and `bun run typecheck`: passed. `bun run build:api`: passed (353 bundled modules).
+- `bun run build`: compilation and TypeScript passed; page-data collection failed for `/icon.svg` with the existing Bun 1.3.8 `Expected CommonJS module to have a function wrapper` error. Full production web build success is not claimed.
+- Strict OpenSpec validation, `git diff --check` and RTL detector on both changed public-course components (zero errors/warnings): passed. Migrated collectors construct native v3 sections without v2 records/conversion. Retired scripts are absent, new CLI help works, protected scripts and lockfile match HEAD.
+
+All six actual representative courses (paid/free per provider) have accepted snapshots, ready hosted WebP images (HTTP 200), and matching management/current public identities. Exact URLs, submission/snapshot IDs, ordered contents, instructors, prices, feedback counts and source gaps are in the [TopLearn](provider-audits/toplearn.md), [Sabzlearn](provider-audits/sabzlearn.md) and [Roocket](provider-audits/roocket.md) audits. Fresh checkpoints created fresh IDs; coordinator repeated all three completed refresh/refined resumes, with no recollection/new acceptance or duplicate history. Checkpoints and reports remain private/ignored.
+
+Provider agents and coordinator checked the actual homepage `#courses` cards/details at desktop and Chrome responsive 390×844, Persian RTL/mixed Latin wrapping, paid/free offers, instructors, source links, ordered contents, Enter opening, initial close focus, Tab/source link, Escape closing and focus return. Coordinator reproduced combined unfiltered discovery and detail opening for all three providers, including free Roocket desktop detail. Native Chrome interference/blank captures were recovered using a fresh local tab; no workaround or frontend redesign was added.
+
+Authentic Sabzlearn/Roocket assets and existing map entries are added with attribution. Temporarily moving both assets produced HTTP 404, confirmed in Chrome Network; provider names, real cards and actions remained present. Assets were restored. The owner additionally requested whole-minute duration display: cards/details now use one Persian formatter rounding to nearest whole minute (682.123→۶۸۲, 1200.5→۱٬۲۰۱, zero→۰, null remains «مدت ثبت نشده»). Real Roocket cards and paid detail show rounded values; stored observations retain exact source numbers. Only these requested display edits and logos affect frontend code.
+
+Known source gaps remain explicit: TopLearn's disclosed comments route returns unrecognized/404 HTML, so feedback is unknown; Sabzlearn’s raw score lacks evidenced scale/vote count, so aggregate rating is unknown; mixed thread totals never become feedback/rating totals. Roocket’s explicit rating/votes remain separate from bounded anonymous comments. Limits, ordinary failures and question/reply/staff exclusions never imply complete coverage. No full-catalog crawl, branch or push occurred. The owner subsequently requested spec sync, archival and a commit. Both behavior contracts are synced and verified, all ten main specs pass strict validation, and the change is [archived](../openspec/changes/archive/2026-10-12-migrate-remaining-providers-v3/).
+
+Commit verification on October 12 reran workspace lint/type checking, 134 utility tests, 15 core/web tests (with local loopback access), 32 API tests (18 integration tests skipped by default), API production build and both changed-component RTL checks successfully. The web production build compiled and passed TypeScript, then hit the same Bun CommonJS runtime error during `/groups/[id]` page-data collection. Existing live/browser evidence above was reviewed; no new provider run was started for this commit.

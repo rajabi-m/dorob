@@ -23,13 +23,11 @@
     "typecheck:utils": "bun run --cwd apps/utils typecheck",
     "test:utils": "bun test apps/utils/tests",
     "scrape:maktabkhooneh": "bun run apps/utils/scrape-maktabkhooneh.ts",
-    "scrape:toplearn": "bun run apps/utils/scrape-toplearn.ts",
-    "scrape:sabzlearn": "bun run apps/utils/scrape-sabzlearn.ts",
-    "scrape:roocket": "bun run apps/utils/scrape-roocket.ts",
-    "dashboard:aggregate": "bun run apps/utils/aggregate-courses.ts",
-    "dashboard:data": "bun run apps/utils/data-dashboard.ts",
     "db:migrate": "bun run --cwd apps/api migrate",
     "convert:courses": "bun run apps/utils/convert-course-v3.ts",
-    "ingest:maktabkhooneh": "bun run apps/utils/ingest-maktabkhooneh.ts"
+    "ingest:maktabkhooneh": "bun run apps/utils/ingest-maktabkhooneh.ts",
+    "ingest:sabzlearn": "bun run apps/utils/ingest-sabzlearn.ts",
+    "ingest:roocket": "bun run apps/utils/ingest-roocket.ts",
+    "ingest:toplearn": "bun run apps/utils/ingest-toplearn.ts"
   }
 }

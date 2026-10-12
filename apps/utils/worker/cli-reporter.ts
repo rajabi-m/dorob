@@ -2,6 +2,7 @@ import { diagnosticMessage, safeCode, safeText, type DiagnosticCode, type RetryE
 import type { WorkerEvent, RunReport, RunSummary } from "./worker";
 
 export type ReporterOptions = { write: (text: string) => void; isTTY?: boolean; now?: () => number;
+  provider?: "toplearn" | "sabzlearn" | "roocket";
   every?: (callback: () => void, ms: number) => () => void };
 const every = (callback: () => void, ms: number) => { const timer = setInterval(callback, ms); return () => clearInterval(timer); };
 const quote = (s: string) => `'${s.replace(/'/g, "'\\''")}'`;
@@ -24,7 +25,7 @@ export class CliReporter {
   constructor(private readonly origin: string, resume: boolean, private readonly options: ReporterOptions) {
     this.now = options.now ?? Date.now;
     this.started = this.lastPrinted = this.now();
-    this.line(`Starting Maktabkhooneh ingestion${resume ? " (resume saved selections; no rediscovery)" : ""}; backend ${safeText(origin, 200)}`);
+    this.line(`Starting ${this.options.provider ?? "Maktabkhooneh"} ingestion${resume ? " (resume saved selections; no rediscovery)" : ""}; backend ${safeText(origin, 200)}`);
     this.cancel = (options.every ?? every)(() => this.progress(true), 10000);
   }
   elapsed(): number { return Math.max(0, Math.floor((this.now() - this.started) / 1000)); }
@@ -83,7 +84,7 @@ export class CliReporter {
   }
 }
 
-export function humanSummary(report: RunReport, context: RunSummary, checkpoint: string, origin: string, elapsed: number): string {
+export function humanSummary(report: RunReport, context: RunSummary, checkpoint: string, origin: string, elapsed: number, provider: "maktabkhooneh" | "toplearn" | "sabzlearn" | "roocket" = "maktabkhooneh"): string {
   const lines = [`Ingestion ${report.status}; ${elapsed}s elapsed.`,
     `Selected ${report.selected}; collected ${report.collected}; accepted new ${report.acceptedNew}; replayed ${report.replayed}.`,
     `Collection failed ${report.collectionFailed}; delivery pending ${report.deliveryPending}; terminal delivery failed ${report.deliveryFailed}; image processing failed ${report.imageProcessingFailed}.`,
@@ -95,12 +96,12 @@ export function humanSummary(report: RunReport, context: RunSummary, checkpoint:
   if (context.resumable) {
     lines.push("Resume uses saved observations and receipts; only unresolved work is retried.");
     // Paths are validated at the journal boundary. Never truncate a runnable command.
-    lines.push(`Resume: bun run ingest:maktabkhooneh --checkpoint ${quote(checkpoint)} --backend-url ${quote(origin)} --resume`);
+    lines.push(`Resume: bun run ingest:${provider} --checkpoint ${quote(checkpoint)} --backend-url ${quote(origin)} --resume`);
   }
   if (report.deliveryFailed) lines.push("Terminal delivery rejection needs operator review; resume does not change rejected payloads or IDs.");
   return lines.join("\n");
 }
 
-export function fatalDiagnostic(code: DiagnosticCode, stage: string, saved: boolean): string {
-  return `Ingestion stopped during ${stage} (${code}): ${diagnosticMessage(code)} ${saved ? "Previously saved progress is retained." : "No saved progress was confirmed; no resume command is available."}`;
+export function fatalDiagnostic(code: DiagnosticCode, stage: string, saved: boolean, provider?: "toplearn" | "sabzlearn" | "roocket"): string {
+  return `${provider ? provider + " " : ""}Ingestion stopped during ${stage} (${code}): ${diagnosticMessage(code)} ${saved ? "Previously saved progress is retained." : "No saved progress was confirmed; no resume command is available."}`;
 }

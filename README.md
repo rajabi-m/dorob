@@ -22,6 +22,8 @@ In Codex CLI or IDE, invoke `$openspec-propose "your idea"`. In the Codex deskto
 
 The completed `connect-homepage-courses` change is archived at [2026-10-11-connect-homepage-courses](openspec/changes/archive/2026-10-11-connect-homepage-courses/). All 20 tasks are complete; its contracts are synced to [homepage-course-catalog](openspec/specs/homepage-course-catalog/spec.md) and [public-course-catalog](openspec/specs/public-course-catalog/spec.md), and all ten main specs pass strict validation.
 
+The completed `migrate-remaining-providers-v3` change is [archived](openspec/changes/archive/2026-10-12-migrate-remaining-providers-v3/). All 28 tasks are complete; its provider collection and worker contracts are synced to main specs, and all ten main specs pass strict validation. Bounded paid/free ingestion, hosted images, replay and mobile/desktop browser evidence are recorded in [validation](docs/validation.md#remaining-provider-migration-acceptance--october-12-2026).
+
 ## Current experience
 
 - `/`: public-catalog course grid with Persian search, editorial category/free filtering, pagination and real-course details; the selected blue hero and cycling course-group covers retain saved samples.
@@ -71,7 +73,7 @@ bun run build
 bun run start
 ```
 
-Run `build` successfully before `start`. Lint, type checking, and 96 utility tests pass. Production compilation/types pass, but page-data collection fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`. The experimental Turbopack worker-thread configuration resolves the earlier worker-port failure. The local Homebrew Node executable was previously unable to start because `libllhttp.9.3.dylib` was missing. See [current validation and limitations](docs/validation.md).
+Run `build` successfully before `start`. Lint, type checking, and 134 utility tests pass. Production compilation/types pass, but page-data collection fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`. The experimental Turbopack worker-thread configuration resolves the earlier worker-port failure. The local Homebrew Node executable was previously unable to start because `libllhttp.9.3.dylib` was missing. See [current validation and limitations](docs/validation.md).
 
 The homepage course grid needs the local API/database; frontend-only development shows a scoped course error with retry. `DOROB_API_URL` is optional when using the default API port. No API keys or remote fonts are required. Vazirmatn is bundled locally; its license is included in the installed font package.
 
@@ -148,7 +150,7 @@ owner temporarily accepts SSRF/DNS rebinding risk without IP pinning for interna
 crawler URLs. **TODO:** restore verified IP pinning later. See [catalog setup,
 Swagger walkthrough and storage lifecycle](docs/catalog.md#retained-source-observations-v3)
 and [validation](docs/validation.md#course-ingestion-history--october-10-2026).
-AI, scheduled collection and production deployment remain deferred. Homepage course consumption is implemented through the public presentation API. Existing v2 utilities and public curation contracts remain.
+AI, scheduled collection and production deployment remain deferred. Homepage course consumption is implemented through the public presentation API. Maktabkhooneh’s retained v2 export/conversion and public curation contracts remain.
 Use `bun run convert:courses --help` for explicit conversion. Keep separate
 persistent asset/staging directories configured by `THUMBNAIL_ASSET_DIR` and
 `THUMBNAIL_STAGING_DIR`; defaults are ignored under `apps/api/storage`. Back up
@@ -169,32 +171,40 @@ The local catalog adds explicit SQL migrations, minimal course references, edito
 
 ## Standalone data utilities
 
-Four server-side adapters export the [version-2 course contract](docs/course-data-format.md), separately from frontend fixtures:
+Server-only native v3 collectors feed the existing ingestion and thumbnail
+lifecycle through explicit commands. Start the local API/database, then run:
 
 ```sh
-bun run scrape:maktabkhooneh --limit 2
-bun run scrape:toplearn --limit 2
-bun run scrape:sabzlearn --limit 2
-bun run scrape:roocket --limit 2
+bun run ingest:toplearn --limit 2 --checkpoint apps/utils/output/toplearn-run.json
+bun run ingest:sabzlearn --limit 2 --checkpoint apps/utils/output/sabzlearn-run.json
+bun run ingest:roocket --limit 2 --checkpoint apps/utils/output/roocket-run.json
 ```
 
-Each supports `--help`, explicit URLs, `--all`, `--resume`, and an output path. Generated exports are ignored under `apps/utils/output/`. Version-1 checkpoints require a fresh export without `--resume`; use a new output path to preserve old files. Requests are bounded, obey access rules, and preserve unknown values and source evidence. Public feedback is an anonymous bounded sample, not all student reviews.
+Each supports `--help`, repeatable `--url`, exclusive `--limit`/`--all`,
+`--checkpoint`, `--resume`, `--backend-url`, `--json`, and bounded public feedback
+through `--feedback-pages`/`--feedback-items` (defaults 10/500). Resume restores
+saved limits and immutable observations; changed settings or legacy exports fail
+without network/mutation. Fresh refreshes require a new private checkpoint.
+TopLearn, Sabzlearn and Roocket have no supported v2 export command/adapter.
+Maktabkhooneh retains its unchanged `scrape:maktabkhooneh` export-only v2 command,
+`ingest:maktabkhooneh` native command and explicit saved-v2 conversion. Generated
+exports/journals stay ignored under `apps/utils/output/`; collection never starts
+automatically and does not assign editorial categories.
 
-To inspect existing local exports:
+Course durations display the nearest whole Persian minute in cards and details; retained source values preserve their precision.
 
-```sh
-bun run dashboard:aggregate
-bun run dashboard:data
-```
-
-Aggregation expects `apps/utils/output/dashboard-<provider>.json` files by default and supports repeatable `--input PATH` plus `--output PATH`. The read-only dashboard opens at `http://127.0.0.1:8787`; use `--file PATH --port N` for another snapshot/port. It rereads saved data without scraping and omits raw source HTML from browser responses. Generated files must be supplied locally; they are not committed. See [utility setup and limitations](apps/utils/README.md) and [provider mappings](docs/provider-adapters.md).
+The standalone dashboard and aggregation commands are retired. Existing ignored
+exports and journals are preserved. The pure aggregation helper remains only
+as a dependency of the unchanged Maktabkhooneh regression test. See
+[utility setup and limitations](apps/utils/README.md) and
+[provider mappings](docs/provider-adapters.md).
 
 ## Workspace
 
 ```text
 apps/web/       Next.js frontend, component showcase, browser-safe snapshots
 apps/api/       Bun/Elysia API, explicit SQL migrations, local catalog/Swagger
-apps/utils/     Standalone TypeScript adapters, export CLI, local data dashboard
+apps/utils/     Server-only collectors, explicit ingestion worker and Maktabkhooneh export CLI
 packages/core/  Dependency-free category registry and public catalog types
 docs/index.md   Documentation hub
 Plan.md         Current decisions, phase status, and remaining scope
@@ -212,8 +222,8 @@ Project-local frontend and RTL skills live in `.agents/skills/`. Preserve their 
 ## Explicit Maktabkhooneh ingestion
 
 The server-only v3 scraper and resumable worker are available through utility
-entry points; the other three providers and every `scrape:*` export command stay
-v2. Start the local API/database and apply existing migrations, then explicitly run:
+entry points. TopLearn, Sabzlearn and Roocket now use native v3-only ingestion;
+`scrape:maktabkhooneh` remains the unchanged export-only v2 command. Start the local API/database and apply existing migrations, then explicitly run:
 
 ```sh
 bun run ingest:maktabkhooneh --help
@@ -251,8 +261,7 @@ journals and lock recovery](apps/utils/README.md#private-worker-checkpoints-and-
 Accepted facts, hosted-image readiness and editorial website publication are
 separate. This command creates retained observations and explicitly processes
 images; it does not publish groups or connect frontend fixtures. API startup,
-migrations and the launcher do not start collection. Schedules, other provider
-migrations and AI remain deferred. Homepage course integration is now implemented separately. Acceptance check
+migrations and the launcher do not start collection. Schedules and AI remain deferred; the remaining-provider migration is implemented and verified with bounded paid/free live ingestion, replay and desktop/mobile browser acceptance. Homepage course integration is now implemented separately. Acceptance check
 results are recorded in [validation](docs/validation.md).
 
 October 10 dev sampling: the initial ten courses succeeded. A subsequent

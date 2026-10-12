@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { BaseScraper } from "../scrapers/base";
 import { minimal } from "../../api/src/ingestion-examples";
+import { AccessDeniedError } from "../scrapers/public-provider";
+import type { CourseIngestion } from "../../../packages/core/src/ingestion";
 
 class FixtureScraper extends BaseScraper {
   readonly providerId = "example";
@@ -13,7 +15,7 @@ class FixtureScraper extends BaseScraper {
   }
   courseKey(url: string) { return new URL(url).pathname; }
   protected relevantSitemap(url: string) { return /sitemap|courses\.xml/.test(new URL(url).pathname); }
-  protected extract(body: string, sourceUrl: string, checkedAt: string, submissionId: string) {
+  protected extract(body: string, sourceUrl: string, checkedAt: string, submissionId: string): CourseIngestion | Promise<CourseIngestion> {
     if (body === "bad") throw new Error("Invalid fixture");
     const value = minimal();
     return { ...value, sourceUrl, submissionId, source: { ...value.source, checkedAt, extractorVersion: this.extractorVersion } };
@@ -29,6 +31,37 @@ test("base validates source-only collection, fresh identity and sequential dedup
   assert.equal(results.length, 2);
   assert.equal(results[0].observation?.schemaVersion, 3);
   assert.notEqual(results[0].observation?.submissionId, results[1].observation?.submissionId);
+});
+
+class EnrichedScraper extends FixtureScraper {
+  protected async extract(body: string, url: string, at: string, id: string) {
+    const value = await super.extract(body, url, at, id);
+    try {
+      const page = await this.originClient("https://feedback.example.org").request("https://feedback.example.org/comments");
+      value.description = { coverage: { status: "partial", reason: "Supplementary text only" }, data: page.body };
+      value.source.fieldSources["description.data"] = "public comments response";
+    } catch (error) {
+      if (error instanceof AccessDeniedError || this.signal?.aborted) throw error;
+      value.description = { coverage: { status: "failed", reason: "Supplementary request failed" }, data: null };
+    }
+    return value;
+  }
+}
+test("base awaits controlled async enrichment and isolates ordinary optional failure", async () => {
+  const fetch = transport(url => new Response(url.endsWith("robots.txt") ? "" : url.includes("feedback.") ? "published" : "ok"));
+  const value = await new EnrichedScraper(origin, { delayMs: 0, fetch }).scrapeCourse("/course/1");
+  assert.equal(value.description?.data, "published");
+  const failing = transport(url => new Response(url.endsWith("robots.txt") ? "" : "ok", { status: url.endsWith("comments") ? 404 : 200 }));
+  const partial = await new EnrichedScraper(origin, { delayMs: 0, retries: 0, fetch: failing }).scrapeCourse("/course/1");
+  assert.equal(partial.description?.coverage.status, "failed");
+  assert.equal(partial.title, value.title);
+});
+test("supplementary denial and cancellation stop async collection", async () => {
+  const denied = transport(url => new Response(url.endsWith("robots.txt") ? "" : "ok", { status: url.endsWith("comments") ? 403 : 200 }));
+  await assert.rejects(new EnrichedScraper(origin, { delayMs: 0, fetch: denied }).scrapeCourse("/course/1"), AccessDeniedError);
+  const controller = new AbortController();
+  const fetch = transport(url => { if (url.endsWith("comments")) controller.abort(); return new Response(url.endsWith("robots.txt") ? "" : "ok"); });
+  await assert.rejects(new EnrichedScraper(origin, { delayMs: 0, fetch, signal: controller.signal }).scrapeCourse("/course/1"));
 });
 test("base bounded discovery retains successful selections after partial sitemap failure", async () => {
   const fetch = transport(url => new Response(url.endsWith("robots.txt") ? "Sitemap: https://example.org/sitemap.xml" : url.endsWith("sitemap.xml")

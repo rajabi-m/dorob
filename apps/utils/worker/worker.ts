@@ -6,6 +6,8 @@ import { BackendError, backendOrigin, validateSnapshot, type BackendClient } fro
 import { JournalStore, type Attempt, type Entry, type Journal, type Selection } from "./journal";
 import { DiagnosticError, courseIdentity, observe, safeCode, type DiagnosticCode } from "../diagnostics";
 
+import type { FeedbackSettings } from "../scrapers/native-v3";
+
 export type RunReport = { runId: string; status: Journal["status"]; selected: number; collected: number; acceptedNew: number; replayed: number;
   collectionFailed: number; deliveryPending: number; deliveryFailed: number; imageProcessingFailed: number; images: Record<Entry["image"], number>; presentationReady: boolean;
   observations: { sourceUrl: string; checkedAt: string | null; courseId: string | null; snapshotId: string | null }[]; exitCode: number };
@@ -20,7 +22,7 @@ export type WorkerEvent =
   | ({ type: "failure"; phase: Attempt["phase"]; code: DiagnosticCode; action: "stop" | "continue"; accepted: boolean } & Position)
   | { type: "fatal"; code: DiagnosticCode; saved: boolean; phase: "invocation" | "checkpoint" | "discovery" }
   | { type: "complete"; summary: RunSummary };
-export type WorkerOptions = { checkpoint: string; resume?: boolean; selection?: Selection; signal?: AbortSignal; onEvent?: (event: WorkerEvent) => void };
+export type WorkerOptions = { checkpoint: string; collectionSettings?: FeedbackSettings; resume?: boolean; selection?: Selection; signal?: AbortSignal; onEvent?: (event: WorkerEvent) => void };
 export type Collector = Pick<BaseScraper, "providerId" | "extractorVersion" | "canonicalCourseUrl" | "courseKey" | "discoverCourses" | "discoveryIsComplete" | "discoveryWarnings" | "scrapeCourse">;
 export class ScraperWorker {
   constructor(private readonly scraper: Collector, private readonly backend: BackendClient, private readonly storeFactory = (path: string) => new JournalStore(path)) {}
@@ -34,9 +36,9 @@ export class ScraperWorker {
     if (selection.urls.length || selection.mode === "limit" && (!Number.isSafeInteger(selection.limit) || selection.limit! < 1) || selection.mode === "all" && selection.limit !== null || !["limit", "all"].includes(selection.mode)) throw new DiagnosticError("invalid_selection");
     return selection;
   }
-  private compatible(journal: Journal, selection?: Selection) {
+  private compatible(journal: Journal, selection?: Selection, settings?: FeedbackSettings) {
     if (journal.providerId !== this.scraper.providerId || journal.extractorVersion !== this.scraper.extractorVersion || journal.backend !== backendOrigin(this.backend.origin) ||
-      selection && JSON.stringify(journal.selection) !== JSON.stringify(selection)) throw new DiagnosticError("checkpoint_mismatch");
+      (selection && JSON.stringify(journal.selection) !== JSON.stringify(selection)) || (settings && JSON.stringify(journal.collectionSettings) !== JSON.stringify(settings))) throw new DiagnosticError("checkpoint_mismatch");
     const keys = new Set<string>();
     for (const e of journal.entries) {
       try {
@@ -55,14 +57,14 @@ export class ScraperWorker {
       catch { throw new DiagnosticError("invalid_selection"); }
       const store = this.storeFactory(options.checkpoint);
       let journal = await store.preflight(!!options.resume);
-      if (journal) { this.compatible(journal, selection); saved = true; }
+      if (journal) { this.compatible(journal, selection, options.collectionSettings); saved = true; }
       if (options.signal?.aborted) throw new DiagnosticError("canceled", saved);
       await store.acquire();
       const now = () => new Date().toISOString();
       try {
         // Recheck under ownership before performing work.
         journal = await store.preflight(!!options.resume);
-        if (journal) { this.compatible(journal, selection); saved = true; }
+        if (journal) { this.compatible(journal, selection, options.collectionSettings); saved = true; }
         else {
           const selected = selection ?? { mode: "limit" as const, urls: [], limit: 10 };
           let urls: string[];
@@ -74,7 +76,7 @@ export class ScraperWorker {
             emit({ type: "discovery", status: "done" });
           }
           const time = now();
-          journal = { journalVersion: 1, runId: randomUUID(), providerId: this.scraper.providerId, extractorVersion: this.scraper.extractorVersion, backend: this.backend.origin, selection: selected,
+          journal = { ...(options.collectionSettings ? { collectionSettings: options.collectionSettings } : {}), journalVersion: 1, runId: randomUUID(), providerId: this.scraper.providerId, extractorVersion: this.scraper.extractorVersion, backend: this.backend.origin, selection: selected,
             discoveryComplete: selected.mode !== "urls" && this.scraper.discoveryIsComplete, discoveryWarnings: selected.mode === "urls" ? [] : this.scraper.discoveryWarnings,
             entries: urls.map(url => ({ url, observation: null, receipt: null, created: null, image: "unstarted", error: null, attempts: [] })), startedAt: time, updatedAt: time, status: "running" };
           fatalCode = "checkpoint_save";

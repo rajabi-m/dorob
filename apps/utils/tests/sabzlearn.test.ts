@@ -1,12 +1,10 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { readFile, mkdtemp, rm } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { readFile } from "node:fs/promises";
 import { canonicalCourseUrl, parseCoursePage, SabzlearnScraper } from "../scrapers/sabzlearn.ts";
 import { AccessDeniedError } from "../scrapers/public-provider.ts";
 import { decodeNuxtPayload } from "../scrapers/maktabkhooneh.ts";
-import { main } from "../scrape-sabzlearn.ts";
+import { main } from "../ingest-sabzlearn.ts";
 
 function assertSubset(actual: unknown, expected: Record<string, unknown>) {
   assert.ok(actual !== null && typeof actual === "object");
@@ -39,162 +37,113 @@ function mockFetch(failure = false, calls: string[] = []) {
   }) as typeof fetch;
 }
 
-describe("Sabzlearn adapter", () => {
-  test("reduced public paid/free/Python observations return the complete contract", () => {
-    const c = parseCoursePage(fixture, courseUrl, "2026-10-02T00:00:00Z");
-    assert.deepEqual(c.id, "sabzlearn:100"); assert.deepEqual(c.schemaVersion, 2); assert.equal(c.derived, null);
-    assertSubset(c.offers?.[0], { amount: 2000000, originalAmount: 4000000, sourcePrice: { unit: "toman" } });
-    assert.deepEqual(c.duration, { contentMinutes: 720, effortHours: null, completionWindowDays: null });
-    assertSubset(c.syllabus?.[0].lessons?.[0], { id: "8295", order: 1, type: "video", contentMinutes: 12 + 10 / 60 });
-    assert.equal(c.learningOutcomes, null); assert.equal(c.providerLevel, null); assert.equal(c.rating, null); assert.equal(c.providerUpdatedAt, null);
-    assert.equal(c.source.parserVersion, "2.1.0"); assert.equal(c.reviews.items, null);
-    assert.equal(c.reviews.collection.collectedCount, null); assert.equal(c.reviews.collection.publishedCount, null);
-    assert.equal(c.syllabusCoverage.status, "unknown"); assert.equal(c.syllabusCoverage.publishedLessonCount, 4);
-    assert.equal(c.syllabusCoverage.extractedLessonCount, 4); assert.equal(c.syllabus?.[0].description, null);
-    assert.equal(c.syllabus?.[0].lessons?.[0].description, null); assert.equal(c.technologies, null);
-    assert.equal(c.offers?.[0].accessDescription, "فقط آنلاین"); assert.equal(c.offers?.[0].supportDescription, null);
-    assert.match(c.source.contentHash, /^[a-f0-9]{64}$/);
-    assert.deepEqual(parseCoursePage(fixture, courseUrl, "2026-10-03T00:00:00Z").source.contentHash, c.source.contentHash);
-    const free = parseCoursePage(htmlFixture, "https://sabzlearn.ir/course/html-tutorial/");
-    assertSubset(free.offers?.[0], { status: "free", amount: 0, originalAmount: null });
-    const python = parseCoursePage(pythonFixture, "https://sabzlearn.ir/course/python/");
-    assert.deepEqual(python.id, "sabzlearn:25"); assert.deepEqual(python.offers?.[0].amount, 3500000);
+describe("Sabzlearn native v3", () => {
+  test("real reduced paid/free sources produce evidenced native sections and fresh IDs", () => {
+    const paid = parseCoursePage(fixture, courseUrl, "2026-10-12T00:00:00Z"), again = parseCoursePage(fixture, courseUrl);
+    assert.equal(paid.schemaVersion,3); assert.equal(paid.providerCourseId,"100"); assert.notEqual(paid.submissionId,again.submissionId);
+    assertSubset(paid.pricing.data?.[0],{amount:2000000,originalAmount:4000000,sourcePrice:{unit:"toman"}});
+    assert.equal(paid.education?.data?.duration.contentMinutes,720);
+    assertSubset(paid.curriculum?.data?.syllabus?.[0].lessons?.[0],{id:"8295",order:1,type:"video",contentMinutes:12+10/60});
+    assert.equal(paid.curriculum?.data?.syllabusCoverage.status,"unknown");
+    assert.equal(paid.feedback?.data?.rating,null); assert.equal(paid.feedback?.data?.reviews.items,null);
+    assert.equal(paid.providerState?.data?.providerUpdatedAt,null); assert.ok(paid.providerData?.data?.["sabzlearn.course"].lastUpdateJalali);
+    assertSubset(parseCoursePage(htmlFixture,"https://sabzlearn.ir/course/html-tutorial/").pricing.data?.[0],{status:"free",amount:0});
+    assert.equal(parseCoursePage(pythonFixture,"https://sabzlearn.ir/course/python/").providerCourseId,"25");
+    assert.ok(paid.source.fieldSources["education.data.duration.contentMinutes"]);
   });
-  test("explicit educational headings and support FAQs provide source claims, not inferred facts", () => {
-    const page = changed({ full_content: '<h2>چه چیزی یاد می‌گیرید؟</h2><ul><li>ساخت برنامهٔ ساده</li><li>نوشتن آزمون</li></ul><h2>به چه کسانی پیشنهاد می‌شود؟</h2><p>افراد آشنا با رایانه</p><h2>چه پروژه هایی انجام می‌شود؟</h2><p>ساخت یک برنامهٔ فروشگاهی</p><h2>تبلیغات</h2><p>بهترین دوره</p>',
-      faq: [{ question: "آیا دوره پشتیبانی دارد؟", answer: "<p>پاسخ به پرسش‌ها در انجمن دوره</p>" }],
-      chapters: [{ id: 1, title: "شروع", description: "شرح فصل", episodes_count: 1, episodes: [{ id: 10, title: "آغاز", description: "شرح جلسه", has_video: true, duration: "10:00" }] }] });
-    const c = parseCoursePage(page, courseUrl);
-    assert.deepEqual(c.learningOutcomes, ["ساخت برنامهٔ ساده", "نوشتن آزمون"]);
-    assert.equal(c.intendedAudience, "افراد آشنا با رایانه");
-    assert.equal(c.learningSupport.practiceDescription, "ساخت یک برنامهٔ فروشگاهی");
-    assert.equal(c.learningSupport.supportDescription, "پاسخ به پرسش‌ها در انجمن دوره");
-    assert.equal(c.learningSupport.assessmentDescription, null); assert.equal(c.technologies, null);
-    assert.equal(c.syllabus?.[0].description, "شرح فصل"); assert.equal(c.syllabus?.[0].lessons?.[0].description, "شرح جلسه");
-    assert.equal(c.syllabusCoverage.status, "unknown"); // Matching counts alone do not establish complete traversal.
-    assert.match(c.source.fieldSources["learningSupport.supportDescription"], /course\.faq\[0\]\.answer/);
-    assert.equal(c.source.fieldSources["syllabus.0.lessons.0.description"], "course.chapters[0].episodes[0].description");
-    assert.notEqual(c.source.contentHash, parseCoursePage(changed({}), courseUrl).source.contentHash);
+  test("explicit educational headings/FAQ and every published instructor survive",()=>{
+    const c=parseCoursePage(changed({full_content:'<h2>چه چیزی یاد می‌گیرید؟</h2><ul><li>ساخت برنامه</li></ul><h2>پیش نیاز دوره</h2><p>آشنایی با رایانه</p><h2>چه پروژه هایی</h2><p>فروشگاه</p>',teachers:[{name:"مدرس اول"},{name:"مدرس دوم",role:"همکار"}],faq:[{question:"آیا دوره پشتیبانی دارد؟",answer:"انجمن دوره"}]}),courseUrl);
+    assert.deepEqual(c.education?.data?.learningOutcomes,["ساخت برنامه"]); assert.equal(c.education?.data?.learningSupport.practiceDescription,"فروشگاه");
+    assert.equal(c.education?.data?.learningSupport.supportDescription,"انجمن دوره"); assert.equal(c.instructors?.data?.length,2);
+    assert.equal(c.classification?.data?.providerLevel,null); assert.equal(c.education?.data?.technologies,null);
   });
-  test("explicit outcome and access FAQs retain prose and establish recorded delivery only when stated", () => {
-    const course = parseCoursePage(changed({ faq: [
-      { question: "بعد از پایان دوره اموزش PHP چه چیزهایی یاد می‌گیرم؟", answer: "ساخت پروژه و اتصال به پایگاه داده" },
-      { question: "آیا دسترسی به ویدیوهای دوره PHP دائمی است؟", answer: "پس از خرید می‌توانید آموزش‌ها را در زمان دلخواه مرور کنید." },
-    ] }), courseUrl);
-    assert.deepEqual(course.learningOutcomes, ["ساخت پروژه و اتصال به پایگاه داده"]);
-    assert.equal(course.format, "recorded-video");
-    assert.match(course.offers![0].accessDescription!, /فقط آنلاین\nآیا دسترسی/);
-    assert.match(course.source.fieldSources["offers.full.accessDescription"], /course.faq\[1\]/);
-    const unknown = parseCoursePage(changed({ faq: [{ question: "آیا دوره آنلاین است؟", answer: "بله" }] }), courseUrl);
-    assert.equal(unknown.format, null);
-    assert.equal(unknown.learningOutcomes, null);
-    const headingFirst = parseCoursePage(changed({ full_content: "<h2>چه خواهید آموخت</h2><ul><li>هدف صریح</li></ul>", faq: [{ question: "بعد از دوره چه چیزهایی یاد می‌گیرم؟", answer: "هدف دوم" }] }), courseUrl);
-    assert.deepEqual(headingFirst.learningOutcomes, ["هدف صریح"]);
+  test("unknown/conflicting currency, ambiguous zero and sale stopped stay accountable",()=>{
+    assertSubset(parseCoursePage(changed({},"2,000,000 توضیحات تومان"),courseUrl).pricing.data?.[0],{amount:null,status:"unknown"});
+    assertSubset(parseCoursePage(changed({},"2,000,000 ریال"),courseUrl).pricing.data?.[0],{amount:200000,sourcePrice:{unit:"rial"}});
+    assert.equal(parseCoursePage(changed({},"2,000,000 ریال 2,000,000 تومان"),courseUrl).pricing.data?.[0].amount,null);
+    assert.equal(parseCoursePage(changed({original_price:0,discounted_price:0},"0 تومان"),courseUrl).pricing.data?.[0].status,"unknown");
+    assert.deepEqual(parseCoursePage(changed({is_sale_stopped:true}),courseUrl).pricing.data,[]);
+    assert.equal(parseCoursePage(changed({original_price:null,discounted_price:null}),courseUrl).pricing.data,null);
+    assert.throws(()=>parseCoursePage(changed({is_free:true}),courseUrl));
   });
-  test("explicit course JSON-LD reviews are anonymous, deduplicated, and coverage remains unknown", () => {
-    // Entirely synthetic reviews and identities; none are sourced from provider feedback.
-    const review = { "@type": "Review", author: { name: "نویسندهٔ ساختگی" }, reviewBody: "من نویسندهٔ ساختگی هستم؛ تمرین‌ها مفید بود. fake@example.test @fakeuser 09123456789",
-      datePublished: "2026-10-03T12:00:00Z", reviewRating: { ratingValue: 4, bestRating: 5 } };
-    const jsonld = (reviews: unknown[], url = courseUrl) => `<script type="application/ld+json">${JSON.stringify({ "@type": "Course", url, review: reviews })}</script>`;
-    const page = changed({}) + jsonld([review, review, { "@type": "Comment", text: "سؤال" }]);
-    const c = parseCoursePage(page, courseUrl);
-    assert.equal(c.reviews.items?.length, 1); assert.equal(c.reviews.collection.omittedCount, 2);
-    assert.equal(c.reviews.collection.status, "unknown"); assert.equal(c.reviews.collection.publishedCount, null);
-    assert.equal(c.reviews.collection.hasMore, null); assert.equal(c.reviews.collection.pagesRead, 1);
-    const item = c.reviews.items![0];
-    assert.equal(item.redacted, true); assert.deepEqual(item.rating, { value: 4, scale: 5 });
-    assert.equal(item.publishedAt, "2026-10-03T12:00:00.000Z"); assert.equal(item.verifiedEnrollment, null);
-    assert.equal(c.source.fieldSources["reviews.items.0"], item.sourceLocator);
-    assert.match(item.id, /^[a-f0-9]{64}$/); assert.equal(item.sourceUrl, courseUrl);
-    assert.doesNotMatch(JSON.stringify(c), /نویسندهٔ ساختگی|fake@example|fakeuser|09123456789/);
-    assert.equal(parseCoursePage(changed({}) + jsonld([review], "https://sabzlearn.ir/course/python/"), courseUrl).reviews.items, null);
-    assert.equal(parseCoursePage(changed({}) + jsonld([{ "@type": "Comment", reviewBody: "سؤال" }]), courseUrl).reviews.items, null);
-    assert.equal(parseCoursePage(changed({}) + jsonld([{ ...review, inReplyTo: { "@id": "reply-1" } }]), courseUrl).reviews.items, null);
-    assert.equal(parseCoursePage(changed({}) + jsonld([{ ...review, itemReviewed: { url: "https://sabzlearn.ir/course/python/" } }]), courseUrl).reviews.items, null);
-    assert.equal(item.sourceLocator, "JSON-LD[0].review[0]");
-    assert.notEqual(parseCoursePage(changed({}) + jsonld([{ ...review, reviewBody: "سرعت تدریس زیاد بود" }]), courseUrl).source.contentHash, c.source.contentHash);
-    const noScale = parseCoursePage(changed({}) + jsonld([{ ...review, datePublished: "1405/07/11", reviewRating: { ratingValue: 4 } }]), courseUrl).reviews.items![0];
-    assert.equal(noScale.rating, null); assert.equal(noScale.publishedAt, null); assert.equal(noScale.publishedDateText, "1405/07/11");
+  test("optional malformed curriculum fails alone and mismatched counts stay partial",()=>{
+    const c=parseCoursePage(changed({chapters:[{title:"فصل",episodes:null}]}),courseUrl);
+    assert.equal(c.curriculum?.coverage.status,"failed"); assert.equal(c.curriculum?.data,null); assert.equal(c.pricing.data?.[0].amount,2000000);
+    const partial=parseCoursePage(changed({chapters:[{title:"فصل",episodes_count:3,episodes:[{title:"جلسه",duration:"05:00"}]}]}),courseUrl);
+    assert.equal(partial.curriculum?.data?.syllabusCoverage.status,"partial"); assert.equal(partial.curriculum?.data?.syllabusCoverage.extractedLessonCount,1);
   });
-  test("mixed public comments and questions do not become reviews or leak identities", () => {
-    const values: unknown[] = [];
-    function encode(value: unknown): number { const index = values.length; values.push(null); values[index] = Array.isArray(value) ? value.map(encode) : value !== null && typeof value === "object" ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, encode(item)])) : value; return index; }
-    const details = (decodeNuxtPayload(fixture).data as Record<string, unknown>)["course-csharp"];
-    encode({ data: { "course-csharp": details, "courses-csharp-comments": { items: [{ id: 1, content: "یک سؤال", user: { name: "شخص ساختگی", avatar: "https://example.test/private.webp" }, replies: [] }], pagination: { total: 100, has_more_pages: true } } } });
-    const c = parseCoursePage(`<script id="__NUXT_DATA__">${JSON.stringify(values)}</script>`, courseUrl);
-    assert.equal(c.reviews.items, null); assert.equal(c.reviews.collection.publishedCount, null);
-    assert.equal(c.reviews.collection.hasMore, true); assert.match(c.reviews.collection.stopReason!, /mixed comment\/reply total/);
-    assert.doesNotMatch(JSON.stringify(c), /شخص ساختگی|private.webp|یک سؤال/);
+  test("matching Course JSON-LD retains classified anonymous individual ratings and Jalali dates",()=>{
+    const review={"@type":"Review",author:{name:"شخص ساختگی"},reviewBody:"شخص ساختگی تمرین‌ها مفید بود fake@example.test",datePublished:"1405/07/11",reviewRating:{ratingValue:4,bestRating:5}};
+    const c=parseCoursePage(changed({})+`<script type="application/ld+json">${JSON.stringify({"@type":"Course",url:courseUrl,review:[review]})}</script>`,courseUrl);
+    assert.deepEqual(c.feedback?.data?.reviews.items?.[0].rating,{value:4,scale:5}); assert.equal(c.feedback?.data?.reviews.items?.[0].publishedAt,null);
+    assert.equal(c.feedback?.data?.reviews.items?.[0].sourceType,"review"); assert.doesNotMatch(JSON.stringify(c),/شخص ساختگی|fake@example/);
   });
-  test("synthetic self-referencing public comments preserve anonymous feedback and exclude questions/replies/staff", () => {
-    const values: unknown[] = [];
-    function encode(value: unknown): number { const index = values.length; values.push(null); values[index] = Array.isArray(value) ? value.map(encode) : value !== null && typeof value === "object" ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, encode(item)])) : value; return index; }
-    const details = (decodeNuxtPayload(fixture).data as Record<string, unknown>)["course-csharp"];
-    const comments = [
-      { id: 1, reply_id: 1, content: "نویسندهٔ ساختگی هستم؛ تمرین‌ها مفید بود fake@example.test", created_at: "1405/07/11", user: { name: "نویسندهٔ ساختگی", type: "دانشجو" }, replies: [{ id: 2, reply_id: 1, content: "پاسخ مدرس", user: { name: "پاسخگوی ساختگی", type: "مدرس" } }] },
-      { id: 3, reply_id: 3, content: "آیا دوره پروژه دارد؟", user: { name: "پرسشگر ساختگی", type: "کاربر" } },
-      { id: 4, reply_id: 1, content: "پاسخ دیگر", user: { type: "کاربر" } },
-      { id: 5, reply_id: 5, content: "پشتیبانی آماده است", user: { type: "پشتیبان" } },
-    ];
-    encode({ data: { "course-csharp": details, "courses-csharp-comments": { items: comments, pagination: { total: 100, has_more_pages: true } } } });
-    const c = parseCoursePage(`<script id="__NUXT_DATA__">${JSON.stringify(values)}</script>`, courseUrl);
-    assert.equal(c.reviews.items?.length, 1); assert.equal(c.reviews.items![0].id, "1");
-    assert.equal(c.reviews.items![0].sourceType, "comment"); assert.equal(c.reviews.items![0].verifiedEnrollment, null);
-    assert.equal(c.reviews.items![0].publishedAt, null); assert.equal(c.reviews.items![0].publishedDateText, "1405/07/11");
-    assert.equal(c.reviews.items![0].rating, null); assert.equal(c.reviews.items![0].redacted, true);
-    assert.equal(c.reviews.collection.status, "partial"); assert.equal(c.reviews.collection.publishedCount, null);
-    assert.equal(c.reviews.collection.omittedCount, 3); assert.equal(c.reviews.collection.hasMore, true);
-    assert.equal(c.source.fieldSources["reviews.items.0"], "__NUXT_DATA__.data.courses-csharp-comments.items[0]");
-    assert.doesNotMatch(JSON.stringify(c), /نویسندهٔ ساختگی|پرسشگر ساختگی|پاسخگوی ساختگی|fake@example|پاسخ مدرس|پشتیبانی آماده/);
-    const partial = parseCoursePage(changed({ chapters: [{ title: "شروع", episodes_count: 3, episodes: [{ title: "جلسه", has_video: true }] }] }), courseUrl);
-    assert.equal(partial.syllabusCoverage.status, "partial"); assert.equal(partial.syllabusCoverage.publishedLessonCount, 3); assert.equal(partial.syllabusCoverage.extractedLessonCount, 1);
+  test("JSON-LD review bounds and explicit aggregate scale/votes stay distinct",()=>{
+    const reviews=Array.from({length:4},(_,i)=>({"@type":"Review",reviewBody:`تمرین مفید ${i}`,reviewRating:{ratingValue:4,bestRating:5}}));
+    const c=parseCoursePage(changed({})+`<script type="application/ld+json">${JSON.stringify({"@type":"Course",url:courseUrl,review:reviews,aggregateRating:{ratingValue:4.8,bestRating:5,ratingCount:123,reviewCount:400}})}</script>`,courseUrl,undefined,undefined,{feedbackPages:2,feedbackItems:2});
+    assert.equal(c.feedback?.data?.reviews.items?.length,2); assert.equal(c.feedback?.data?.reviews.collection.omittedCount,2);
+    assert.equal(c.feedback?.data?.reviews.collection.stopReason,"item-limit"); assert.equal(c.feedback?.data?.reviews.collection.status,"partial");
+    assert.deepEqual(c.feedback?.data?.rating,{value:4.8,scale:5,count:123});
   });
-  test("synthetic unknown units/prices, rial normalization and disabled offers", () => {
-    assertSubset(parseCoursePage(changed({}, "2,000,000 توضیحات تومان"), courseUrl).offers?.[0], { amount: null, originalAmount: null, status: "unknown", sourcePrice: { unit: "unknown" } });
-    assertSubset(parseCoursePage(changed({}, "2,000,000 ریال توضیحات"), courseUrl).offers?.[0], { amount: 200000, originalAmount: 400000, sourcePrice: { unit: "rial" } });
-    assert.equal(parseCoursePage(changed({}, "2,000,000 ریال 2,000,000 تومان توضیحات"), courseUrl).offers?.[0].amount, null);
-    const noPurchasePrice = changed({}, "قیمت نامشخص").replace("<main>", "<main><nav>2,000,000 تومان</nav>");
-    assert.equal(parseCoursePage(noPurchasePrice, courseUrl).offers?.[0].amount, null);
-    assert.equal(parseCoursePage(changed({ original_price: null, discounted_price: null }), courseUrl).offers, null);
-    assert.deepEqual(parseCoursePage(changed({ is_sale_stopped: true }), courseUrl).offers, []);
-    assert.equal(parseCoursePage(changed({ original_price: 0, discounted_price: 0 }, "0 تومان توضیحات"), courseUrl).offers?.[0].amount, null);
-    assert.equal(parseCoursePage(changed({ chapters: undefined }), courseUrl).syllabus, null);
+  test("large curriculum and max feedback preserve core within evidence/payload capacity",()=>{
+    const episodes=Array.from({length:700},(_,i)=>({id:i,title:`جلسه ${i}`,description:"شرح جلسه",has_video:true,duration:"01:00"}));
+    const reviews=Array.from({length:2000},(_,i)=>({"@type":"Review",reviewBody:`بازخورد مفید ${i}`}));
+    const c=parseCoursePage(changed({chapters:[{title:"فصل",episodes_count:700,episodes}]})+`<script type="application/ld+json">${JSON.stringify({"@type":"Course",url:courseUrl,review:reviews})}</script>`,courseUrl,undefined,undefined,{feedbackPages:10,feedbackItems:2000});
+    assert.equal(c.pricing.data?.[0].amount,2000000);assert.equal(c.curriculum?.data?.syllabus?.[0].lessons?.length,700);
+    assert.ok(Object.keys(c.source.fieldSources).length<=4000); assert.ok(Buffer.byteLength(JSON.stringify(c))<1024*1024);
+    assert.ok((c.feedback?.data?.reviews.items?.length ?? 0)>0);assert.equal(c.feedback?.data?.reviews.collection.status,"partial");
+    if(c.feedback!.data!.reviews.items!.length<2000) assert.match(c.feedback!.data!.reviews.collection.stopReason!,/payload-limit|evidence-limit/);
   });
-  test("rejects layout, identity and conflicting price drift", () => {
-    assert.throws(() => parseCoursePage("<h1>course</h1>", courseUrl));
-    assert.throws(() => parseCoursePage(changed({ slug: "other" }), courseUrl));
-    assert.throws(() => parseCoursePage(changed({ id: null }), courseUrl));
-    assert.throws(() => parseCoursePage(changed({ is_free: true }), courseUrl));
-    assert.throws(() => parseCoursePage(changed({ discounted_price: 5000000 }), courseUrl));
-    for (const value of [-1, "2000000", false]) assert.throws(() => parseCoursePage(changed({ discounted_price: value }), courseUrl));
-    assert.throws(() => parseCoursePage(fixture, courseUrl, "bad date"));
+  test("malformed optional numbers do not discard identity or valid pricing",()=>{
+    const c=parseCoursePage(changed({students_enrolled:3e12,total_duration:1e18,rating_score:"bad",chapters:[{title:"فصل",episodes_count:3e12,episodes:[{title:"جلسه",duration:"999999999999999999999999:00"}]}]}),courseUrl);
+    assert.equal(c.providerCourseId,"100");assert.equal(c.pricing.data?.[0].amount,2000000);
+    assert.equal(c.feedback?.data?.studentCount,null); assert.equal(c.feedback?.data?.rating,null);assert.equal(c.curriculum?.data?.lessonCount,null);
+    assert.equal(c.education?.data?.duration.contentMinutes,null);assert.equal(c.curriculum?.data?.syllabus?.[0].lessons?.[0].contentMinutes,null);
+    const oversized=parseCoursePage(changed({full_content:"آ".repeat(21000)}),courseUrl);assert.equal(oversized.description?.coverage.status,"failed");assert.equal(oversized.pricing.data?.[0].amount,2000000);
   });
-  test("strict URLs and sitemap course-only discovery", async () => {
-    assert.deepEqual(canonicalCourseUrl("/course/csharp?ref=1#x"), courseUrl);
-    for (const url of ["http://sabzlearn.ir/course/csharp/", "https://evil.test/course/csharp/", "https://x@sabzlearn.ir/course/csharp/", "/lesson/1/", "/course/csharp/lesson/"]) assert.throws(() => canonicalCourseUrl(url));
-    const calls: string[] = [], scraper = new SabzlearnScraper({ fetch: mockFetch(false, calls), delayMs: 0 });
-    assert.deepEqual(await scraper.discoverCourses(), [courseUrl]);
-    assert.deepEqual(calls.some(url => url.includes("blog")), false);
-    const results = []; for await (const result of scraper.scrapeCourses([courseUrl, courseUrl])) results.push(result);
-    assert.equal((results).length, 1); assert.deepEqual(results[0].course?.id, "sabzlearn:100");
+  test("bounded controlled pagination deduplicates and filters questions, replies/staff",async()=>{
+    const calls:string[]=[];
+    const c=await new SabzlearnScraper({fetch:feedbackFetch(calls),delayMs:0,feedbackPages:3}).scrapeCourse(courseUrl);
+    const feedback=c.feedback!.data!;
+    assert.deepEqual(feedback.reviews.items?.map(x=>x.id),["1","2"]); assert.equal(feedback.reviews.collection.pagesRead,2);
+    assert.equal(feedback.reviews.collection.publishedCount,null); assert.equal(feedback.rating,null);
+    assert.equal(feedback.reviews.collection.status,"partial"); assert.equal(feedback.reviews.items?.[0].publishedDateText,"1405/07/11");
+    assert.doesNotMatch(JSON.stringify(c),/نام ساختگی|fake@example|09123456789|متن پاسخ/);
+    assert.ok(calls.includes("https://api.sabzlearn.ir/robots.txt")); assert.ok(calls.some(x=>x.includes("page=2&per_page=12")));
   });
-  test("access denied pauses collection and parsing failures become errors", async () => {
-    const scraper = new SabzlearnScraper({ delayMs: 0, fetch: (async (input: string | URL | Request) => String(input).endsWith("robots.txt") ? new Response("User-agent: *") : new Response("Denied", { status: 403 })) as typeof fetch });
-    await assert.rejects(scraper.scrapeCourse(courseUrl), AccessDeniedError);
-    await assert.rejects(scraper.scrapeCourse(courseUrl), AccessDeniedError);
-    const broken = new SabzlearnScraper({ fetch: mockFetch(true), delayMs: 0 });
-    for await (const result of broken.scrapeCourses([courseUrl])) { assert.equal(result.course, null); assert.ok((result.error)?.includes("NUXT")); }
+  test("page/item bounds stop explicitly while retained ordering survives",async()=>{
+    for(const bounds of [{feedbackPages:1},{feedbackItems:1}]){
+      const c=await new SabzlearnScraper({fetch:feedbackFetch(),delayMs:0,...bounds}).scrapeCourse(courseUrl);
+      assert.equal(c.feedback?.data?.reviews.collection.pagesRead,1); assert.equal(c.feedback?.data?.reviews.items?.length,1);
+      assert.match(c.feedback!.data!.reviews.collection.stopReason!,/limit/);
+    }
   });
-  test("CLI partial checkpoint, repair and resume", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "sabzlearn-test-")), output = join(dir, "courses.json");
-    try {
-      const args = ["--url", courseUrl, "--output", output, "--delay-ms", "0"];
-      assert.deepEqual(await main(args, { fetch: mockFetch(true) }), 1);
-      assert.deepEqual(JSON.parse(await readFile(output, "utf8")).status, "partial");
-      assert.deepEqual(await main([...args, "--resume"], { fetch: mockFetch() }), 0);
-      const exported = JSON.parse(await readFile(output, "utf8"));
-      assert.deepEqual(exported.status, "complete"); assert.deepEqual(exported.courses[0].schemaVersion, 2); assert.equal((exported.courses).length, 1);
-      const calls: string[] = []; assert.deepEqual(await main([...args, "--resume"], { fetch: mockFetch(false, calls) }), 0); assert.equal((calls).length, 0);
-    } finally { await rm(dir, { recursive: true, force: true }); }
+  test("later ordinary failures preserve course/early feedback; denial/cancellation propagate",async()=>{
+    const c=await new SabzlearnScraper({fetch:feedbackFetch([],500),delayMs:0,retries:0}).scrapeCourse(courseUrl);
+    assert.equal(c.feedback?.data?.reviews.collection.stopReason,"later-page-failed"); assert.equal(c.pricing.data?.[0].amount,2000000);
+    assert.equal(c.feedback?.data?.reviews.items?.length,1);
+    await assert.rejects(new SabzlearnScraper({fetch:feedbackFetch([],403),delayMs:0}).scrapeCourse(courseUrl),AccessDeniedError);
+    const controller=new AbortController(); controller.abort(); await assert.rejects(new SabzlearnScraper({fetch:feedbackFetch(),delayMs:0,signal:controller.signal}).scrapeCourse(courseUrl));
+  });
+  test("explicit exhausted empty comments differs from absent source",async()=>{
+    const c=await new SabzlearnScraper({fetch:feedbackFetch([],200,true),delayMs:0}).scrapeCourse(courseUrl);
+    assert.deepEqual(c.feedback?.data?.reviews.items,[]); assert.equal(c.feedback?.data?.reviews.collection.status,"complete");
+    assert.equal(parseCoursePage(fixture,courseUrl).feedback?.data?.reviews.items,null);
+  });
+  test("shared base discovers course sitemaps, deduplicates, validates core and entry help",async()=>{
+    const scraper=new SabzlearnScraper({fetch:mockFetch(),delayMs:0}); assert.deepEqual(await scraper.discoverCourses(),[courseUrl]);
+    const results=[];for await(const result of scraper.scrapeCourses([courseUrl,courseUrl])) results.push(result);
+    assert.equal(results.length,1);assert.equal(results[0].observation?.providerCourseId,"100");
+    assert.throws(()=>parseCoursePage(changed({slug:"other"}),courseUrl));assert.throws(()=>parseCoursePage(fixture,courseUrl,"invalid"));
+    for(const url of ["http://sabzlearn.ir/course/csharp/","https://evil.test/course/csharp/","/course/csharp/lesson/"])assert.throws(()=>canonicalCourseUrl(url));
+    const output:string[]=[];assert.equal(await main(["--help"],{log:x=>output.push(x)}),0);assert.match(output[0],/ingest:sabzlearn/);
   });
 });
+function feedbackFixture(empty=false){
+  const values:unknown[]=[];function encode(value:unknown):number{const i=values.length;values.push(null);values[i]=Array.isArray(value)?value.map(encode):value!==null&&typeof value==="object"?Object.fromEntries(Object.entries(value).map(([k,v])=>[k,encode(v)])):value;return i;}
+  const details=(decodeNuxtPayload(fixture).data as Record<string,unknown>)["course-csharp"];
+  encode({data:{"course-csharp":details,"courses-csharp-comments":{items:empty?[]:[comment(1),{...comment(8),content:"آیا دوره مناسب است؟"},{...comment(9),reply_id:1,content:"متن پاسخ"}],pagination:{current_page:1,total:empty?0:100,has_more_pages:!empty}}}});
+  return changed({}).replace(/<script id="__NUXT_DATA__">[\s\S]*?<\/script>/,`<script id="__NUXT_DATA__">${JSON.stringify(values)}</script>`);
+}
+function comment(id:number){return{id,reply_id:id,content:"نام ساختگی تمرین‌ها مفید بود fake@example.test 09123456789",created_at:"1405/07/11",user:{name:"نام ساختگی",type:"کاربر"},replies:[]};}
+function feedbackFetch(calls:string[]=[],status=200,empty=false){return(async(input:string|URL|Request)=>{const url=String(input);calls.push(url);if(url.endsWith("robots.txt"))return new Response("User-agent: *\nDisallow:");if(url===courseUrl)return new Response(feedbackFixture(empty));if(url.includes("/comments?"))return new Response(JSON.stringify({data:{items:[comment(1),{...comment(2),content:"جلسات منظم و کاربردی بود"}],pagination:{current_page:2,total:100,has_more_pages:false}}}),{status});return new Response("missing",{status:404});}) as typeof fetch;}
