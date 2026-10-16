@@ -314,6 +314,19 @@ The homepage card refinement is [archived](openspec/changes/archive/2026-10-11-r
 
 The completed `curate-initial-course-groups` change is [archived](openspec/changes/archive/2026-10-16-curate-initial-course-groups/) on October 16, 2026. All 18 tasks are complete; its curation requirements are synced to main specs and all ten main specs pass strict validation. The seven groups remain drafts awaiting owner review and a separate publication instruction.
 
+October 16 operational follow-up: a one-time editorial pass created 12 empty,
+unpublished groups, two per category, after a restore-tested database backup.
+All eight existing groups and 17 memberships were preserved; the local catalog
+now has 20 groups. See the [draft definitions and recovery report](docs/curation/empty-course-group-drafts.md).
+These are AI-drafted editorial scopes; course suggestions, assignment and
+publication remain separate actions.
+
+Thumbnail association recovery restored 1,493 eligible homepage courses using
+verified retained associations and existing image files, without re-ingestion.
+The two pre-existing download/input failures remain. See the
+[recovery validation](docs/validation.md#thumbnail-association-recovery--october-16-2026).
+Database backups and image files remain ignored local assets outside Git.
+
 ### Local group administration
 
 After `bun run db:up` and `bun run db:migrate`, run the loopback API with

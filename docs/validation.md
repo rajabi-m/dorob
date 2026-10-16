@@ -532,3 +532,36 @@ validation and every archived delta is verified against its main spec. The web
 production build compiles, then Bun 1.3.8 crashes with a segmentation fault during
 the TypeScript stage; standalone workspace type checking passes. Production build
 completion remains blocked. The owner authorized this commit; no push is requested.
+
+## Thumbnail association recovery — October 16, 2026
+
+Owner-requested recovery repaired the empty homepage without re-ingestion. Before
+repair, all 1,495 references remained stored, but current thumbnails were 1,493
+`asset_unavailable`, one `download_failed`, and one `input_limit`. The unavailable
+rows were timestamped October 12, 12:17:39–40 UTC; the original triggering process
+has not been established.
+
+The October 12 11:59:28 UTC backup was checksum-verified and restored into a separate
+`dorob_thumbnail_recovery_20261016` database. It retained 1,713 ready historical
+snapshot associations. All 1,489 retained image files matched their recorded SHA-256
+and byte size. A fresh full current-database backup was taken before repair:
+`apps/api/storage/backups/before-thumbnail-recovery-20261016.dump`, SHA-256
+`90b1cecc3c3c8eb517df20d70f726a59fcdfb0be024bc33156dd30b0d37eefa1`.
+Its archive listing is readable. Both backups remain ignored local recovery assets.
+
+The API was stopped before a locked transaction restored only failed
+`asset_unavailable` rows with matching snapshot/course identities, request/fact hashes,
+and existing asset identity/hash/key/size. Exactly 1,493 rows were repaired. Sorted
+full-row fingerprints of every other public table matched before/after, including
+courses, observations, groups, memberships, suggestions, review history, migration
+ledger, assets and uploads. No publication/curation or source data was rolled back.
+The verification record is retained beside the backups as
+`thumbnail-recovery-20261016.verification.json`.
+
+After normal launcher restart, both `/api/v1/courses?limit=1` on the API and
+`/api/courses?limit=1` on the web app return HTTP 200, total 1,493 and one item.
+A restored hosted image returns HTTP 200 `image/webp`. Browser readback shows
+1,493 courses and populated cards/images, including retained pagination. The two
+pre-existing download/input failures remain unchanged. The temporary recovery
+database was removed after verification; the backups are retained. No application
+code was changed for this operational recovery and no live image downloads occurred.

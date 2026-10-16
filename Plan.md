@@ -323,3 +323,16 @@ Authentication, AI judging (visibly disabled), public fixture-group integration 
 production deployment remain deferred. Focused automated/database/browser checks
 pass; the known Bun production page-data build error remains unresolved. Actual
 validation and remaining limits are in [validation](docs/validation.md#course-group-administration--october-16-2026).
+
+## Empty group drafts — October 16, 2026
+
+At the owner's explicit request, a one-time agent-assisted pass created 12 empty
+draft groups, two per fixed category, for future course suggestions. This extends
+the earlier member-backed curation workflow with intentional unpublished matching
+destinations. All eight existing groups, their publication flags and 17 memberships
+were preserved. The local catalog now has 20 groups; the 12 new groups have no
+members. A complete pre-work database snapshot passed isolated restoration with
+schema and full-row fingerprint comparisons before writes. Definitions, persisted
+IDs, verification and recovery instructions are in the [draft curation report](docs/curation/empty-course-group-drafts.md).
+This is explicit editorial assistance, not runtime AI integration or automatic
+assignment; suggestion production, membership review and publication remain separate.
