@@ -248,6 +248,17 @@ Replace mock data with traceable provider data and connect the existing frontend
 
 ## Next steps and remaining work
 
+- October 12 initial course-group curation: all 1,495 existing references/current
+  observations were inventoried after a complete database backup was created and
+  restore-tested in isolation. Seven draft groups and 17 explicit memberships
+  cover all six fixed categories; exact fields/members and idempotent assignment
+  replay are verified. Python, visualization and n8n have cross-provider members;
+  Photoshop, negotiation, A1 conversation and Excel have single-provider coverage
+  gaps. See the [evidence and persistence report](docs/curation/initial-course-groups.md).
+  Owner review/publication, real group frontend integration and automatic
+  assignment remain separate follow-ups; drafts do not fill public category
+  filters. No new collection or backend AI was added.
+
 - Completed — Live free-course acceptance on October 10: Chrome revealed the current LPIC-1 URL is `/course/آموزش-رایگان-آزمون-lpic1-1555-mk711/`; the previously selected stale slug still returns HTTP 500. Parser 3.1.1 recognizes the provider’s `MAKTAB` free type as well as legacy `FREE`, while ambiguous zeros remain unknown. Paid Python and free LPIC-1 passed ingestion, hosted-thumbnail retrieval and duplicate-free checkpoint resume in an isolated temporary backend/database. See `docs/validation.md` for evidence.
 
 Owner-requested October 10 dev sampling subsequently accepted ten initial courses, then 99 of 100 explicit selections: 89 new records and ten refreshes, all with verified hosted thumbnails. The known free LPIC-1 selection again returned HTTP 500 before extraction; 95 accepted courses were paid and four had unknown pricing. The dev database now contains 99 Maktabkhooneh courses and 109 retained snapshots. These bounded samples did not establish free-course acceptance; the later isolated paid/free check above resolves that gap but does not establish full-catalog validation; private reports/checkpoints stay ignored.
@@ -286,3 +297,5 @@ All ten `improve-ingestion-cli-output` implementation tasks are verified with of
 ## Homepage card refinement — October 11, 2026
 
 `refine-homepage-course-cards` implements compact source instructor summaries, scoped secondary details actions and price-associated Jalali observation-date tooltips for real homepage cards. The existing details destination and sample experiences are preserved. Automated tests, lint, types, RTL audit and strict change validation pass; production building retains the Bun CommonJS runtime blocker. All nine tasks are verified, including Chrome browser acceptance at 320px, 390px and 1280px; see [validation](docs/validation.md#homepage-card-refinement--october-11-2026). The change is [archived](openspec/changes/archive/2026-10-11-refine-homepage-course-cards/), its five requirement blocks are synced to the main homepage catalog spec, and all ten main specs pass strict validation. The owner authorized committing this change on `backend-restart`; no merge or push is requested.
+
+The completed `curate-initial-course-groups` change is [archived](openspec/changes/archive/2026-10-16-curate-initial-course-groups/) on October 16, 2026. All 18 tasks are complete; its curation requirements are synced to main specs and all ten main specs pass strict validation. The seven groups remain drafts awaiting owner review and a separate publication instruction.

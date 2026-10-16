@@ -9,6 +9,7 @@ Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 i
 - [Contributor instructions](../AGENTS.md): scope, commit policy, and required validation.
 - [Validation and limitations](validation.md): current checks, build blocker, and review coverage.
 - [Curated catalog](catalog.md): migrations, canonical identity, manual groups, public eligibility, and local management.
+- [Initial course-group curation](curation/initial-course-groups.md): verified backup, complete existing-course inventory, evidence-based draft definitions, category coverage and persistence ledger.
 - [Backend setup](../README.md#backend-development): API, PostgreSQL, local Swagger, configuration, and lifecycle commands.
 
 - [Backend foundation archive](../openspec/changes/archive/2026-10-09-introduce-backend-project/): completed proposal, design, delta specs, and 12 tasks.

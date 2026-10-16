@@ -168,6 +168,16 @@ bun apps/api/tests/built-ingestion-smoke.ts
 
 The local catalog adds explicit SQL migrations, minimal course references, editor-defined groups, and many-to-many assignments. See [catalog setup and workflow](docs/catalog.md). It has no ORM, AI jobs, authentication or cloud deployment. The homepage course section reads eligible current observations; surrounding frontend regions retain saved fixtures.
 
+October 12 initial curation researched all 1,495 existing course references and
+created seven verified draft groups with 17 explicit memberships across all six
+categories. Python, data visualization and n8n include multiple providers;
+Photoshop, negotiation, A1 conversation and Excel currently have supported
+members from Maktabkhooneh only. The [curation report](docs/curation/initial-course-groups.md)
+records exact evidence, persisted IDs, category limits and the restore-tested
+pre-work database backup. Drafts await owner review and remain absent from
+public group/category eligibility. Publication, real group frontend integration
+and automatic assignment remain separate work.
+
 
 ## Standalone data utilities
 
@@ -301,3 +311,5 @@ Focused shared/web verification: `bun test packages/core/tests apps/web/tests`.
 Real homepage cards now summarize source instructors below their titles and expose the retained Jalali collection date through the price button. «مشاهده دوره» continues to open the existing details dialog. Prices remain observations, not current provider quotations. Chrome acceptance for this refinement passed at mobile and desktop widths; see [validation](docs/validation.md#homepage-card-refinement--october-11-2026).
 
 The homepage card refinement is [archived](openspec/changes/archive/2026-10-11-refine-homepage-course-cards/) with its instructor, alignment, provenance and details-action contracts synced to the [homepage catalog spec](openspec/specs/homepage-course-catalog/spec.md).
+
+The completed `curate-initial-course-groups` change is [archived](openspec/changes/archive/2026-10-16-curate-initial-course-groups/) on October 16, 2026. All 18 tasks are complete; its curation requirements are synced to main specs and all ten main specs pass strict validation. The seven groups remain drafts awaiting owner review and a separate publication instruction.

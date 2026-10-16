@@ -22,6 +22,52 @@ Groups start as drafts (`isPublished: false`). Public lists/details show only pu
 
 Management is unauthenticated and intended only for the loopback local development service. Do not expose it on an untrusted network. Authentication and production deployment require separate work.
 
+## One-time agent-assisted editorial curation
+
+The explicitly requested development session can research existing courses and
+submit individual editorial operations. This is manual, agent-assisted work;
+there is no backend AI call, matching engine or automatic assignment. The
+[initial curation report](curation/initial-course-groups.md) records retained
+evidence, all six category outcomes, definitions, exact canonical memberships,
+backup identity and a persistence ledger. Its companion inventory records every
+current snapshot and collection date.
+
+Before curation writes, confirm the loopback API/database target, keep other
+writers quiescent, create a complete ignored PostgreSQL custom-format dump, and
+prove restoration in a new isolated database. Verify schema, migration ledger,
+counts, definitions and exact memberships; remove only the verification database.
+Keep the archive and its checksum. Backup/restore verification failure blocks
+curation writes. Recovery of the working catalog needs an explicit owner request
+and replaces its active state with the backup point, discarding later database
+changes. Hosted image files are separate and stay untouched during this pass.
+
+Read every page of `GET /api/v1/manage/courses` and each current observation at
+`GET /api/v1/manage/courses/{encodedCourseId}`. Read all management groups and
+their membership pages. These reads use the existing schemas and pagination
+limits; public filters alone omit drafts and cannot inventory initial category
+membership. Select at least two evidenced existing courses per focused set,
+record descriptions/prerequisites/curricula beyond title similarity, and explain
+unknown facts or single-provider limits. Never invent missing category coverage.
+
+Recheck source snapshot IDs and slug collisions immediately before mutation.
+Create with `POST /api/v1/manage/groups`, supplying `slug`, Persian `title`,
+`description` (at most 2,000 characters), `categoryId`, nullable `targetLevel`,
+and explicit `isPublished: false`. Use the returned UUID for individual
+`PUT /api/v1/manage/groups/{id}/courses/{encodedCourseId}` operations (204).
+Encode the whole canonical course ID, including colons, slashes and Unicode.
+Read back every field and all membership pages before claiming persistence.
+
+Keep a confirmed/pending ledger after each group. Reconcile uncertain POST
+responses before retrying because creation is not idempotent. Repeating a
+confirmed membership PUT is safe and must leave distinct counts unchanged.
+Preserve unrelated groups, memberships and immutable observations. Do not
+collect new courses or process images to fill gaps during this workflow.
+
+Drafts await owner review and a separate publication instruction; they do not
+populate public groups or category filters. Real group frontend integration and
+future automatic course assignment are separate changes. Editorial membership
+does not claim identical content, equivalent outcomes or quality rankings.
+
 ## Two-course Swagger walkthrough (synthetic local test data)
 
 Run `bun run dev:api` and open `http://127.0.0.1:3001/docs`. These examples are synthetic test records on `example.com`, not provider facts. Pick unique IDs/slugs if you want to keep multiple trials. All operations use **Try it out** → **Execute** and the current loopback origin.
