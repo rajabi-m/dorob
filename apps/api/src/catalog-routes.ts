@@ -52,14 +52,14 @@ export function catalogRoutes(repository?: CatalogRepository) {
       const result = await repo().registerCourse(input);
       return status(result.created ? 201 : 200, result.course);
     }, { body: courseInput, response: { 200: course, 201: course, ...errors }, detail: { tags: ["Local management"], summary: "Register or update a minimal course reference" } })
-    .get("/api/v1/manage/courses", ({ query }) => repo().listCourses(paging(query)), {
-      query: pageQuery, response: { 200: page(course), ...errors }, detail: { tags: ["Local management"], summary: "List registered references ordered by canonical ID" },
+    .get("/api/v1/manage/courses", ({ query }) => repo().listCourses(paging(query), query.q), {
+      query: t.Object({...pagination,q:t.Optional(t.String({maxLength:200}))}), response: { 200: page(course), ...errors }, detail: { tags: ["Local management"], summary: "List registered references ordered by canonical ID" },
     })
     .post("/api/v1/manage/groups", async ({ body, status }) => status(201, await repo().createGroup({ ...trim(body), targetLevel: body.targetLevel ?? null, isPublished: body.isPublished ?? false })), {
       body: groupInput, response: { 201: group, ...errors }, detail: { tags: ["Local management"], summary: "Create an editorial group (draft by default)" },
     })
-    .get("/api/v1/manage/groups", ({ query }) => repo().listGroups(paging(query)), {
-      query: pageQuery, response: { 200: page(group), ...errors }, detail: { tags: ["Local management"], summary: "List all groups, including drafts" },
+    .get("/api/v1/manage/groups", ({ query }) => repo().listGroups(paging(query), false, query.category, {q:query.q,isPublished:query.isPublished===undefined?undefined:query.isPublished==="true"}), {
+      query: t.Object({...pagination,q:t.Optional(t.String({maxLength:200})),category:t.Optional(category),isPublished:t.Optional(t.Union([t.Literal("true"),t.Literal("false")]))}), response: { 200: page(group), ...errors }, detail: { tags: ["Local management"], summary: "List all groups, including drafts" },
     })
     .get("/api/v1/manage/groups/:id", ({ params, query }) => repo().groupDetail(params.id, paging(query)), {
       params: groupParams, query: pageQuery, response: { 200: detail, ...errors }, detail: { tags: ["Local management"], summary: "Read a group with paginated minimal references" },

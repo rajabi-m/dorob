@@ -30,3 +30,4 @@ export interface GroupDetail extends CourseGroup {
 
 export type * from "./ingestion";
 export * from './public-courses';
+export * from './group-admin';

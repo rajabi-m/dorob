@@ -3,7 +3,7 @@ import { parseCourseQuery, publicCoursePageSchema, publicCourseDetailSchema, val
 import { CatalogError } from './catalog';
 import type { PublicCourseRepository } from './public-courses';
 import type { TSchema, TUnsafe } from '@sinclair/typebox';
-function apiSchema(s: PublicSchema): TSchema {
+export function apiSchema(s: PublicSchema): TSchema {
   if (s.anyOf) return t.Union(s.anyOf.map(apiSchema));
   if (s.enum) return t.Union(s.enum.map(v => v === null ? t.Null() : t.Literal(v as string)));
   switch (s.type) {

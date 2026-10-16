@@ -11,9 +11,11 @@ import { createImageDownloader } from "./image-download";
 import { createThumbnailService, type ThumbnailService } from "./thumbnails";
 import { createPublicCourseRepository, type PublicCourseRepository } from "./public-courses";
 import { publicCourseRoutes } from "./public-course-routes";
+import {createSuggestionRepository, type SuggestionRepository} from "./group-suggestions";
+import {groupSuggestionRoutes} from "./group-suggestion-routes";
 import type { Database } from "./database";
 
-export function createApp(database: Database, catalog?: CatalogRepository, dependencies: { ingestion?: IngestionRepository; thumbnails?: ThumbnailService; publicCourses?: PublicCourseRepository } = {}) {
+export function createApp(database: Database, catalog?: CatalogRepository, dependencies: { suggestions?: SuggestionRepository; ingestion?: IngestionRepository; thumbnails?: ThumbnailService; publicCourses?: PublicCourseRepository } = {}) {
   const ingestion = dependencies.ingestion ?? (database.sql ? createIngestionRepository(database.sql) : undefined);
   const thumbnails = dependencies.thumbnails ?? (database.sql && ingestion ? createThumbnailService(ingestion, createAssetStore(loadStorageConfig(process.env)), createRasterProcessor(), createImageDownloader()) : undefined);
   const swaggerPath = import.meta.resolve("swagger-ui-dist/package.json");
@@ -36,6 +38,7 @@ export function createApp(database: Database, catalog?: CatalogRepository, depen
       swagger: { cdn: "/docs/assets/swagger-ui-bundle.js", theme: "/docs/assets/swagger-ui.css", validatorUrl: "" },
     }))
     .use(catalogRoutes(catalog ?? (database.sql ? createCatalogRepository(database.sql) : undefined)))
+    .use(groupSuggestionRoutes(dependencies.suggestions ?? (database.sql ? createSuggestionRepository(database.sql) : undefined)))
     .use(ingestionRoutes(ingestion, thumbnails))
     .use(publicCourseRoutes(dependencies.publicCourses ?? (database.sql && thumbnails ? createPublicCourseRepository(database.sql, thumbnails) : undefined)))
     .onStart(async () => { if (thumbnails) { try { await thumbnails.initialize(); } catch { /* Outage remains inspectable through safe API errors; startup does not require DB. */ } } })

@@ -89,15 +89,19 @@ The project SHALL provide an explicit migration command that applies catalog sch
 - **THEN** stored groups and assignments remain available with the same IDs
 
 ### Requirement: Local editorial workflow
-The management workflow SHALL remain local development only, without claiming authenticated administration or production readiness. Group definitions and assignments SHALL remain editor-controlled. An explicitly requested development-agent research pass SHALL support editorial curation through existing management operations; the backend SHALL NOT call AI or automatically create groups or place courses during curation.
+The management workflow SHALL remain local development only, without claiming authenticated administration or production readiness. Group definitions and assignments SHALL remain editor-controlled through the local admin frontend and management API. Explicit agent research and external system suggestions SHALL support editorial review; the backend SHALL NOT invoke AI or create memberships from suggestions without admin approval.
 
 #### Scenario: Follow the development workflow
 - **WHEN** the owner follows the documented local workflow
-- **THEN** they can curate a group through the loopback-bound service without an AI provider, ingestion worker, or admin frontend
+- **THEN** they can curate a group through the loopback-bound admin frontend or management API without an AI provider or ingestion worker
 
 #### Scenario: Agent assists explicit editorial work
 - **WHEN** the owner requests a development agent to research existing courses and manually populate groups
 - **THEN** the agent records its editorial reasoning and submits explicit group definitions and course assignments, without introducing runtime AI calls, automatic placement, or claims of quality ranking
+
+#### Scenario: System suggests an assignment
+- **WHEN** an external system submits a course-to-group suggestion
+- **THEN** the local workflow retains the suggestion for human review without treating it as an approved membership
 
 ### Requirement: Verified pre-work database backup
 Before its first backend write, initial curation SHALL create a complete restorable backup of the target PostgreSQL database and verify restoration in an isolated database. The backup SHALL remain outside version control. The report SHALL record its location, timestamp, checksum, verification outcome, and recovery instructions. Backup or restore verification failure SHALL prevent curation writes. Restoring the working database SHALL require an explicit owner request.
@@ -169,3 +173,18 @@ The initial curation report SHALL record group definitions, inclusion/exclusion 
 #### Scenario: Public source research adds context
 - **WHEN** a public source page is used to clarify group fit beyond retained facts
 - **THEN** the report identifies its URL, research date, and the supporting finding separately from the stored observation without rewriting that observation
+
+### Requirement: Searchable management catalog
+Management group lists SHALL support normalized text search, category and publication filters; course-reference lists SHALL support normalized text search. Filtering SHALL precede pagination and totals. Search SHALL normalize equivalent Persian/Arabic letters and spacing without rewriting stored text. Existing unfiltered response shapes, pagination limits, and ordering SHALL remain compatible.
+
+#### Scenario: Search all pages
+- **WHEN** a matching course or group lies beyond the first unfiltered page
+- **THEN** a filtered request includes it and reports the full matching total
+
+#### Scenario: Combine group filters
+- **WHEN** an admin selects category, publication status, and search text together
+- **THEN** only groups satisfying every supplied filter are returned, including drafts when selected
+
+#### Scenario: Existing client omits new filters
+- **WHEN** an existing management client requests lists without filters
+- **THEN** it receives the established paginated shape and deterministic ordering

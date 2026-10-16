@@ -299,3 +299,27 @@ All ten `improve-ingestion-cli-output` implementation tasks are verified with of
 `refine-homepage-course-cards` implements compact source instructor summaries, scoped secondary details actions and price-associated Jalali observation-date tooltips for real homepage cards. The existing details destination and sample experiences are preserved. Automated tests, lint, types, RTL audit and strict change validation pass; production building retains the Bun CommonJS runtime blocker. All nine tasks are verified, including Chrome browser acceptance at 320px, 390px and 1280px; see [validation](docs/validation.md#homepage-card-refinement--october-11-2026). The change is [archived](openspec/changes/archive/2026-10-11-refine-homepage-course-cards/), its five requirement blocks are synced to the main homepage catalog spec, and all ten main specs pass strict validation. The owner authorized committing this change on `backend-restart`; no merge or push is requested.
 
 The completed `curate-initial-course-groups` change is [archived](openspec/changes/archive/2026-10-16-curate-initial-course-groups/) on October 16, 2026. All 18 tasks are complete; its curation requirements are synced to main specs and all ten main specs pass strict validation. The seven groups remain drafts awaiting owner review and a separate publication instruction.
+
+## Local group administration — October 16, 2026
+
+`add-course-group-admin` has all 27 tracked tasks complete under the documented
+local development acceptance scope and is [archived](openspec/changes/archive/2026-10-16-add-course-group-admin/).
+Its three behavior contracts are synced to main specs; all 12 main specs pass strict
+validation. Product owner review remains separate. It adds
+`/admin/groups`, draft creation/editing, explicit
+publication, searchable manual curation, retained-course inspection and a
+confidence-ordered suggestion review inbox. Suggestions are immutable and attributed
+to caller-supplied system names/IDs. Versioned pair decisions and atomic memberships
+retain history, selected approval provenance and safe replay. Rejection persists
+until explicit reopening; the owner approved this policy at implementation start.
+Legacy/manual assignments have no invented confidence. Shared components also appear
+in the labelled `/design-system` showcase without management writes.
+
+The additive migration preserves existing groups, memberships, publication and
+observations. Acceptance uses temporary records and does not publish the seven
+existing drafts. The whole-app launcher now binds the web listener to loopback;
+standalone admin startup and API examples are documented in README/catalog docs.
+Authentication, AI judging (visibly disabled), public fixture-group integration and
+production deployment remain deferred. Focused automated/database/browser checks
+pass; the known Bun production page-data build error remains unresolved. Actual
+validation and remaining limits are in [validation](docs/validation.md#course-group-administration--october-16-2026).

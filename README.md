@@ -313,3 +313,38 @@ Real homepage cards now summarize source instructors below their titles and expo
 The homepage card refinement is [archived](openspec/changes/archive/2026-10-11-refine-homepage-course-cards/) with its instructor, alignment, provenance and details-action contracts synced to the [homepage catalog spec](openspec/specs/homepage-course-catalog/spec.md).
 
 The completed `curate-initial-course-groups` change is [archived](openspec/changes/archive/2026-10-16-curate-initial-course-groups/) on October 16, 2026. All 18 tasks are complete; its curation requirements are synced to main specs and all ten main specs pass strict validation. The seven groups remain drafts awaiting owner review and a separate publication instruction.
+
+### Local group administration
+
+After `bun run db:up` and `bun run db:migrate`, run the loopback API with
+`bun run dev:api`, then the web app with:
+
+```sh
+DOROB_API_URL=http://127.0.0.1:3001 bun run dev --hostname 127.0.0.1
+```
+
+Open [group administration](http://127.0.0.1:3000/admin/groups). Create a draft,
+edit its fields, select existing catalog courses manually, inspect retained source
+facts, and explicitly publish/unpublish. A saved publication flag needs at least
+two members for public eligibility. Public group cards/routes still use fixtures.
+The existing frontend-only startup remains available; admin reads show a retry
+state if the API is unavailable. The whole-app launcher also supplies the API URL;
+its web listener now binds explicitly to `127.0.0.1`.
+
+External callers submit attributed suggestions through the local management API;
+review them by confidence in the panel. Approvals add one membership atomically.
+Rejections persist across resubmissions until explicitly reopened. Manual additions
+are explicit overrides. Confidence and system names are caller-supplied, without
+verified identity or quality calibration. AI judging is visibly disabled.
+See [management API examples and review semantics](docs/catalog.md#local-group-suggestion-ledger).
+
+Browser requests use concrete `/api/admin/...` handlers. Server-only
+`DOROB_API_URL` selects the upstream; requests have five-second deadlines, bounded
+validated responses and no caching. Browser mutations require matching Origin.
+This is local development administration without authentication: use loopback
+listeners and a trusted machine. Authentication, shared-network use and deployment
+remain deferred. No migration publishes the seven existing drafts.
+
+The completed `add-course-group-admin` change is [archived](openspec/changes/archive/2026-10-16-add-course-group-admin/)
+on October 16, 2026. All 27 tasks are complete, its three behavior contracts are
+synced to main specs, and all 12 main specs pass strict validation.

@@ -6,7 +6,7 @@ export function apiOrigin(value=process.env.DOROB_API_URL ?? 'http://127.0.0.1:3
   if(!['http:','https:'].includes(url.protocol) || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error('Invalid API origin');
   return url.origin;
 }
-async function boundedBody(response: Response, maximum: number) {
+export async function boundedBody(response: Response, maximum: number) {
   const length=response.headers.get('content-length'); if(length !== null && (!/^\d+$/.test(length) || Number(length)>maximum)) { await response.body?.cancel(); throw new Error('Invalid response'); }
   const reader=response.body?.getReader(); if(!reader) throw new Error('Empty response');
   const chunks: Uint8Array[]=[];let size=0;

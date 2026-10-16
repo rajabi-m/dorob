@@ -34,6 +34,11 @@ describe.skipIf(process.env.API_INTEGRATION !== "1")("catalog migrations", () =>
       await migrate(sql, migrations); await migrate(sql, migrations);
       expect((await sql`SELECT current_snapshot_id FROM courses WHERE id='test:1'`)[0].current_snapshot_id).toBeNull();
       expect((await sql`SELECT course_id FROM course_group_courses WHERE group_id=${group.id}`)[0].course_id).toBe("test:1");
+      const [review] = await sql`SELECT status,version,origin,selected_suggestion_id FROM group_pair_reviews WHERE group_id=${group.id}`;
+      expect(review).toMatchObject({ status:'approved',version:0,origin:'manual',selected_suggestion_id:null });
+      expect((await sql`SELECT is_published FROM course_groups WHERE id=${group.id}`)[0].is_published).toBe(false);
+      expect((await sql`SELECT action FROM group_review_transitions WHERE group_id=${group.id}`)[0].action).toBe('baseline');
+      expect((await sql`SELECT count(*)::int AS n FROM group_suggestions`)[0].n).toBe(0);
     });
   });
   test("category parity and relational constraints reject invalid writes", async () => {

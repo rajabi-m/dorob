@@ -391,3 +391,148 @@ selecting a category may honestly return zero results until curation exists.
 Order is current acceptance time descending, then canonical course ID with `C`
 collation. On unchanged data offset pages are stable; concurrent ingestion can
 shift subsequent pages. Reads provide no frozen multi-request snapshot.
+
+## Local group suggestion ledger
+
+Migration `003_group_suggestions.sql`, applied explicitly with `bun run db:migrate`,
+adds immutable `group_suggestions`, versioned `group_pair_reviews`, and append-only
+`group_review_transitions`. Existing memberships are seeded as approved/manual,
+with a migration-time baseline event rather than an invented historical decision.
+No suggestion or confidence is fabricated. Groups, memberships, publication flags,
+and source observations are preserved; checksum-tracked reruns are no-ops.
+Isolated migration tests verify preservation and rerun behavior.
+
+System-scoped `(system_id, submission_id)` identifies an immutable payload: an exact
+normalized replay returns its identity; changed content conflicts. Several systems
+may submit separate scores for the same pair. Reviews govern the course/group pair,
+while approval provenance selects one exact submission. Lists use a repeatable-read
+snapshot, confidence descending, receipt time descending, then UUID ascending.
+Offset pages may shift when new submissions arrive.
+
+Approve/reject/reopen lock the pair and check its observed integer version in the
+same transaction as membership and history writes. Exact action retries return the
+stored outcome only while no subsequent transition exists. Rejection persists across
+new submissions until explicitly reopened. Manual add approves with manual provenance;
+removal rejects. Repeated existing assignments preserve prior provenance/history.
+Scores are caller-reported values, not calibrated probabilities or quality ratings.
+System identities are attribution supplied by callers, without authentication.
+
+Rollback retains the additive tables and history; there is no destructive down
+migration. An older application cannot maintain this ledger. If older binaries write
+memberships, reconcile pair state against memberships before enabling reviews again.
+
+### Admin panel workflow
+
+Start the API and loopback web listener as documented in
+[local group administration](../README.md#local-group-administration), then open
+`/admin/groups`. Search covers all groups before pagination; category and publication
+filters combine. Create at `/admin/groups/new`; saved drafts open at
+`/admin/groups/[id]`. Edit title, Latin slug, description, fixed category and optional
+level. Validation/conflict messages retain input. After an uncertain create, the
+panel searches the submitted slug before offering another create.
+
+Use **انتخاب دورهٔ موجود** to search all registered references, **بررسی دوره** to
+inspect bounded retained facts (including courses unavailable publicly), and
+**افزودن دستی**/**حذف از گروه** for explicit membership overrides. Missing facts are
+shown as missing; unready images never hide management candidates. The member list
+shows the selected system submission or a manual/editorial label. A suggestion's
+history records prior decisions even after removal/re-addition.
+
+Pending, approved and rejected tabs retain immutable submissions separately. Approve
+or reject with the displayed pair version; a competing review yields a conflict and
+refreshes pair rows, counts and eligibility. Rejected suggestions require explicit
+**بازگشایی بررسی**. Confidence percentages and dates use Persian/Jalali presentation.
+The disabled **داوری با هوش مصنوعی** control performs no operation.
+
+Publication is explicit and separate from eligibility: a published one-member group
+still cannot appear in public group/category reads. At least two members are needed;
+removing members below two hides the group without resetting its publication flag.
+Existing public group cards/destinations remain sample-backed. Implementing this
+panel does not publish the seven existing draft groups.
+
+Recorded acceptance used an isolated temporary schema: an empty draft, three
+attributed submissions sorted 94/94/72, two approvals, one-member publication then
+two-member eligibility, a rejected competing-tab approval, management-only course
+inspection and a manual override. Existing catalog fingerprints were compared
+before/after migration and after temporary-schema cleanup. See
+[validation](validation.md#course-group-administration--october-16-2026).
+
+### Suggestion API examples
+
+These operations are also available under **Local management** in
+[local Swagger](http://127.0.0.1:3001/docs). Use only temporary records when trying
+publication/review changes. Create a temporary group and register a minimal course
+using the existing management operations first. Copy their actual returned IDs:
+
+```sh
+GROUP_ID='copy-created-group-uuid'
+COURSE_ID='copy-existing-provider:course-id'
+```
+
+Submission includes caller-supplied attribution; neither a system account nor AI
+execution is implied. Substitute the actual course ID in this JSON (encode the
+whole canonical ID when it is a URL path segment):
+
+```sh
+curl -i -H 'Content-Type: application/json' \
+  --data '{"courseId":"local-test:python-one","systemId":"research-one","systemName":"Research One","submissionId":"python-one-v1","confidencePercent":87.5}' \
+  "http://127.0.0.1:3001/api/v1/manage/groups/$GROUP_ID/suggestions"
+# 201 new; repeating the exact payload returns 200 and the same suggestion ID.
+# Reusing systemId/submissionId with changed normalized content returns 409.
+
+curl "http://127.0.0.1:3001/api/v1/manage/groups/$GROUP_ID/suggestions?status=pending&limit=20&offset=0"
+curl "http://127.0.0.1:3001/api/v1/manage/groups/$GROUP_ID/member-reviews"
+```
+
+Copy a returned suggestion ID and its current `review.version`. Never assume the
+example version remains current after another write:
+
+```sh
+SUGGESTION_ID='copy-returned-suggestion-uuid'
+curl -i -H 'Content-Type: application/json' --data '{"expectedReviewVersion":0}' \
+  "http://127.0.0.1:3001/api/v1/manage/suggestions/$SUGGESTION_ID/approve"
+# 200: review plus membership:true. Exact retry at the same input version is safe
+# until another transition occurs; stale/conflicting decisions return 409.
+
+curl "http://127.0.0.1:3001/api/v1/manage/suggestions/$SUGGESTION_ID/history?limit=20&offset=0"
+```
+
+For a different pending suggestion, rejection and reopening use the same body shape:
+
+```sh
+curl -i -H 'Content-Type: application/json' --data '{"expectedReviewVersion":0}' \
+  "http://127.0.0.1:3001/api/v1/manage/suggestions/$SUGGESTION_ID/reject"
+curl -i -H 'Content-Type: application/json' --data '{"expectedReviewVersion":1}' \
+  "http://127.0.0.1:3001/api/v1/manage/suggestions/$SUGGESTION_ID/reopen"
+```
+
+Fresh submissions after rejection remain rejected. Reopen returns the pair to
+pending, with prior rejection retained in history. Approved memberships must be
+removed explicitly before further review. Manual overrides retain that history:
+
+```sh
+# Whole-ID URL encoding, including colon/slashes/spaces/Persian characters:
+ENCODED_COURSE_ID=$(bun -e 'console.log(encodeURIComponent(process.argv[1]))' "$COURSE_ID")
+curl -i -X DELETE "http://127.0.0.1:3001/api/v1/manage/groups/$GROUP_ID/courses/$ENCODED_COURSE_ID"
+curl -i -X PUT "http://127.0.0.1:3001/api/v1/manage/groups/$GROUP_ID/courses/$ENCODED_COURSE_ID"
+# Both return 204. Re-add establishes manual provenance, without invented confidence.
+```
+
+Invalid input is 422, missing parents/records 404, conflicts 409 and database
+unavailability 503. The API does not expose SQL or credentials. Direct local
+API/Swagger calls are unchanged by browser Origin checks. These endpoints remain
+unauthenticated local development tools; do not expose them to an untrusted network.
+
+Admin state presentation uses the shared Dorob palette: gold for draft/pending,
+blue for published, green for approved/public eligibility, and slate for rejected.
+Publication and eligibility remain separate labels. Icons and Persian text accompany
+color; confidence remains blue as caller-reported information. The shared components
+and all publication/review variants are demonstrated with labelled samples in
+`/design-system#admin-specimens`.
+
+Destructive admin actions use the shared red danger tokens and `AdminDangerButton`:
+membership removal includes a trash icon, and unpublishing includes a visibility-off
+icon. Both retain explicit Persian labels and disabled/focus states. Detail sections
+use shared icon headings (blue editing, green approved members, gold suggestions),
+with publication separated from field saving. These shared additions also have
+sample-only examples in the design-system showcase.

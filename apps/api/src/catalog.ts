@@ -1,6 +1,9 @@
 import type { ReservedSQL, SQL } from "bun";
 import type { CategoryId, CourseGroup, CourseReference, GroupDetail, Page } from "@dorob/core";
 
+import {normalizeSearch} from "./public-course-projection";
+import { manualMembership } from "./group-suggestions";
+
 export type Pagination = { limit: number; offset: number };
 export type CourseInput = Omit<CourseReference, "id">;
 export type GroupInput = Omit<CourseGroup, "id" | "courseCount">;
@@ -11,10 +14,10 @@ export class CatalogError extends Error {
 }
 export interface CatalogRepository {
   registerCourse(input: CourseInput): Promise<{ course: CourseReference; created: boolean }>;
-  listCourses(page: Pagination): Promise<Page<CourseReference>>;
+  listCourses(page: Pagination, q?: string): Promise<Page<CourseReference>>;
   createGroup(input: GroupInput): Promise<CourseGroup>;
   updateGroup(id: string, patch: Partial<GroupInput>): Promise<CourseGroup>;
-  listGroups(page: Pagination, publicOnly?: boolean, category?: CategoryId): Promise<Page<CourseGroup>>;
+  listGroups(page: Pagination, publicOnly?: boolean, category?: CategoryId, filters?: {q?:string;isPublished?:boolean}): Promise<Page<CourseGroup>>;
   groupDetail(key: string, page: Pagination, publicOnly?: boolean): Promise<GroupDetail>;
   membership(groupId: string, courseId: string, linked: boolean): Promise<void>;
 }
@@ -64,11 +67,12 @@ export function createCatalogRepository(sql: SQL): CatalogRepository {
         return { course, created };
       });
     },
-    listCourses(page) {
+    listCourses(page, q = "") {
       return transaction(sql, true, async tx => {
-        const items: CourseReference[] = await tx.unsafe(`SELECT ${courseFields} FROM courses ORDER BY id COLLATE "C" LIMIT $1 OFFSET $2`, [page.limit, page.offset]);
-        const [{ total }] = await tx`SELECT count(*)::int AS total FROM courses`;
-        return { items, total, ...page };
+        const all: CourseReference[] = await tx.unsafe(`SELECT ${courseFields} FROM courses ORDER BY id COLLATE "C"`);
+        const search=normalizeSearch(q);
+        const matches=all.filter(c=>normalizeSearch(`${c.title} ${c.providerId} ${c.providerCourseId}`).includes(search));
+        return { items:matches.slice(page.offset,page.offset+page.limit), total:matches.length, ...page };
       });
     },
     createGroup(input) {
@@ -91,12 +95,13 @@ export function createCatalogRepository(sql: SQL): CatalogRepository {
         return groups[0];
       });
     },
-    listGroups(page, publicOnly = false, category) {
+    listGroups(page, publicOnly = false, category, filters = {}) {
       return transaction(sql, true, async tx => {
         const predicate = `${publicOnly ? eligibility : "TRUE"} AND ($1::text IS NULL OR g.category_id=$1)`;
-        const items: CourseGroup[] = await tx.unsafe(`SELECT ${groupFields} FROM course_groups g WHERE ${predicate} ORDER BY g.slug COLLATE "C", g.id LIMIT $2 OFFSET $3`, [category ?? null, page.limit, page.offset]);
-        const [{ total }] = await tx.unsafe(`SELECT count(*)::int AS total FROM course_groups g WHERE ${predicate}`, [category ?? null]);
-        return { items, total, ...page };
+        const all: CourseGroup[] = await tx.unsafe(`SELECT ${groupFields} FROM course_groups g WHERE ${predicate} ORDER BY g.slug COLLATE "C", g.id`, [category ?? null]);
+        const search=normalizeSearch(filters.q ?? '');
+        const matches=all.filter(g=>(filters.isPublished===undefined||g.isPublished===filters.isPublished)&&normalizeSearch(`${g.title} ${g.description} ${g.slug}`).includes(search));
+        return { items:matches.slice(page.offset,page.offset+page.limit), total:matches.length, ...page };
       });
     },
     groupDetail(key, page, publicOnly = false) {
@@ -110,11 +115,7 @@ export function createCatalogRepository(sql: SQL): CatalogRepository {
     },
     membership(groupId, courseId, linked) {
       return transaction(sql, false, async tx => {
-        const groups = await tx`SELECT id FROM course_groups WHERE id=${groupId}::uuid FOR KEY SHARE`;
-        const courses = await tx`SELECT id FROM courses WHERE id=${courseId} FOR KEY SHARE`;
-        if (!groups.length || !courses.length) throw new CatalogError(404);
-        if (linked) await tx`INSERT INTO course_group_courses(group_id,course_id) VALUES (${groupId}::uuid,${courseId}) ON CONFLICT DO NOTHING`;
-        else await tx`DELETE FROM course_group_courses WHERE group_id=${groupId}::uuid AND course_id=${courseId}`;
+        await manualMembership(tx, groupId, courseId, linked);
       });
     },
   };

@@ -451,3 +451,84 @@ Authentic Sabzlearn/Roocket assets and existing map entries are added with attri
 Known source gaps remain explicit: TopLearn's disclosed comments route returns unrecognized/404 HTML, so feedback is unknown; Sabzlearn’s raw score lacks evidenced scale/vote count, so aggregate rating is unknown; mixed thread totals never become feedback/rating totals. Roocket’s explicit rating/votes remain separate from bounded anonymous comments. Limits, ordinary failures and question/reply/staff exclusions never imply complete coverage. No full-catalog crawl, branch or push occurred. The owner subsequently requested spec sync, archival and a commit. Both behavior contracts are synced and verified, all ten main specs pass strict validation, and the change is [archived](../openspec/changes/archive/2026-10-12-migrate-remaining-providers-v3/).
 
 Commit verification on October 12 reran workspace lint/type checking, 134 utility tests, 15 core/web tests (with local loopback access), 32 API tests (18 integration tests skipped by default), API production build and both changed-component RTL checks successfully. The web production build compiled and passed TypeScript, then hit the same Bun CommonJS runtime error during `/groups/[id]` page-data collection. Existing live/browser evidence above was reviewed; no new provider run was started for this commit.
+
+## Course-group administration — October 16, 2026
+
+`add-course-group-admin` implements the local Persian group panel, immutable system
+suggestions, pair-level versioned review, provenance/history, explicit publication
+and manual membership overrides. Rejection persists until explicit reopening, as
+approved by the owner at implementation start. Authentication, runtime AI judging,
+production deployment and public fixture-group replacement remain deferred.
+
+| Check | Result |
+| --- | --- |
+| Shared/API/web focused tests | Passed: contracts, replay/error/OpenAPI routes, Origin/Host authority checks, fixed forwarding paths, response/input bounds, timeout, safe errors, retained input, uncertain-create reconciliation, review refresh/conflicts and transport-free showcase interactions. The combined relevant suite had 34 passes plus one sandbox socket-listen failure; rerunning the affected existing HTTP deadline file with socket access passed all four tests. Subsequent changed-contract/UI focused runs pass. |
+| Isolated PostgreSQL | Passed: ten focused migration/catalog/suggestion/public-catalog tests across four files. Three updated suggestion tests also pass after strengthening concurrent-first-submission, approval rollback after membership insertion, simultaneous review conflict, manual/submission concurrency and separate-pool reconnection assertions. Additive migration reruns preserve legacy assignments/publication and seed manual provenance without fabricated suggestions/confidence. |
+| Local database preservation | Migration applied explicitly after capturing ordered hashes of courses, groups, memberships and snapshots. Hashes were identical afterward; acceptance used a separate temporary schema, without publishing or changing the existing seven drafts. Cleanup preservation is recorded below. |
+| Integrated local browser flow | Passed in Codex in-app browser using temporary records: empty Persian draft creation, three attributed submissions ordered 94/94/72, approvals, publication with one member still ineligible, two-member eligibility, manual override with manual provenance, management-only course inspection, and a second tab's stale approval rejected after the first tab's rejection. Filtered navigation finds a draft beyond the first unfiltered page. |
+| Temporary HTTP smoke | Passed: exact/conflicting replay, approved-pair reject conflict, rejected-pair approval conflict, explicit reopening, rejection, manual removal/re-add, retained history, unpublish/republish and public eligibility. No AI provider/job was used. |
+| Persian/RTL/accessibility | Detector: seven admin component files, four admin route files and the changed design-system page report zero errors/warnings. Desktop (1280px) and mobile (390px) checks cover long Persian titles, mixed Latin IDs/names, Persian confidence/numerals, Jalali dates, labelled controls and visible keyboard focus. Mobile page width was 375px at a 390px viewport; inspection dialog width 324px. Escape closes the dialog and returns focus. Showcase mobile width is 341px with no page overflow; keyboard focus remains visible on its review buttons. |
+| Browser fixes | Real browser acceptance exposed Next dev's internal URL host mismatch: mutation checks now compare Origin with the request Host authority/protocol, with foreign/missing Origin still rejected. The list also normalizes empty native-form filters before its initial query; forms preserve draft inputs across background refreshes. |
+| Lint / types / API build | `bun run lint`, `bun run typecheck`, `bun run build:api` pass. The loopback launcher passes `bash -n run.sh`. |
+| Web production build | `bun run build` compiles and passes TypeScript, then fails during page-data collection with the existing Bun 1.3.8 `Expected CommonJS module to have a function wrapper` error (this run reports `/api/admin/courses/[courseId]`). This is not a successful production build; browser acceptance uses development mode. |
+| Scope | No dependency or lockfile changes, live collection, AI execution, authentication, commit, push, branch or publication of existing drafts. Management search currently scans the small retained reference/group set within one repeatable-read transaction before pagination, matching the existing public search approach; SQL search indexing can be selected separately if needed. |
+
+Screenshots of the temporary acceptance state were captured at
+`/tmp/dorob-admin-desktop.jpg`, `/tmp/dorob-admin-mobile.jpg` and
+`/tmp/dorob-admin-showcase-mobile.jpg`; they are local temporary evidence rather
+than committed catalog assets. Browser automation was performed through the
+available in-app browser; Chrome was unavailable in this session.
+
+Acceptance cleanup completed: the temporary schema was removed and the original
+courses/groups/memberships/snapshots fingerprints still matched. The normal
+`./run.sh` launcher was then started for owner review against the preserved catalog,
+with both app listeners on loopback. Strict OpenSpec validation and `git diff --check`
+pass. The change is now archived with its three behavior contracts synced; owner
+product review remains separate, and the production build limitation is still open.
+
+Normal-catalog readback shows exactly seven preserved draft groups with their
+original member counts (17 memberships total). The running owner-review panel is
+[local administration](http://127.0.0.1:3000/admin/groups).
+
+Admin dropdown spacing refinement — October 16: native selects now use a shared
+chevron inset 16px from the logical end edge, with room reserved for text and a
+native-appearance fallback in forced-colors mode. The local panel was visually
+checked; RTL detector, workspace lint and type checking pass. The production build
+again compiles/types successfully and hits the existing Bun CommonJS page-data
+error (this run at `/_not-found`). No catalog records were changed.
+
+Admin state-color refinement — October 16: shared gold/blue/green/slate state badges,
+icons, eligibility indicators, restrained list-row accents, review tabs and approval
+buttons now give publication/review states distinct visual treatments. Existing
+success/warning surface colors are exposed as shared semantic tokens. The showcase
+includes draft, published-but-ineligible and eligible examples alongside all review
+states; equal-specificity badge overrides were corrected after visual inspection.
+Desktop (1280px) and mobile (390px) browser checks pass, with no horizontal page
+overflow at 390px and visible keyboard focus. Existing four admin UI tests, workspace
+lint/types and the RTL detector pass. Production compilation/types pass, followed by
+the unchanged Bun CommonJS page-data blocker at `/api/admin/courses/[courseId]`.
+No memberships/publication flags were changed. Preview: `/tmp/dorob-state-showcase.jpg`.
+
+Group detail visual refinement — October 16: membership removal/unpublishing now
+use a shared red danger button with explicit icons, pale-red idle and solid-red hover
+states, backed by semantic danger tokens. A status overview, colored shared section
+headings, green-accented member cards and a separate publication area clarify the
+editing/curation hierarchy. The showcase demonstrates enabled/disabled danger buttons
+with local sample-only interaction and the shared member heading. Existing four admin
+UI tests, workspace lint/types and RTL checks pass. Read-only browser inspection of
+the A1 group at desktop/mobile widths confirms red removal buttons, visible keyboard
+focus and no horizontal overflow at 390px; its two memberships and draft state were
+not changed. Production compilation/types pass; the existing Bun CommonJS page-data
+error remains (this run at `/api/admin/courses`). Screenshot:
+`/tmp/dorob-group-detail-actions.jpg`.
+
+Commit verification — October 16: workspace lint/type checking, API production
+build, launcher syntax and the RTL detector pass. The shared/web/API suite reports
+57 passes, 21 opt-in integration skips and one sandbox loopback-listen failure;
+the affected HTTP deadline file passes all four tests when local socket access is
+allowed. The ten focused PostgreSQL migration/catalog/suggestion/public-catalog
+tests pass using isolated temporary schemas. All 12 main specs pass strict
+validation and every archived delta is verified against its main spec. The web
+production build compiles, then Bun 1.3.8 crashes with a segmentation fault during
+the TypeScript stage; standalone workspace type checking passes. Production build
+completion remains blocked. The owner authorized this commit; no push is requested.
