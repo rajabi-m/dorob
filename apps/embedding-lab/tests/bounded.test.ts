@@ -1,0 +1,2 @@
+import {test,expect} from 'bun:test';import {boundedJSON} from '../src/bounded';
+test('chunked oversized responses stop before collecting unbounded content',async()=>{let cancelled=false;const stream=new ReadableStream({start(c){c.enqueue(new TextEncoder().encode('123456'));c.enqueue(new TextEncoder().encode('789'));},cancel(){cancelled=true;}});await expect(boundedJSON(new Response(stream),5)).rejects.toThrow('too large');expect(cancelled).toBe(true);expect(await boundedJSON(Response.json({ok:true}),100)).toEqual({ok:true});});

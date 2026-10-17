@@ -41,3 +41,15 @@ Phase 1 is accepted and phase 2 is complete for now (October 4, 2026). Phase 3 i
 - [RTL design skill](../.agents/skills/rtl-design/SKILL.md): Persian/RTL rules and static audit workflow.
 
 Frontend fixtures and standalone scraper exports have different contracts. Production scraping and AI assessment documents describe future work; their presence does not activate phase 3.
+
+- [Local embedding laboratory: real results and review walkthrough](embedding-lab.md)
+  — standalone experiments, weak matches, portable evidence and a separate synthetic capacity test.
+- [Embedding lab installation, commands and artifact recovery](../apps/embedding-lab/README.md).
+
+- [Catalog embedding workflow](catalog-embeddings.md): backend/CLI commands, immutable
+  revisions, raw scores, review/promotion, cancellation and recovery.
+- [Embedding integration results](embedding-results.md): real-model acceptance,
+  isolated draft/review walkthrough, preferred-policy capacity and limitations.
+
+- [Bundled pgvector migration and recovery](pgvector-migration.md): pinned image,
+  restore verification, preserved catalog, active/original volumes and backups.

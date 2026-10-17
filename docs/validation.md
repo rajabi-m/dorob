@@ -565,3 +565,163 @@ A restored hosted image returns HTTP 200 `image/webp`. Browser readback shows
 pre-existing download/input failures remain unchanged. The temporary recovery
 database was removed after verification; the backups are retained. No application
 code was changed for this operational recovery and no live image downloads occurred.
+
+## Embedding laboratory — October 16, 2026
+
+`add-local-embedding-suggestions` implements the separate `apps/embedding-lab`
+workspace and explicit commands. No production API/admin source, database schema,
+Compose or `run.sh` changes are included. The lockfile adds only the local workspace
+and references already installed dependency versions. Nothing was committed,
+branched or pushed.
+
+- Focused lab tests: **25 pass, 0 fail**. Coverage includes immutable/checksummed
+  storage, symlinks/traversal, corrupted records, interrupted temporary files,
+  stale/live locks, feedback replay/history, paginated capture/rechecks, incomplete
+  selection, input normalization/UTF-8 bounds/negation, cache reuse, model failures,
+  bounded chunked responses, exact matching, overlap/bridge coherence, suppression,
+  centroid/member distinction, run reuse/concurrency/cancellation, comparison,
+  evidence integrity/reimport and local Host/Origin isolation.
+- `bun run lint:lab`, `bun run typecheck:lab`, `bun run build:lab` pass. The built
+  lab starts independently on loopback, without main service startup or inference.
+  Initial dependency linking needed sandbox escalation for Bun's temporary-directory
+  access; installation used the local cache, with no package-version changes.
+- Existing `bun run lint` and `bun run typecheck` pass. `bun run build` compiles and
+  completes TypeScript, then fails during page-data collection with the existing
+  Bun 1.3.8 `Expected CommonJS module to have a function wrapper` error. The standalone
+  lab production build does not use Next and passes.
+- RTL detector on the three lab UI files: **0 errors, 0 warnings**. Built browser
+  inspection covered 1280px desktop, 390px and 320px mobile, long Persian source
+  titles/descriptions, Latin URLs/hashes, Jalali dates, visible keyboard focus,
+  inspector focus and return, group result filtering, overlap links and comparison
+  details. Main content had no unintended horizontal overflow; local scope lists
+  and saved-run shelves scroll within their own bounds.
+- Real browser flows inspected matching/source/input provenance, 15 overlapping
+  tighter-discovery sets, source text as React text, optional manual title,
+  uncertain feedback persistence and comparison of the two real discovery runs.
+  Feedback notes explicitly identify agent persistence demonstrations, not owner
+  suitability approval. Reviewed-sample determinate denominators remain zero.
+- Full-dataset matching with only 70 selected-demo vectors fails explicitly on
+  missing vectors without inference. Missing model/runtime and digest/dimension
+  failures are tested with fake transports; cached experiments require no transport.
+  Opening reimported results does not contact either application API or Ollama.
+- Real cancellation was checked in an independent reimport store. A bounded first
+  generation completed six additional course vectors plus 19 group vectors before
+  cancellation was attempted. A second six-course generation was immediately
+  cancelled through the workbench. Its attempt is `cancelled`, the earlier 25 valid
+  vectors remain, all three imported completed runs and both review events remain,
+  and no cancelled attempt creates a completed run. Main demonstration evidence
+  remains separate with its original 70 vectors.
+- Real capture, model digest, 51-course/19-group sample, one matching and two
+  discovery runs, weak matches, overlap/member changes and validated three-run
+  export/reimport are recorded in [the walkthrough](embedding-lab.md).
+  All 1,495 source observations were captured without drift/failures; the owner's
+  test group was excluded by ID. No catalog mutation client exists in the lab.
+- A seeded **synthetic** 10,000-course/100-group/1,024-dimension capacity test
+  completed on Apple M4 / 16 GiB / Bun 1.3.8: matching 11.863 s, discovery 35.437 s,
+  peak native process RSS 133,267,456 bytes (~127.1 MiB), k=20, candidate cap=10,000,
+  all seeds covered. It makes no real-catalog quality claim. `/usr/bin/time -l`
+  reported 47.49 s wall time but its remaining instrumentation was denied access
+  to `kern.clockrate`; no independent external peak-RSS result is claimed.
+- Strict OpenSpec validation and final whitespace/scope checks pass. Evidence,
+  benchmark reports, datasets and vectors remain ignored under lab `output/`.
+
+Software acceptance is separate from owner model-quality review. Loose similarity
+produces clear scope errors and broad ambiguous reconciliation; no precision,
+recall, calibrated confidence, production policy or integration approval is claimed.
+Authentication/deployment, generative judging/naming, automatic submission,
+pgvector and scheduling remain outside this change.
+
+## Catalog embedding integration — October 17, 2026
+
+All 24 OpenSpec tasks are implemented and verified. The earlier custom-build
+missing-clang failure was resolved by the owner's selected bundled pgvector image.
+Migrations 004–006 are active. All 18 original data-table fingerprints match the
+restore-tested backup; 1,495 courses, 20 groups, 17 memberships, review history and
+the protected group are preserved.
+
+- Real PostgreSQL API suite: 63 passed, zero failures/skips, 678 assertions.
+- Core/engine/worker/frontend/utility suites: 181 passed, zero failures, 445 assertions.
+  An initial sandbox run could not open the frontend test's loopback listener;
+  the authorized local-network rerun passed without source changes.
+- Workspace lint/type checking, engine lint/types/build, worker lint/types/build
+  and API production build pass. Source and built CLI help do no work.
+- Final built worker over actual HTTP reuses all four real vectors with the model
+  endpoint deliberately unavailable; 36 embedding endpoint paths appear in Swagger.
+- Isolated real BGE-M3 generation, reuse, retained forced revisions, matching,
+  discovery, cancellation/resume, candidate review, one draft/all-member suggestions,
+  idempotent delivery and ordinary approval/rejection/stale withholding pass.
+- Preferred-policy synthetic capacity: 10,000 courses/100 groups/1024 dimensions,
+  210.019 seconds end to end, peak combined backend/worker RSS 403.92 MiB.
+  Actual HTTP, pgvector storage, suppression/reconciliation and delivery are included;
+  synthetic inference is not model throughput or catalog-quality evidence.
+- Original migrations 001–003 and frontend source remain unchanged; application
+  code imports no lab runtime or evidence. No daemon, worker Compose service,
+  scheduled/startup inference, real[] fallback or approximate index is introduced.
+- Strict OpenSpec change validation and documentation link/scope checks pass.
+
+`bun run build` compiles and typechecks, then retains the existing Bun CommonJS
+page-data error (`Expected CommonJS module to have a function wrapper`) for
+`/_not-found`. This frontend production limitation remains unresolved and separate
+from the backend/worker builds. Existing UI confidence wording is also retained;
+exact raw score semantics are documented without a calibrated-quality claim.
+See [workflow](catalog-embeddings.md), [actual results and artifacts](embedding-results.md)
+and [backup recovery](pgvector-migration.md). No commit, deployment or publication
+was performed.
+
+## Bundled pgvector image migration — October 17, 2026
+
+Completed the owner-authorized move to upstream `pgvector/pgvector:0.8.7-pg17-bookworm`
+with pinned manifest digest. Actual ARM64 server: PostgreSQL 17.11, pgvector 0.8.7.
+Complete backups of both databases and roles restored into a separate fresh volume.
+Both schemas and all 19 user-table fingerprints matched before cutover. After
+migration 004 and normal restart, all 18 data-table fingerprints still match; the
+migration ledger has its expected fourth row. Preserved: 1,495 courses, 20 groups,
+17 memberships, original test schema, protected group and all source/review facts.
+Original Alpine volume remains retained; hosted image files are unchanged.
+
+Real PostgreSQL API suite: 55 pass, zero skip/fail, 587 assertions. API lint,
+typecheck and build pass; Compose validation and health/restart pass. Temporary
+vector(1024) storage/cosine smoke passes. Actual HTTP readiness/course/group reads
+return 200 with 1,493 eligible public courses and 20 management groups. Check process
+stopped afterward. No inference, placement or publication occurred.
+
+Image download stalled, then a retry had a TLS handshake timeout; pulling by the
+verified digest succeeded. Migration without standalone DATABASE_URL failed safely;
+the explicit documented local connection succeeded. These issues are resolved.
+Exact image pin, archive checksums, isolated/schema fingerprints, local metadata,
+known adopted-volume label warning and recovery limits are in the
+[migration report](pgvector-migration.md). The earlier missing-clang custom-build
+failure no longer blocks database migration. Frontend production build retains
+its previously documented Bun CommonJS limitation; no frontend changes were made.
+
+
+## Embedding worker startup diagnostics — October 17, 2026
+
+After an owner run exposed a generic connection error, model/backend transport
+failures now name the service, configured origin and recovery action. Ollama
+connection failures explicitly recommend `ollama serve`; backend connection
+failures recommend `./run.sh`. Timeouts, Ollama HTTP failures and malformed
+responses are distinguished without printing upstream response bodies. Explicit
+cancellation keeps its original signal. Both human and JSON executable output
+are tested against an unavailable model endpoint. Worker suite: seven tests pass
+(36 assertions), including three diagnostics tests; worker lint/types/build pass.
+
+## Embedding archive and commit verification — October 17, 2026
+
+Both embedding changes are archived with 44/44 tasks complete. All seven delta
+capabilities were verified against the synced main specs, preserving existing
+purposes and unrelated requirements. All 16 main specs pass strict validation;
+OpenSpec lists no active changes.
+
+The final verification passed 63 API tests (678 assertions) with real PostgreSQL
+and 209 lab/engine/core/worker/frontend/utility tests (559 assertions), in separate
+processes. A combined-process run caused a thumbnail HTTP test to return 422
+instead of 413 after browser tests changed globals; the documented standalone API
+suite passes without source changes. The initial sandbox-only run could not bind
+the frontend deadline test's loopback socket; the local-access rerun passes.
+Workspace and lab/worker/engine lint and type checks pass. API, lab, worker and
+engine production builds pass. The lab RTL detector reports zero errors/warnings.
+The frontend production build still fails collecting `/_not-found` page data with
+the previously documented Bun CommonJS wrapper error after compilation/type checks.
+No application source changed during this archive/commit review. Generated output,
+local evidence and database backups remain ignored; no push is authorized.

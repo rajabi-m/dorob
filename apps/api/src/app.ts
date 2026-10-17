@@ -1,3 +1,4 @@
+import {embeddingRoutes} from './embedding-routes';
 import { categoryRegistry } from "@dorob/core";
 import { Elysia, t } from "elysia";
 import { openapi } from "@elysia/openapi";
@@ -37,6 +38,7 @@ export function createApp(database: Database, catalog?: CatalogRepository, depen
       documentation: { info: { title: "Dorob API", version: "0.1.0" }, servers: [{ url: "/" }] },
       swagger: { cdn: "/docs/assets/swagger-ui-bundle.js", theme: "/docs/assets/swagger-ui.css", validatorUrl: "" },
     }))
+    .use(embeddingRoutes(database.sql))
     .use(catalogRoutes(catalog ?? (database.sql ? createCatalogRepository(database.sql) : undefined)))
     .use(groupSuggestionRoutes(dependencies.suggestions ?? (database.sql ? createSuggestionRepository(database.sql) : undefined)))
     .use(ingestionRoutes(ingestion, thumbnails))

@@ -89,7 +89,7 @@ The project SHALL provide an explicit migration command that applies catalog sch
 - **THEN** stored groups and assignments remain available with the same IDs
 
 ### Requirement: Local editorial workflow
-The management workflow SHALL remain local development only, without claiming authenticated administration or production readiness. Group definitions and assignments SHALL remain editor-controlled through the local admin frontend and management API. Explicit agent research and external system suggestions SHALL support editorial review; the backend SHALL NOT invoke AI or create memberships from suggestions without admin approval.
+The management workflow SHALL remain local development only, without claiming authenticated administration or production readiness. Group definitions and assignments SHALL remain editor-controlled through the existing frontend and management API. Explicit CLI local embedding operations and external suggestions SHALL support review. Draft creation from discovery SHALL require explicit editorial action; memberships and publication SHALL remain separate decisions.
 
 #### Scenario: Follow the development workflow
 - **WHEN** the owner follows the documented local workflow
@@ -102,6 +102,13 @@ The management workflow SHALL remain local development only, without claiming au
 #### Scenario: System suggests an assignment
 - **WHEN** an external system submits a course-to-group suggestion
 - **THEN** the local workflow retains the suggestion for human review without treating it as an approved membership
+#### Scenario: Explicit CLI embedding work
+- **WHEN** the owner explicitly runs generation, matching or discovery from CLI
+- **THEN** the worker uses backend HTTP APIs and local inference without automatically assigning or publishing courses/groups
+
+#### Scenario: Discovery promotion with suggestions
+- **WHEN** the owner explicitly promotes an approved discovered set with valid group fields
+- **THEN** an empty unpublished draft is created and every discovered member is submitted as a discovery-scored suggestion, leaving assignment/publication to separate actions
 
 ### Requirement: Verified pre-work database backup
 Before its first backend write, initial curation SHALL create a complete restorable backup of the target PostgreSQL database and verify restoration in an isolated database. The backup SHALL remain outside version control. The report SHALL record its location, timestamp, checksum, verification outcome, and recovery instructions. Backup or restore verification failure SHALL prevent curation writes. Restoring the working database SHALL require an explicit owner request.

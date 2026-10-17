@@ -103,7 +103,7 @@ bun run start:api
 
 Root lint and typecheck also include the API. Build the API before `start:api`; output is ignored under `apps/api/dist`.
 
-Install and start Docker Desktop (or another Docker engine with Compose v2) before `db:up`. Compose runs only PostgreSQL `17.11-alpine3.23`, binds to `127.0.0.1:5432`, waits for `pg_isready`, and stores data in the `postgres_data` named volume. The example uses database/user `dorob` and development password `dorob_dev`. API startup does not require a reachable database.
+Install and start Docker Desktop (or another Docker engine with Compose v2) before `db:up`. Compose runs the digest-pinned upstream `pgvector/pgvector:0.8.7-pg17-bookworm` image (PostgreSQL 17.11 with pgvector 0.8.7), binds to `127.0.0.1:5432`, waits for `pg_isready`, and stores data in the `postgres_vector_data` named volume. Migration 004 enables the bundled `vector` extension. The [migration and recovery record](docs/pgvector-migration.md) documents the restore-verified move and retained original volume. The example uses database/user `dorob` and development password `dorob_dev`. API startup does not require a reachable database.
 
 If port 5432 is occupied, use `POSTGRES_PORT=5433 bun run db:up` and change the port in `apps/api/.env`'s `DATABASE_URL` to 5433. Compose reads `POSTGRES_PORT` from the shell or root `.env`; it does not read the API `.env`. Keep that override on later Compose commands. Change API `PORT` independently if 3001 is occupied.
 
@@ -361,3 +361,54 @@ remain deferred. No migration publishes the seven existing drafts.
 The completed `add-course-group-admin` change is [archived](openspec/changes/archive/2026-10-16-add-course-group-admin/)
 on October 16, 2026. All 27 tasks are complete, its three behavior contracts are
 synced to main specs, and all 12 main specs pass strict validation.
+
+### Independent local embedding laboratory
+
+`bun run build:lab` then `bun run start:lab` opens a separate Persian experiment
+workbench at [127.0.0.1:3010](http://127.0.0.1:3010). `bun run dev:lab` is the lab's
+own development entry point. Existing app/launcher commands do not start it.
+
+Explicit read-only capture, installed BGE-M3/Ollama generation, immutable cached
+runs, overlapping discovery, comparison, local feedback and evidence export/reimport
+are implemented under `apps/embedding-lab`. Saved results work offline; generation
+requires explicit action. `output/` is ignored and should be backed up separately.
+No production schema, suggestion inbox or membership integration is included.
+See [setup and commands](apps/embedding-lab/README.md), the [real-results walkthrough
+and separate synthetic benchmark](docs/embedding-lab.md), and [validation](docs/validation.md#embedding-laboratory--october-16-2026).
+Focused checks: `bun run lint:lab`, `bun run typecheck:lab`, `bun run test:lab`,
+`bun run build:lab`.
+
+### Catalog embedding integration
+
+The finite HTTP CLI and backend workflow are implemented. Start the local API with
+`./run.sh`, then explicitly run `bun run worker:embeddings generate`, `match`,
+`discover` or `both`. Generation uses the installed local BGE-M3 artifact; compatible
+vectors are reused and `--force` retains a new immutable revision. No startup hook
+runs inference. Migration 004 enables pgvector; 005–006 add application persistence
+and integrity constraints. All six migrations are active in the working database.
+
+Matching suggestions use the existing inbox. Discovery review and explicit promotion
+create an empty unpublished draft and suggestions for every member; memberships and
+publication require separate review. Exact raw scores and provenance are available
+through 36 documented endpoint paths under `/api/v1/manage/embeddings` in `/docs`.
+The percentage displayed by the existing inbox is a compatibility score, not a
+calibrated probability.
+
+See [commands, evidence, cancellation and recovery](docs/catalog-embeddings.md),
+[verified results and capacity](docs/embedding-results.md), and
+[database migration/backup recovery](docs/pgvector-migration.md). The independent lab
+keeps its existing commands and evidence. Checks include `bun run lint`,
+`bun run typecheck`, `bun run test:embedding-engine`, `bun run test:embedding-worker`,
+`bun run lint:embedding-worker`, `bun run typecheck:embedding-worker`,
+`bun run build:api` and `bun run build:embedding-worker`; database acceptance uses
+`API_INTEGRATION=1 bun run test:api` with the documented local DATABASE_URL.
+
+October 17, 2026 — Both embedding changes are archived:
+[`add-local-embedding-suggestions`](openspec/changes/archive/2026-10-17-add-local-embedding-suggestions/)
+(20/20 tasks) and
+[`integrate-catalog-embedding-workflow`](openspec/changes/archive/2026-10-17-integrate-catalog-embedding-workflow/)
+(24/24 tasks). Their seven capability deltas are synced to main specs; all 16
+main specs pass strict validation. No active OpenSpec changes remain.
+The latest verification passed 63 PostgreSQL API tests and 209 additional tests
+in separate processes; the existing frontend Bun build limitation is recorded
+in [validation](docs/validation.md).

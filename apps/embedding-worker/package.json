@@ -1,0 +1,16 @@
+{
+  "name": "@dorob/embedding-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/cli.ts --target bun --outdir dist",
+    "lint": "bun --bun eslint .",
+    "typecheck": "bun --bun tsc -p tsconfig.json",
+    "test": "bun test tests"
+  },
+  "dependencies": {
+    "@dorob/core": "workspace:*",
+    "@dorob/embedding-engine": "workspace:*"
+  }
+}

@@ -536,3 +536,15 @@ icon. Both retain explicit Persian labels and disabled/focus states. Detail sect
 use shared icon headings (blue editing, green approved members, gold suggestions),
 with publication separated from field saving. These shared additions also have
 sample-only examples in the design-system showcase.
+
+
+## Bundled vector extension
+
+The local PostgreSQL 17.11 service now uses the upstream pgvector 0.8.7 image,
+pinned by digest. Additive migration 004 enables `vector` in `public`; migrations
+005–006 add immutable embedding evidence, operations, discovery and integrity
+constraints. Explicit HTTP CLI commands use this storage; no automatic jobs or
+approximate indexes are introduced. See the [workflow guide](catalog-embeddings.md).
+The active volume is
+`postgres_vector_data`. See [migration and recovery](pgvector-migration.md) for
+the restored catalog, retained original Alpine volume and checksum-verified backups.

@@ -1,5 +1,6 @@
 import type { SQL, ReservedSQL } from 'bun';
 import type { SuggestionInput, GroupSuggestion, PairReview, Page, ReviewAction, ReviewOutcome, ReviewTransition, MemberReview } from '@dorob/core';
+import { embeddingApprovalGuard } from './embedding-results';
 import { CatalogError, transaction, type Pagination } from './catalog';
 export interface SuggestionRepository {
   submit(groupId:string,input:SuggestionInput):Promise<{suggestion:GroupSuggestion;created:boolean}>;
@@ -44,15 +45,19 @@ export async function manualMembership(tx:ReservedSQL,g:string,c:string,linked:b
   else await tx`DELETE FROM course_group_courses WHERE group_id=${g}::uuid AND course_id=${c}`;
   await transition(tx,prior,linked?'manual-add':'manual-remove',linked?'approved':'rejected',null,'manual');
 }
-export function createSuggestionRepository(sql:SQL):SuggestionRepository {
-  return {
-    submit(g,input) {return transaction(sql,false,async tx=>{
+export async function submitSuggestion(tx:ReservedSQL,g:string,input:SuggestionInput) {
       await lockPair(tx,g,input.courseId);
-      const inserted=await tx`INSERT INTO group_suggestions(group_id,course_id,system_id,system_name,submission_id,confidence_percent) VALUES (${g}::uuid,${input.courseId},${input.systemId},${input.systemName},${input.submissionId},${input.confidencePercent}) ON CONFLICT (system_id,submission_id) DO NOTHING RETURNING id`;
+      const inserted=await tx`INSERT INTO group_suggestions(group_id,course_id,system_id,system_name,submission_id,confidence_percent) VALUES (${g}::uuid,${input.courseId},${input.systemId},${input.systemName},${input.submissionId},${String(input.confidencePercent)}::numeric) ON CONFLICT (system_id,submission_id) DO NOTHING RETURNING id`;
       const [row]=inserted.length?inserted:await tx`SELECT id FROM group_suggestions WHERE system_id=${input.systemId} AND submission_id=${input.submissionId}`;
       const s=await suggestion(tx,row.id);
       if(s.groupId!==g||(['courseId','systemId','systemName','submissionId','confidencePercent'] as const).some(k=>s[k]!==input[k]))throw new CatalogError(409);
       return {suggestion:s,created:!!inserted.length};
+}
+export function createSuggestionRepository(sql:SQL):SuggestionRepository {
+  return {
+    submit(g,input) {return transaction(sql,false,async tx=>{
+      if(input.systemId.startsWith('dorob-embedding-'))throw new CatalogError(422);
+      return submitSuggestion(tx,g,input);
     });},
     list(g,status,page) {return transaction(sql,true,async tx=>{
       if(!(await tx`SELECT id FROM course_groups WHERE id=${g}::uuid`).length)throw new CatalogError(404);
@@ -69,6 +74,7 @@ export function createSuggestionRepository(sql:SQL):SuggestionRepository {
       }
       if((action==='reopen'&&prior.status!=='rejected')||(action!=='reopen'&&prior.status!=='pending'))throw new CatalogError(409);
       const status=action==='approve'?'approved':action==='reject'?'rejected':'pending';
+      if(action==='approve')await embeddingApprovalGuard(tx,id);
       if(action==='approve')await tx`INSERT INTO course_group_courses(group_id,course_id) VALUES (${s.groupId}::uuid,${s.courseId}) ON CONFLICT DO NOTHING`;
       return transition(tx,prior,action,status,action==='reopen'?null:id,action==='reopen'?null:'suggestion',id);
     });},

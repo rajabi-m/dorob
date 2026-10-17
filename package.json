@@ -28,6 +28,19 @@
     "ingest:maktabkhooneh": "bun run apps/utils/ingest-maktabkhooneh.ts",
     "ingest:sabzlearn": "bun run apps/utils/ingest-sabzlearn.ts",
     "ingest:roocket": "bun run apps/utils/ingest-roocket.ts",
-    "ingest:toplearn": "bun run apps/utils/ingest-toplearn.ts"
+    "ingest:toplearn": "bun run apps/utils/ingest-toplearn.ts",
+    "dev:lab": "bun run --cwd apps/embedding-lab dev",
+    "start:lab": "bun run --cwd apps/embedding-lab start",
+    "build:lab": "bun run --cwd apps/embedding-lab build",
+    "lint:lab": "bun run --cwd apps/embedding-lab lint",
+    "typecheck:lab": "bun run --cwd apps/embedding-lab typecheck",
+    "test:lab": "bun run --cwd apps/embedding-lab test",
+    "lab": "bun run --cwd apps/embedding-lab cli",
+    "worker:embeddings": "bun apps/embedding-worker/src/cli.ts",
+    "build:embedding-worker": "bun run --cwd apps/embedding-worker build",
+    "test:embedding-worker": "bun run --cwd apps/embedding-worker test",
+    "typecheck:embedding-worker": "bun run --cwd apps/embedding-worker typecheck",
+    "lint:embedding-worker": "bun run --cwd apps/embedding-worker lint",
+    "test:embedding-engine": "bun run --cwd packages/embedding-engine test"
   }
 }

@@ -336,3 +336,72 @@ schema and full-row fingerprint comparisons before writes. Definitions, persiste
 IDs, verification and recovery instructions are in the [draft curation report](docs/curation/empty-course-group-drafts.md).
 This is explicit editorial assistance, not runtime AI integration or automatic
 assignment; suggestion production, membership review and publication remain separate.
+
+## Independent embedding experiments — October 16, 2026
+
+`add-local-embedding-suggestions` implements an independent local Bun/React
+laboratory under `apps/embedding-lab`. This is phase 3 evaluation work: existing
+catalog/admin/public behavior, schema and launcher remain separate. It captures
+frozen facts through existing GET routes, uses verified installed local BGE-M3,
+retains versioned file caches and immutable experiments, supports independent
+multi-group matching and overlapping coherent discovery, and provides a Persian
+RTL inspection/comparison/local-feedback/evidence workbench.
+
+The real capture retained 1,495 courses and 19 groups, explicitly excluding the
+owner's test group. Actual local vectors for a biased bounded 51-course/19-group
+sample produced one matching and two discovery runs; useful candidates and clear
+scope failures are preserved together. Two uncertain agent demonstration reviews
+verify persistence, not owner quality approval. A separate synthetic 10,000-vector
+benchmark measured capacity, without claiming real-data quality at that scale.
+See [results, limitations and review walkthrough](docs/embedding-lab.md),
+[commands/storage/recovery](apps/embedding-lab/README.md) and
+[validation](docs/validation.md#embedding-laboratory--october-16-2026).
+
+Owner review, calibrated quality evaluation, alternative representations/models,
+generative judging/naming and scheduling remain separate work. Application
+pgvector storage, score contracts and inbox submission are delivered by the
+separate catalog embedding integration below; membership approval remains editorial. The lab never writes catalog records or publishes groups.
+Local evidence is ignored outside Git and must be backed up separately. No commit,
+branch or push is implied by completing this implementation.
+
+## Catalog embedding integration — October 17, 2026
+
+`integrate-catalog-embedding-workflow` is implemented and verified (24/24 tasks).
+The application-owned engine, additive browser-safe contracts, pgvector persistence,
+local backend APIs and finite HTTP-only CLI support explicit generation/reuse/force,
+matching/discovery, persisted progress, cancellation and frozen-input recovery.
+Matching feeds the unchanged suggestion ledger; reviewed discoveries can explicitly
+create empty unpublished drafts plus all-member suggestions. Individual membership
+approval and publication remain separate editorial decisions.
+
+Migrations 004–006 are active. Full original-data fingerprints still match the
+restore-tested backup: 1,495 courses, 20 groups, 17 memberships and the protected
+group are unchanged. Real inference/review demonstrations used an isolated restored
+database; the separate 10,000-course preferred-policy capacity run passed. The lab
+and frontend source are unchanged. See the [workflow guide](docs/catalog-embeddings.md),
+[results and limitations](docs/embedding-results.md) and [validation](docs/validation.md).
+The earlier missing-clang build attempt was superseded by the pinned bundled image.
+The owner authorized archival and a commit on October 17, 2026. Deployment,
+automatic placement and publication remain deferred.
+
+
+## Bundled pgvector migration — October 17, 2026
+
+At the owner's explicit request, the local database now uses digest-pinned upstream
+`pgvector/pgvector:0.8.7-pg17-bookworm`: PostgreSQL 17.11 with pgvector 0.8.7.
+The custom-build path is retired. Complete backups passed isolated restoration,
+schema comparison and all 19 user-table fingerprints before cutover. A new
+`postgres_vector_data` volume holds the restored active database; the original
+`dorob_postgres_data` volume remains retained. Migration 004 enables the extension;
+all 18 data-table fingerprints remain unchanged and the ledger has one new entry.
+The 1,495 courses, 20 groups, 17 memberships, protected test group and review history
+are preserved. All 55 API tests with PostgreSQL, API lint/types/build, API reads,
+vector(1024)/cosine and normal restart checks pass. No inference or publication
+was introduced. See [migration, backup and recovery](docs/pgvector-migration.md).
+
+October 17, 2026 — Both embedding changes are archived:
+[`add-local-embedding-suggestions`](openspec/changes/archive/2026-10-17-add-local-embedding-suggestions/)
+(20/20 tasks) and
+[`integrate-catalog-embedding-workflow`](openspec/changes/archive/2026-10-17-integrate-catalog-embedding-workflow/)
+(24/24 tasks). Their seven capability deltas are synced to main specs; all 16
+main specs pass strict validation. No active OpenSpec changes remain.

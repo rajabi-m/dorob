@@ -11,7 +11,7 @@ describe.skipIf(process.env.API_INTEGRATION!=='1')('durable group suggestions',(
    await migrate(sql,await readMigrations());const c=createCatalogRepository(sql),r=createSuggestionRepository(sql);
    const course=(await c.registerCourse({providerId:'test',providerCourseId:'Python / یک',title:'پایتون',sourceUrl:'https://example.com'})).course;
    const g=await c.createGroup({slug:'suggestions',title:'پایتون',description:'شرح',categoryId:'code',targetLevel:null,isPublished:false});
-   const body={courseId:course.id,systemId:'one',systemName:'نمونه',submissionId:'first',confidencePercent:87.5};
+   const body={courseId:course.id,systemId:'one',systemName:'نمونه',submissionId:'first',confidencePercent:75.63581726395481};
    const concurrent=await Promise.all([r.submit(g.id,body),r.submit(g.id,body)]);expect(concurrent.filter(x=>x.created)).toHaveLength(1);const a=concurrent[0];expect((await r.submit(g.id,body)).suggestion.id).toBe(a.suggestion.id);
    await expect(r.submit(g.id,{...body,confidencePercent:90})).rejects.toMatchObject({status:409});
    const b=await r.submit(g.id,{...body,systemId:'two',confidencePercent:94});

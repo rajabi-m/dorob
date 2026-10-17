@@ -42,3 +42,4 @@ tmp/
 temp/
 apps/utils/output/
 apps/api/storage/
+apps/embedding-lab/output/
