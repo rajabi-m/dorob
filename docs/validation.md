@@ -725,3 +725,147 @@ The frontend production build still fails collecting `/_not-found` page data wit
 the previously documented Bun CommonJS wrapper error after compilation/type checks.
 No application source changed during this archive/commit review. Generated output,
 local evidence and database backups remain ignored; no push is authorized.
+# Discovered group review — October 17, 2026
+
+- Recovery contracts: `bun test packages/core/tests/embeddings.test.ts`: 8 pass,
+  57 assertions. Isolated PostgreSQL acceptance: 2 pass, 26 assertions.
+- Transport and existing admin transport: 5 pass, 90 assertions. Shared discovery
+  components: 2 pass, 15 assertions. API type checking passes.
+- `/design-system` inspected in the in-app Chromium browser at 1280×900 and
+  360×800. Long Persian titles, Latin provider/IDs, missing fields, distinct
+  textual statuses, Persian decimal scores and a Jalali date render correctly.
+  At 360px the document width is exactly 360px (no horizontal overflow).
+  Keyboard Tab from approval reaches dismissal with a visible 3px primary outline.
+  The reduced-motion media rule disables transitions/animation; no ambient motion
+  is introduced. This verifies the rule, not OS-level motion preference switching.
+  Local screenshot evidence: `/private/tmp/dorob-discovery-review/specimens-mobile.png`
+  and `/private/tmp/dorob-discovery-review/specimens-desktop.png` (not committed).
+- RTL detector: discovery components, showcase and CSS each pass with zero findings.
+  Final panel verification and full application checks are recorded below.
+
+Final acceptance for discovered-group review:
+
+| Check | Result |
+| --- | --- |
+| `bun run lint` | Pass: web, utils and API; no warnings |
+| `bun run typecheck` | Pass: web, utils and API |
+| `bun apps/web/node_modules/typescript/bin/tsc -p apps/web/tsconfig.integration.json` | Pass: isolated browser/API fixture, ES2023 server scope |
+| `bun test packages/core/tests apps/web/tests` | 47 pass, 0 fail, 483 assertions |
+| `API_INTEGRATION=1 bun test apps/web/acceptance/discovery-review.test.tsx` | 1 pass, 0 fail, 21 assertions |
+| `API_INTEGRATION=1 bun run test:api` | 63 pass, 0 fail, 685 assertions |
+| `bun run build:api` | Pass; both API and raster-worker entry points bundled |
+| `bun run build` | Compilation and TypeScript pass; production page-data collection fails with the existing Bun CommonJS wrapper error |
+| `openspec validate add-discovered-group-review --strict` | Pass |
+
+The current web build error is `Expected CommonJS module to have a function
+wrapper` while loading `next/dist/compiled/next-server/app-page-turbo.runtime.prod.js`;
+the final attempt reports failure collecting page data for
+`/api/admin/embeddings/configurations/[id]`. Production output is therefore not
+reported as successful. Earlier test type errors were corrected; they are not the
+remaining build failure. The existing Happy DOM tests for public-card `fill`
+images emit CSS-size warnings in their layout-free environment; all assertions pass.
+
+Database acceptance uses disposable, uniquely named schemas and drops them in
+`finally`. It exercises real repositories/Elysia through the same-origin transport
+and mounted browser components: saved results, approval without group/membership,
+one draft despite a lost response, reload readback, explicit delivery, cumulative
+counts and the group-management link. Membership remains zero and publication false;
+the operation count stays at the single fixture operation. No real editorial
+records or installed-model inference are touched. Existing inbox/provenance and
+migration-preservation regressions pass. PostgreSQL and local-socket tests required
+execution outside the network sandbox; no dependency installation was needed.
+
+Final visual acceptance: `/admin/discoveries` and `/design-system` were reviewed at
+1280×900 and 360×800 using Chromium. The real panel's four selected course images
+loaded through `/api/thumbnails/:id`, with no source URL forwarding. Queue covers,
+compact course metadata and Persian provider names replace repeated technical text.
+Optional notes, experimental scores, readable pairwise evidence, comparisons,
+overlap, history and technical IDs remain inspectable through disclosures. Both
+mobile pages have document width exactly 360px. Browser back/forward preserves the
+candidate URL; mobile return restores focus to the selected queue link. Tab reaches
+the decision controls with a visible 3px primary outline. Exact Persian decimal
+samples `۰٫۸۲۳۴۵` / `۰٫۷۰۱۲۳`, Jalali dates and isolated Latin identifiers were
+verified. Reduced-motion styling disables animation/transitions (OS preference
+switching was not exercised). Shared thumbnail/compact/full/status/busy/disabled/
+missing/evidence and group-field variants have production-export specimens.
+
+Screenshot evidence (local, not committed):
+`/private/tmp/dorob-discovery-review/panel-desktop.png`,
+`/private/tmp/dorob-discovery-review/panel-mobile.png`,
+`/private/tmp/dorob-discovery-review/specimens-desktop.png`,
+`/private/tmp/dorob-discovery-review/specimens-mobile.png`.
+The final RTL detector scans every touched web source file (31 files), with zero
+errors or warnings. Local administration remains unauthenticated and loopback-only;
+no browser generation, automatic membership or publication is introduced.
+
+### Run-wide discovery sorting extension — October 17, 2026
+
+The completed change has 23 tasks, including shared allowlisted `id`, `similarity`
+and `course-count` contracts, SQL ordering before pagination, browser URL state,
+and the shared `DiscoverySortControl` specimen. Existing omitted-sort ID order
+is preserved; highest mean and most-course choices use descending numeric values
+with ascending candidate ID ties. Retained/suppressed and run filters apply first.
+Unknown/repeated sort values are rejected from the original query string, including
+at the API boundary (the framework otherwise normalizes duplicate query keys).
+No migration, inference, discovery-algorithm or editorial-record changes occur.
+
+Final extension checks:
+
+- `bun run lint`: pass for web, utils and API, no warnings.
+- `bun run typecheck`: pass for web, utils and API.
+- Separate `tsconfig.integration.json` type checking: pass.
+- `bun test packages/core/tests apps/web/tests`: 50 pass, 0 fail, 519 assertions.
+- `API_INTEGRATION=1 bun run test:api`: 64 pass, 0 fail, 714 assertions.
+- `API_INTEGRATION=1 bun test apps/web/acceptance/discovery-review.test.tsx`:
+  1 pass, 0 fail, 21 assertions; existing promotion/recovery flow remains valid.
+- `bun run build:api`: pass; both entry points bundled.
+- `bun run build`: compilation and TypeScript pass; existing Bun CommonJS-wrapper
+  failure during page-data collection remains, reported this time for
+  `/api/admin/courses/[courseId]`. No successful production output is claimed.
+- Strict OpenSpec validation and whitespace checks pass.
+- RTL detector: all five touched web implementation files pass with zero findings.
+
+Isolated database fixtures cover both sorts across multiple pages, stable score/count
+ties, default compatibility, another run, retained/suppressed separation, malformed
+queries and unchanged records. Frontend tests cover forwarding/validation, first-page
+and candidate reset on sorting, candidate-link persistence, type/history/reload
+state and isolated no-network showcase interactions. New sorting uses a fixed SQL
+expression allowlist, preserving response guards, no-store and existing boundaries.
+
+Chromium acceptance at 1280×900 and 360×800 verifies both options, 13-course
+collections at the front of course-count order, selection reset, reload, browser
+back/forward and keyboard focus. Tab from the select reaches the queue with a
+visible 3px primary outline. The 360px document remains exactly 360px wide in both
+the panel and showcase. The isolated specimen updates its local order caption.
+Only saved-result browsing was performed against real records; mutations remain
+confined to disposable test schemas. Local screenshot evidence (not committed):
+`/private/tmp/dorob-discovery-review/sorting-desktop.png`,
+`/private/tmp/dorob-discovery-review/sorting-mobile.png`,
+`/private/tmp/dorob-discovery-review/sorting-showcase-mobile.png`.
+
+
+### Discovery review archive and commit checks — October 18, 2026
+
+`add-discovered-group-review` is archived under
+`openspec/changes/archive/2026-10-18-add-discovered-group-review/` with all 23 tasks
+complete. All ten added requirements were verified against the administration and
+discovery main specs, preserving existing requirements and Purpose sections.
+Strict validation passed for all 16 main specs, the selected change before its
+move, and all 13 archived changes afterward.
+
+Pre-commit checks passed: root lint and type checking, the separate web integration
+type check, 50 web/core tests (519 assertions), 64 API tests with PostgreSQL
+integration (714 assertions), one isolated browser/API acceptance test (21
+assertions), and the API production build. Local-socket and PostgreSQL tests passed
+outside the network sandbox; their disposable schemas were cleaned up. The initial
+sandboxed web/core run could not bind its local test server.
+
+The frontend production build again compiled and passed TypeScript, then failed
+collecting page data for `/api/admin/embeddings/discoveries/[id]/promotion` with
+the existing Bun error `Expected CommonJS module to have a function wrapper`.
+A preliminary attempt overlapped route-type generation and encountered a generated
+`.next/types` directory cleanup error; the sequential retry reached the documented
+Bun failure above. No successful frontend production build is claimed. Existing
+Happy DOM image-layout warnings persist; all assertions pass. Prior desktop/mobile,
+keyboard and mixed-direction visual acceptance remains recorded above; this
+archive/commit step does not change UI behavior.

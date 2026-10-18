@@ -7,8 +7,8 @@ export async function adminRequest<T>(path:string,guard:(v:unknown)=>v is T,meth
  if(response.status===204)return null as T;
  const value:unknown=await response.json();if(!guard(value))throw new BrowserAdminError(503,'پاسخ سرویس معتبر نیست؛ دوباره تلاش کنید.');return value;
 }
-export function useAdminRead<T>(path:string,guard:(v:unknown)=>v is T,revision=0){
- const [result,setResult]=useState<{key:string;path:string;data?:T;error?:string}>();const key=path+'#'+revision;
- useEffect(()=>{const controller=new AbortController();let active=true;adminRequest(path,guard,'GET',undefined,controller.signal).then(data=>{if(active)setResult({key,path,data});}).catch(e=>{if(active)setResult(previous=>({key,path,data:previous?.path===path?previous.data:undefined,error:e instanceof Error?e.message:'دریافت اطلاعات ممکن نشد.'}));});return()=>{active=false;controller.abort();};},[path,guard,key]);
- return result?.key===key?result:result?.path===path?{...result,refreshing:true}:undefined;
+export function useAdminRead<T>(path:string,guard:(v:unknown)=>v is T,revision=0,enabled=true){
+ const [result,setResult]=useState<{key:string;path:string;data?:T;error?:string;refreshing?:boolean}>();const key=path+'#'+revision;
+ useEffect(()=>{if(!enabled)return;const controller=new AbortController();let active=true;adminRequest(path,guard,'GET',undefined,controller.signal).then(data=>{if(active)setResult({key,path,data});}).catch(e=>{if(active)setResult(previous=>({key,path,data:previous?.path===path?previous.data:undefined,error:e instanceof Error?e.message:'دریافت اطلاعات ممکن نشد.'}));});return()=>{active=false;controller.abort();};},[path,guard,key,enabled]);
+ return !enabled?undefined:result?.key===key?result:result?.path===path?{...result,refreshing:true}:undefined;
 }

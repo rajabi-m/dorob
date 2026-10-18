@@ -1,7 +1,7 @@
 import type {TSchema} from '@sinclair/typebox';
 import {Elysia,t} from 'elysia';
 import type {SQL} from 'bun';
-import {isEmbeddingFence,isEmbeddingInput,categoryRegistry,targetLevels,type EmbeddingFence} from '@dorob/core';
+import {isEmbeddingFence,isEmbeddingInput,discoverySortOrders,parseDiscoveryCandidateQuery,categoryRegistry,targetLevels,type EmbeddingFence} from '@dorob/core';
 import {defaults,hash,type Pair,type Settings} from '@dorob/embedding-engine';
 import {CatalogError} from './catalog';
 import {createEmbeddingRepository} from './embeddings';
@@ -60,11 +60,12 @@ export function embeddingRoutes(sql?:SQL) {
  for(const action of ['reuse','finalize','delivery'] as const)app.post(root+`/results/${action}`,async({body})=>Response.json(await results()[action](body.fence)),{body:object({fence}),detail:meta(action==='finalize'?'Finalize counts and immutable delivery plans':'Deliver up to 20 matching suggestions atomically with immutable evidence')});
  app.post(root+'/runs/:id/accept-partial',({params})=>results().acceptPartial(params.id),{params,body:object({}),detail:meta('Explicitly accept partial run before membership approval')});
  app.get(root+'/suggestions/:id/evidence',({params})=>results().evidence(params.id),{params,detail:meta('Exact score kind, configuration, frozen revisions and educational currentness')});
- app.get(root+'/runs/:id/discoveries',({params,query})=>results().candidates(params.id,paging(query),query.suppressed??false),{params,query:object({...pagination,suppressed:t.Optional(t.BooleanString())}),detail:meta('Page retained or suppressed candidates; no inference')});
+ app.get(root+'/runs/:id/discoveries',({params,request})=>{const q=(()=>{try{return parseDiscoveryCandidateQuery(new URL(request.url).searchParams);}catch{throw new CatalogError(422);}})();return results().candidates(params.id,{limit:q.limit,offset:q.offset},q.suppressed,q.sort);},{params,query:object({...pagination,suppressed:t.Optional(t.BooleanString()),sort:t.Optional(t.Union(discoverySortOrders.map(s=>t.Literal(s))))}),detail:meta('Page retained or suppressed candidates; optional sort=id|similarity|course-count before pagination, ID ascending ties; no inference')});
  app.get(root+'/discoveries/:id',({params})=>results().candidate(params.id),{params,detail:meta('Read frozen members, pairwise scores, representatives and reconciliation')});
  app.get(root+'/discoveries/:id/evidence',({params})=>results().candidateEvidence(params.id),{params,detail:meta('Read exact pairwise, seed and reconciliation evidence for a candidate')});
  app.get(root+'/discoveries/:id/overlap',({params,query})=>results().overlap(params.id,paging(query)),{params,query:object(pagination),detail:meta('Page shared-member candidate links and exact Jaccard overlap')});
  app.get(root+'/discoveries/:id/history',({params,query})=>results().history(params.id,paging(query)),{params,query:object(pagination),detail:meta('Page immutable discovery annotation/review history')});
+ app.get(root+'/discoveries/:id/promotion',({params})=>results().promotion(params.id),{params,detail:{...meta('Read original draft identity and cumulative suggestion delivery counts; no mutation or inference'),description:'Returns {promotion:null} for a known unpromoted candidate, or {promotion:{id,groupId,planned,delivered,pending,complete}}. planned = delivered + pending; complete iff pending is zero. Unknown candidate: 404. No migration or mutation.'}});
  app.post(root+'/discoveries/:id/review',({params,body})=>results().review(params.id,body),{params,body:object({requestId:uuid,expectedVersion:t.Integer({minimum:0,maximum:2147483646}),status:t.Union((['pending','approved','dismissed'] as const).map(x=>t.Literal(x))),title:t.Union([t.Null(),t.String({maxLength:300})]),note:t.Union([t.Null(),t.String({maxLength:2000})]),acceptPartial:t.Boolean()}),detail:meta('Versioned candidate approval/dismissal; creates no group or membership')});
  app.post(root+'/discoveries/:id/promote',({params,body})=>results().promote(params.id,body),{params,body:object({requestId:uuid,expectedVersion:t.Integer({minimum:0,maximum:2147483646}),group}),detail:meta('Explicitly create one empty unpublished draft and all-member suggestion plan')});
  app.post(root+'/promotions/:id/delivery',({params})=>results().promotionDelivery(params.id),{params,body:object({}),detail:meta('Explicit promotion delivery/retry; every member uses frozen within-set mean, no new inference')});

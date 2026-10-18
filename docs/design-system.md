@@ -11,3 +11,30 @@ Search focus outlines the complete field. Dialogs are centered and scrollable; E
 The document root uses `lang="fa"` and `dir="rtl"`; styles use logical properties and explicit direction for Latin islands. Prices use Persian digits and distinguish free, paid, discounted, and unknown amounts. Original discounted prices are muted and struck through above the current amount. Fonts and supplied skills retain their license/attribution.
 
 Acceptance covers the implemented showcase. Additional core-component coverage, shared UI-package extraction, and complete screen-reader/all-breakpoint review remain follow-ups. Current automated results and historical browser-review limits are in [validation](validation.md).
+# Discovery review specimens
+
+`/design-system` includes isolated saved-discovery specimens from the production
+`DiscoveryCollectionPreview`, `DiscoveryEvidenceSummary`, `DiscoveryDecisionBar`
+and `DiscoveryBadge` exports. They use existing semantic tokens and a course-stack
+composition without invented covers. Pending/approved/dismissed, selected, busy,
+disabled, stale, partial, suppressed and missing-course states are visible, along
+with shared loading/empty/error feedback. Interactions use local state only.
+Experimental similarity uses Persian decimals, independently of inbox confidence.
+Latin identifiers are isolated and the sample date is Jalali.
+
+`GroupFields` is shared by the existing group create/edit form and discovery
+promotion. Its explicit-category variant is also rendered in the isolated
+discovery specimens; submission there only validates local fields.
+
+Compact queue previews use retained thumbnail stacks; `DiscoveryThumbnail` has
+loaded, missing and image-error fallback behavior. The showcase uses a labelled
+saved-snapshot image and a neutral missing-image example, without management reads.
+Course details put images/title/provider/duration/instructor first. Optional notes,
+scores and provenance remain available through keyboard-accessible disclosures.
+Both ordinary and explicit-category `GroupFields` variants have labelled specimens.
+
+`DiscoverySortControl` is shared by the review desk and isolated showcase, with
+Persian choices for default order, highest similarity and most courses. Its label
+uses an explicit accessible association. The showcase updates a local selected-order
+caption without network requests. The control wraps with existing toolbar fields
+and stacks at narrow mobile widths.

@@ -380,6 +380,44 @@ Focused checks: `bun run lint:lab`, `bun run typecheck:lab`, `bun run test:lab`,
 
 ### Catalog embedding integration
 
+Saved discovery results are available at
+[پیشنهادهای گروه‌بندی](http://127.0.0.1:3000/admin/discoveries), alongside group
+administration. Use the same local API/database setup and server-only
+`DOROB_API_URL`. Run selection, candidate selection and pagination survive reloads
+and browser back/forward. Retained and suppressed collections are browsed separately.
+Current course inspection is labelled separately from frozen run evidence;
+similarity scores are experimental, not calibrated confidence or course quality.
+No completed runs/collections produces an explicit empty state. Execute discovery
+separately with `bun run worker:embeddings discover`; opening the page never
+starts inference or generates group titles.
+
+Use «مرتب‌سازی مجموعه‌ها» to show highest experimental mean similarity or most
+courses first. Ordering covers the entire selected run and retained/suppressed
+set before pagination. Equal values use stable candidate-ID ties. The URL retains
+the order across reloads and navigation; changing it clears selection and returns
+to page one. The default preserves the original ordering.
+
+The review desk saves candidate approval/dismissal/return to pending using observed
+versions and stable request IDs. Optional titles/notes are editorial annotations.
+Approval creates no group or membership. A separate form creates one empty,
+unpublished draft for a current, retained, approved candidate; partial evidence
+requires an explicitly saved candidate-scoped acknowledgement. Promotion requests
+are saved in session storage before sending; uncertain outcomes permit identical
+replay only. Persisted promotion lookup recovers existing drafts even in another
+session. Delivery and retry are explicit actions with cumulative counts, then
+`/admin/groups/:id` handles membership approval and publication separately.
+Browser storage must be available for safe new promotion; backend recovery reads
+remain available if storage is unavailable. Administration remains trusted,
+loopback-only and unauthenticated.
+
+The course-focused desk includes retained thumbnails and compact summaries, with
+notes and detailed evidence behind disclosures. Full isolated browser-to-API
+acceptance (in addition to ordinary web/core tests) can be run with
+`API_INTEGRATION=1 bun test apps/web/acceptance/discovery-review.test.tsx`.
+Its separate server-capable test type check is
+`bun apps/web/node_modules/typescript/bin/tsc -p apps/web/tsconfig.integration.json`;
+server fixture imports stay outside the frontend's normal TypeScript scope.
+
 The finite HTTP CLI and backend workflow are implemented. Start the local API with
 `./run.sh`, then explicitly run `bun run worker:embeddings generate`, `match`,
 `discover` or `both`. Generation uses the installed local BGE-M3 artifact; compatible
@@ -390,7 +428,7 @@ and integrity constraints. All six migrations are active in the working database
 Matching suggestions use the existing inbox. Discovery review and explicit promotion
 create an empty unpublished draft and suggestions for every member; memberships and
 publication require separate review. Exact raw scores and provenance are available
-through 36 documented endpoint paths under `/api/v1/manage/embeddings` in `/docs`.
+through 37 documented endpoint paths under `/api/v1/manage/embeddings` in `/docs`.
 The percentage displayed by the existing inbox is a compatibility score, not a
 calibrated probability.
 
@@ -408,7 +446,12 @@ October 17, 2026 — Both embedding changes are archived:
 (20/20 tasks) and
 [`integrate-catalog-embedding-workflow`](openspec/changes/archive/2026-10-17-integrate-catalog-embedding-workflow/)
 (24/24 tasks). Their seven capability deltas are synced to main specs; all 16
-main specs pass strict validation. No active OpenSpec changes remain.
+main specs pass strict validation. The subsequent `add-discovered-group-review`
+change adds the browser review desk, recovery read and run-wide sorting. It is
+[archived](openspec/changes/archive/2026-10-18-add-discovered-group-review/) on
+October 18, 2026 with all 23 tasks complete. Its ten added requirements are synced
+to the administration and discovery main specs; all 16 main specs pass strict
+validation.
 The latest verification passed 63 PostgreSQL API tests and 209 additional tests
 in separate processes; the existing frontend Bun build limitation is recorded
 in [validation](docs/validation.md).

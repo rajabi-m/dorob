@@ -1,8 +1,17 @@
 /** Additive, browser-safe wire contracts. No inference, SQL or filesystem imports. */
-import { isUuid } from './group-admin';
+import { isUuid,parseAdminQuery } from './group-admin';
 import { validCourseId } from './public-courses';
 
 export const embeddingProfile = 'educational-v1:utf8-65536:chunks-4096:byte-pool-l2:nfc-fa' as const;
+export const discoverySortOrders=['id','similarity','course-count'] as const;
+export type DiscoverySort=typeof discoverySortOrders[number];
+export const isDiscoverySort=(v:unknown):v is DiscoverySort=>discoverySortOrders.includes(v as DiscoverySort);
+export function parseDiscoveryCandidateQuery(params:URLSearchParams){
+  const sort=params.get('sort')??'id',suppressed=params.get('suppressed')??'false';
+  if(params.getAll('sort').length>1||params.getAll('suppressed').length>1||!isDiscoverySort(sort)||!['true','false'].includes(suppressed))throw new Error('Invalid discovery query');
+  const page=new URLSearchParams(params);page.delete('sort');page.delete('suppressed');
+  return {...parseAdminQuery(page),sort,suppressed:suppressed==='true'};
+}
 export interface EmbeddingConfiguration {
   id: string; model: string; digest: string; dimensions: 1024; profile: typeof embeddingProfile;
 }
@@ -100,3 +109,60 @@ export function isEmbeddingDiscovery(v: unknown): v is EmbeddingDiscovery {
 export function isEmbeddingFence(v: unknown): v is EmbeddingFence {
   return record(v) && exact(v,['operationId','attemptId','token']) && isUuid(v.operationId) && isUuid(v.attemptId) && isUuid(v.token);
 }
+
+export interface DiscoveryPromotion { id:string; groupId:string; planned:number; delivered:number; pending:number; complete:boolean }
+export interface DiscoveryPromotionLookup { promotion:DiscoveryPromotion|null }
+export interface EmbeddingRunSummary {
+  id:string; operationId:string; manifestId:string; configurationId:string; settings:Record<string,number>;
+  partial:boolean; complete:boolean; pairCount:number; candidateCount:number; createdAt:string;
+}
+/** The persisted run-detail endpoint intentionally uses SQL column names. */
+export interface EmbeddingRunDetail {
+  id:string; operation_id:string; manifest_id:string; configuration_id:string; computation_key:string;
+  settings:Record<string,number>; revision_ids:string[]; partial:boolean; complete:boolean;
+  expected_pairs:number; expected_sets:number; created_at:string;
+}
+export interface DiscoveryEvidence {
+  runId:string; manifestId:string; configurationId:string;
+  body:{ id:string; members:string[]; seeds:string[]; medoid:string; mean:number; minimum:number; suppressedBy:string|null;
+    status:'novel'|'partial'|'covered'|'ambiguous';
+    pairwise:{a:string;b:string;score:number}[];
+    reconciliation:(EmbeddingDiscovery['reconciliation'][number]&{fraction:number})[] };
+}
+export interface DiscoveryReviewInput { requestId:string; expectedVersion:number; status:EmbeddingDiscovery['review']['status']; title:string|null; note:string|null; acceptPartial:boolean }
+export interface DiscoveryReviewResult extends DiscoveryReviewInput { version:number }
+export interface DiscoveryHistory { body:DiscoveryReviewResult; createdAt:string }
+export interface DiscoveryOverlap { candidateId:string; jaccard:number }
+export interface EmbeddingFrozenInput { input:EmbeddingInput; sourceSnapshotId:string|null; exclusion:string|null }
+const settings=(v:unknown):v is Record<string,number>=>record(v)&&Object.keys(v).length>0&&Object.keys(v).length<=30&&Object.values(v).every(n=>typeof n==='number'&&Number.isFinite(n));
+export function isDiscoveryPromotionLookup(v:unknown):v is DiscoveryPromotionLookup {
+  if(!record(v)||!exact(v,['promotion']))return false;
+  const p=v.promotion;return p===null||record(p)&&exact(p,['id','groupId','planned','delivered','pending','complete'])&&isUuid(p.id)&&isUuid(p.groupId)&&count(p.planned)&&count(p.delivered)&&count(p.pending)&&p.planned===Number(p.delivered)+Number(p.pending)&&p.complete===(p.pending===0);
+}
+export function isEmbeddingRunSummary(v:unknown):v is EmbeddingRunSummary {
+  return record(v)&&exact(v,['id','operationId','manifestId','configurationId','settings','partial','complete','pairCount','candidateCount','createdAt'])&&[v.id,v.operationId,v.manifestId].every(isUuid)&&hash(v.configurationId)&&settings(v.settings)&&typeof v.partial==='boolean'&&typeof v.complete==='boolean'&&count(v.pairCount)&&count(v.candidateCount)&&date(v.createdAt);
+}
+export function isEmbeddingRunDetail(v:unknown):v is EmbeddingRunDetail {
+  return record(v)&&exact(v,['id','operation_id','manifest_id','configuration_id','computation_key','settings','revision_ids','partial','complete','expected_pairs','expected_sets','created_at'])&&[v.id,v.operation_id,v.manifest_id].every(isUuid)&&hash(v.configuration_id)&&hash(v.computation_key)&&settings(v.settings)&&ids(v.revision_ids,10100,isUuid)&&typeof v.partial==='boolean'&&typeof v.complete==='boolean'&&count(v.expected_pairs)&&count(v.expected_sets)&&date(v.created_at);
+}
+export function isDiscoveryEvidence(v:unknown):v is DiscoveryEvidence {
+  if(!record(v)||!exact(v,['runId','manifestId','configurationId','body'])||![v.runId,v.manifestId].every(isUuid)||!hash(v.configurationId)||!record(v.body))return false;
+  const b=v.body;
+  if(!exact(b,['id','members','seeds','medoid','mean','minimum','suppressedBy','status','pairwise','reconciliation'])||!hash(b.id)||!ids(b.members,13,courseId)||b.members.length<2||!ids(b.seeds,13,courseId)||!b.seeds.every(s=>(b.members as string[]).includes(s))||!(b.suppressedBy===null||hash(b.suppressedBy))||!['novel','partial','covered','ambiguous'].includes(String(b.status)))return false;
+  // Reuse the strict discovery member/score/reconciliation contract, omitting only wire-only fractions.
+  if(!Array.isArray(b.reconciliation)||!b.reconciliation.every(r=>record(r)&&exact(r,['groupId','centroidScore','members','fraction'])&&score(r.fraction)&&Number(r.fraction)>=0))return false;
+  const members=b.members;
+  const mapped={id:v.runId,runId:v.runId,members,revisionIds:members.map((_,i)=>`00000000-0000-4000-8000-${String(i).padStart(12,'0')}`),representative:b.medoid,mean:b.mean,minimum:b.minimum,suppressedBy:null,overlapCount:0,current:true,partial:false,reconciliation:b.reconciliation.map(r=>({groupId:r.groupId,centroidScore:r.centroidScore,members:r.members})),review:{status:'pending',version:0,title:null,note:null,partialAccepted:false}};
+  if(!isEmbeddingDiscovery(mapped)||!Array.isArray(b.pairwise)||b.pairwise.length!==members.length*(members.length-1)/2)return false;
+  const seen=new Set<string>();return b.pairwise.every(p=>{if(!record(p)||!exact(p,['a','b','score'])||!members.includes(String(p.a))||!members.includes(String(p.b))||String(p.a)>=String(p.b)||!score(p.score))return false;const key=JSON.stringify([p.a,p.b]);if(seen.has(key))return false;seen.add(key);return true;});
+}
+export function isDiscoveryReviewInput(v:unknown):v is DiscoveryReviewInput {
+  return record(v)&&exact(v,['requestId','expectedVersion','status','title','note','acceptPartial'])&&isUuid(v.requestId)&&count(v.expectedVersion)&&Number(v.expectedVersion)<2147483647&&['pending','approved','dismissed'].includes(String(v.status))&&(v.title===null||text(v.title,300))&&(v.note===null||text(v.note,2000))&&typeof v.acceptPartial==='boolean';
+}
+export function isDiscoveryReviewResult(v:unknown):v is DiscoveryReviewResult {
+  if(!record(v)||!exact(v,['requestId','expectedVersion','status','title','note','acceptPartial','version']))return false;
+  const {version,...body}=v;return isDiscoveryReviewInput(body)&&count(version)&&version===Number(body.expectedVersion)+1;
+}
+export function isDiscoveryHistory(v:unknown):v is DiscoveryHistory {return record(v)&&exact(v,['body','createdAt'])&&isDiscoveryReviewResult(v.body)&&date(v.createdAt);}
+export function isDiscoveryOverlap(v:unknown):v is DiscoveryOverlap {return record(v)&&exact(v,['candidateId','jaccard'])&&isUuid(v.candidateId)&&score(v.jaccard)&&v.jaccard>0;}
+export function isEmbeddingFrozenInput(v:unknown):v is EmbeddingFrozenInput {return record(v)&&exact(v,['input','sourceSnapshotId','exclusion'])&&isEmbeddingInput(v.input)&&(v.sourceSnapshotId===null||isUuid(v.sourceSnapshotId))&&[null,'protected','missing-observation','sparse'].includes(v.exclusion as never);}

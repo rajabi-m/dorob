@@ -165,6 +165,68 @@ approval replays retain their recorded result. No existing membership is retract
 
 ## Discovery review and promotion
 
+Candidate listing accepts `sort=id|similarity|course-count`, for example
+`GET /api/v1/manage/embeddings/runs/:id/discoveries?sort=similarity&limit=20&offset=0`.
+Omitting sort preserves candidate ID ascending. `similarity` orders frozen numeric
+mean pairwise similarity descending; `course-count` orders frozen member-array
+length descending. Both use candidate ID ascending for ties. The run and
+retained/suppressed filter apply before ordering, then pagination applies. Unknown
+or repeated sort parameters return 422. Sorting neither changes discovery's
+generation/suppression order nor alters editorial decisions or invokes inference.
+The browser's «مرتب‌سازی مجموعه‌ها» select preserves the chosen order in URL,
+candidate/page links and history. Changing order clears page/candidate selection;
+run/type changes keep it. No migration or additional model work is required.
+
+Open `/admin/discoveries` in the local web app for saved-run review. Pagination
+covers runs and retained/suppressed candidates separately. Run/page/candidate are
+addressable in the URL, including direct links and browser history navigation.
+Incomplete runs cannot be edited; empty results direct the editor to separately
+invoke `bun run worker:embeddings discover`. The browser never starts inference.
+Course identities remain visible when inspection fails, with per-member retry.
+Current retained course facts are distinct from frozen manifest/revision/input
+evidence. Nearby-group coverage is provisional; pairwise scores are experimental
+similarity, not course quality or calibrated certainty. Titles are editorial input.
+
+The review desk uses ready retained thumbnails through the existing web image
+handler, with neutral placeholders for missing/failed images. Management summaries
+include only a validated optional `thumbnailAssetId`, never provider image URLs or
+storage paths. Course cards emphasize title, provider, duration and instructor;
+supporting comparisons, history, notes and technical evidence are disclosed on
+demand. No new backend image API or source collection is needed.
+
+Candidate approval/dismissal/return-to-pending saves only a versioned decision.
+Conflicts refresh saved state while preserving entered title/note; an uncertain
+decision can retry its unchanged request ID/body. Partial acceptance is an explicit
+unchecked acknowledgement scoped to this candidate, saved with the review.
+Historical annotations remain possible but stale/suppressed candidates cannot
+produce drafts. Changed annotations must be saved explicitly before promotion.
+
+The separate draft form requires Persian title, Latin slug, educational scope,
+category and optional level. It stores the exact request ID/body in session
+storage before sending. Until resolved, only identical replay is available.
+Opening the candidate reads persisted promotion/delivery state: success means
+an empty unpublished draft, with planned suggestions still awaiting explicit
+delivery. Delivery failure does not erase draft success. Explicit delivery/retry
+refreshes cumulative counts and links to `/admin/groups/:id`; member approval and
+publication remain separate. No real editorial data is required to install the
+page. It needs available browser session storage for safe new promotion and the
+same trusted loopback setup as existing admin pages; no authentication is added.
+
+Recovery clients may read `GET /api/v1/manage/embeddings/discoveries/:id/promotion`.
+A known unpromoted candidate returns `{ "promotion": null }`; an unknown UUID
+returns 404. A promoted candidate returns the original identities and cumulative
+persisted delivery counts, for example:
+
+```json
+{"promotion":{"id":"11111111-1111-4111-8111-111111111111","groupId":"22222222-2222-4222-8222-222222222222","planned":3,"delivered":1,"pending":2,"complete":false}}
+```
+
+Here `planned = delivered + pending`, and `complete` is true exactly when pending
+is zero. Counts describe delivery, independently of later membership decisions.
+The repeatable-read, read-only transaction uses existing promotion/delivery tables;
+no migration, request ID, draft creation, delivery or inference is needed for reads.
+Reloading or another session can therefore recover the same draft safely.
+
 ```sh
 bun run worker:embeddings inspect CANDIDATE_UUID
 bun run worker:embeddings review CANDIDATE_UUID --version 0 --decision approved
@@ -209,6 +271,7 @@ responses. Swagger documents bounded bodies and safe 404/409/422/503 responses.
 | `/discoveries/:id` | GET typed candidate; GET `/evidence`, `/overlap`, `/history` |
 | `/discoveries/:id` | POST `/review`, `/promote` |
 | `/promotions/:id/delivery` | POST explicit delivery/retry |
+| `/discoveries/:id/promotion` | GET original promotion/draft and cumulative delivery counts, or explicit null |
 
 GET pages use bounded `limit`/`offset`; discovery listing accepts `suppressed=true`.
 Overlap links are independently paginated; the candidate carries `overlapCount`.

@@ -1,7 +1,8 @@
 import 'server-only';
+import {discoveryTransport,type DiscoveryOperation} from './discovery-transport';
 import {apiOrigin,boundedBody} from './course-api';
 import {isUuid,validCourseId,isCourseGroup,isCourseReference,isAdminPage,isGroupSuggestion,isReviewOutcome,isMemberReview,isReviewTransition,parseAdminQuery,parseSuggestionInput,isReviewVersion,categoryRegistry,targetLevels,type AdminCourseSummary} from '@dorob/core';
-export type AdminOperation='groups'|'group'|'courses'|'course'|'suggestions'|'members'|'history'|'approve'|'reject'|'reopen'|'membership';
+export type AdminOperation=DiscoveryOperation|'groups'|'group'|'courses'|'course'|'suggestions'|'members'|'history'|'approve'|'reject'|'reopen'|'membership';
 type Guard=(v:unknown)=>boolean;
 const record=(v:unknown):v is Record<string,unknown>=>typeof v==='object'&&v!==null&&!Array.isArray(v);
 export class AdminFailure extends Error {constructor(public status:number){super('درخواست انجام نشد.');}}
@@ -13,6 +14,9 @@ export function summarizeCourse(value:unknown):AdminCourseSummary {
  const snapshot=value.snapshot;if(!record(snapshot)||snapshot.courseId!==value.reference.id||!record(snapshot.payload)||!record(snapshot.thumbnail)||!['ready','missing','failed','pending'].includes(String(snapshot.thumbnail.status)))throw safe(503);
  const p=snapshot.payload;if(p.providerId!==value.reference.providerId||typeof p.title!=='string'||!record(p.source)||typeof p.source.checkedAt!=='string'||!Number.isFinite(Date.parse(p.source.checkedAt)))throw safe(503);
  summary.checkedAt=p.source.checkedAt;summary.thumbnailStatus=snapshot.thumbnail.status as AdminCourseSummary['thumbnailStatus'];
+ // Expose only a validated retained asset identity; browser images use the existing same-origin handler.
+ const asset=snapshot.thumbnail.asset;
+ summary.thumbnailAssetId=snapshot.thumbnail.status==='ready'&&record(asset)&&isUuid(asset.id)?asset.id:null;
  const data=(key:string)=>record(p[key])?p[key].data:null;
  const desc=data('description');if(typeof desc==='string')summary.description=desc.slice(0,4000);
  const education=data('education');if(record(education)&&record(education.duration)&&typeof education.duration.contentMinutes==='number'&&Number.isFinite(education.duration.contentMinutes)&&education.duration.contentMinutes>=0)summary.contentMinutes=education.duration.contentMinutes;
@@ -37,7 +41,8 @@ export function createAdminClient(options:{origin?:string;fetcher?:(url:string,i
   const group=()=>{if(!isUuid(params.id))throw safe(422);return '/api/v1/manage/groups/'+params.id;};
   const suggestion=()=>{if(!isUuid(params.id))throw safe(422);return '/api/v1/manage/suggestions/'+params.id;};
   const page=(kind:'groups'|'courses'|'suggestions'|'page')=>{parseAdminQuery(query,kind);return '?'+query.toString();};
-  if(operation==='groups'&&method==='GET'){path='/api/v1/manage/groups'+page('groups');guard=v=>isAdminPage(v,isCourseGroup);}
+  if(operation.startsWith('discovery-')){try{({path,guard}=discoveryTransport(operation as DiscoveryOperation,method,params.id,query,body));}catch{throw safe(422);}}
+  else if(operation==='groups'&&method==='GET'){path='/api/v1/manage/groups'+page('groups');guard=v=>isAdminPage(v,isCourseGroup);}
   else if(operation==='groups'&&method==='POST'){validateGroup(body,false);path='/api/v1/manage/groups';guard=isCourseGroup;}
   else if(operation==='group'&&['GET','PATCH'].includes(method)){path=group();if(method==='GET')path+=page('page');else validateGroup(body,true);guard=v=>isCourseGroup(v)&&v.id===params.id&&(method!=='GET'||record(v)&&isAdminPage(v.courses,isCourseReference));}
   else if(operation==='courses'&&method==='GET'){path='/api/v1/manage/courses'+page('courses');guard=v=>isAdminPage(v,isCourseReference);}
@@ -57,7 +62,7 @@ export function createAdminClient(options:{origin?:string;fetcher?:(url:string,i
    if(!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')??''))throw safe(503);
    const value=JSON.parse(new TextDecoder().decode(await boundedBody(response,2*1024*1024)));
    if(!guard(value))throw safe(503);
-   if(record(value)&&Array.isArray(value.items)){const parsed=parseAdminQuery(query,operation==='groups'?'groups':operation==='courses'?'courses':operation==='suggestions'?'suggestions':'page');if(value.limit!==parsed.limit||value.offset!==parsed.offset)throw safe(503);}
+   if(record(value)&&Array.isArray(value.items)){const q=new URLSearchParams(query);if(operation==='discovery-candidates'){q.delete('suppressed');q.delete('sort');}const parsed=parseAdminQuery(q,operation==='groups'?'groups':operation==='courses'?'courses':operation==='suggestions'?'suggestions':'page');if(value.limit!==parsed.limit||value.offset!==parsed.offset)throw safe(503);}
    return {status:response.status,data:operation==='course'?summarizeCourse(value):value};
   }catch(e){throw e instanceof AdminFailure?e:safe(503);}
  }};

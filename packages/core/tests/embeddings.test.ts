@@ -2,6 +2,29 @@ import { test, expect } from 'bun:test';
 import { compatibleEmbeddingConfigurations, embeddingProfile, isEmbeddingConfiguration, parseEmbeddingStart, isEmbeddingInput, isEmbeddingOperation, isEmbeddingRevision, isEmbeddingSuggestionEvidence } from '../src/embeddings';
 const id = '11111111-1111-4111-8111-111111111111';
 const cfg = { id: 'a'.repeat(64), model: 'bge-m3', digest: 'b'.repeat(64), dimensions: 1024 as const, profile: embeddingProfile };
+test('discovery sorting query is bounded, allowlisted and backward compatible',async()=>{
+ const {parseDiscoveryCandidateQuery}=await import('../src/embeddings');
+ expect(parseDiscoveryCandidateQuery(new URLSearchParams())).toEqual({limit:20,offset:0,sort:'id',suppressed:false});
+ for(const sort of ['id','similarity','course-count'])expect(parseDiscoveryCandidateQuery(new URLSearchParams({sort,suppressed:'true',limit:'2',offset:'2'}))).toEqual({limit:2,offset:2,sort,suppressed:true});
+ for(const q of ['sort=mean','sort=similarity&sort=id','suppressed=true&suppressed=false','sort=','limit=101','offset=-1','q=anything','order=DESC','suppressed=1'])expect(()=>parseDiscoveryCandidateQuery(new URLSearchParams(q))).toThrow();
+});
+test('saved discovery wire contracts preserve SQL detail casing and reject malformed recovery/pages',async()=>{
+    const c=await import('../src/index');
+    const summary={id,operationId:id,manifestId:id,configurationId:cfg.id,settings:{threshold:.7},partial:false,complete:true,pairCount:0,candidateCount:1,createdAt:'2026-10-17T00:00:00Z'};
+    const detail={id,operation_id:id,manifest_id:id,configuration_id:cfg.id,computation_key:'c'.repeat(64),settings:summary.settings,revision_ids:[id],partial:false,complete:true,expected_pairs:0,expected_sets:1,created_at:summary.createdAt};
+    expect(c.isEmbeddingRunSummary(summary)).toBe(true);expect(c.isEmbeddingRunDetail(detail)).toBe(true);
+    expect(c.isEmbeddingRunDetail(summary)).toBe(false);expect(c.isEmbeddingRunSummary({...summary,pairCount:-1})).toBe(false);
+    const evidence={runId:id,manifestId:id,configurationId:cfg.id,body:{id:'d'.repeat(64),members:['fixture:1','fixture:2'],seeds:['fixture:1'],medoid:'fixture:1',mean:.8,minimum:.8,suppressedBy:null,status:'novel',pairwise:[{a:'fixture:1',b:'fixture:2',score:.8}],reconciliation:[]}};
+    expect(c.isDiscoveryEvidence(evidence)).toBe(true);expect(c.isDiscoveryEvidence({...evidence,body:{...evidence.body,pairwise:[]}})).toBe(false);
+    const review={requestId:id,expectedVersion:0,status:'approved',title:null,note:'شرح',acceptPartial:false,version:1};
+    expect(c.isDiscoveryHistory({body:review,createdAt:summary.createdAt})).toBe(true);expect(c.isDiscoveryReviewResult({...review,version:2})).toBe(false);
+    expect(c.isDiscoveryOverlap({candidateId:id,jaccard:.5})).toBe(true);expect(c.isDiscoveryOverlap({candidateId:'bad',jaccard:1})).toBe(false);
+    const p={id,groupId:id,planned:3,delivered:1,pending:2,complete:false};
+    expect(c.isDiscoveryPromotionLookup({promotion:null})).toBe(true);expect(c.isDiscoveryPromotionLookup({promotion:p})).toBe(true);
+    for(const patch of [{id:'bad'},{planned:2},{pending:-1},{complete:true},{delivered:NaN}])expect(c.isDiscoveryPromotionLookup({promotion:{...p,...patch}})).toBe(false);
+    const page={items:[summary],total:1,limit:20,offset:0};expect(c.isAdminPage(page,c.isEmbeddingRunSummary)).toBe(true);
+    for(const patch of [{total:2},{offset:-1},{limit:101},{items:[{...summary,id:'bad'}]}])expect(c.isAdminPage({...page,...patch},c.isEmbeddingRunSummary)).toBe(false);
+});
 test('configuration compatibility requires exact representation and model artifact', () => {
     expect(isEmbeddingConfiguration(cfg)).toBe(true);
     expect(compatibleEmbeddingConfigurations(cfg,{ ...cfg, digest: 'c'.repeat(64) })).toBe(false);

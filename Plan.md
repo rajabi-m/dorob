@@ -2,6 +2,26 @@
 
 Created: September 30, 2026
 
+October 17, 2026 — `add-discovered-group-review` implements the Persian
+`/admin/discoveries` review desk for saved runs, with retained/suppressed queues,
+current course inspection, frozen evidence and versioned editorial decisions.
+Candidate approval, empty unpublished draft creation, explicit suggestion delivery,
+membership approval and publication remain separate steps. Read-only promotion
+lookup recovers the original draft and cumulative delivery counts without a
+migration. Uncertain promotion stores its exact request/payload in browser session
+storage and allows identical replay only. The browser does not start inference,
+invent group titles or alter the existing course-to-group inbox. New shared
+components are showcased with isolated samples. The extension adds run-wide sorting
+by experimental mean similarity or course count before pagination, preserving URL
+state and stable ties without migration or inference. All 23 implementation tasks and
+isolated integration acceptance are complete; exact checks are recorded in
+`docs/validation.md`. On October 18, 2026, its ten added requirements were
+synced to the two existing main specs and the change was
+[archived](openspec/changes/archive/2026-10-18-add-discovered-group-review/).
+All 16 main specs and the change passed strict validation.
+Trusted loopback-only administration and the existing production-build limitation
+remain; storage availability is required for safe new browser promotion.
+
 Current checks and build limitations are maintained in [validation](docs/validation.md).
 
 Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 has begun with the owner-selected local backend foundation; the homepage course section is connected to the local public catalog. Other product integration remains deferred.

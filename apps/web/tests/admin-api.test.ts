@@ -32,3 +32,10 @@ test('same-origin uses request authority when Next development URL has an intern
  expect((await adminHandler(make('http://127.0.0.1:3100'),'groups',{},client)).status).toBe(201);
  expect((await adminHandler(make('http://foreign.test'),'groups',{},client)).status).toBe(403);
 });
+test('inspection exposes only ready retained thumbnail UUIDs for the existing image handler',()=>{
+ const reference={id:courseId,providerId:'test',providerCourseId:'Python / فارسی',title:'پایتون',sourceUrl:'https://example.com'};
+ const value={reference,presentationReady:true,snapshot:{courseId,thumbnail:{status:'ready',asset:{id,url:'https://private.example/secret'}},payload:{providerId:'test',title:'پایتون',source:{checkedAt:new Date().toISOString()}}}};
+ const summary=summarizeCourse(value);expect(summary.thumbnailAssetId).toBe(id);expect(JSON.stringify(summary)).not.toContain('private.example');
+ expect(summarizeCourse({...value,snapshot:{...value.snapshot,thumbnail:{status:'failed',asset:{id}}}}).thumbnailAssetId).toBeNull();
+ expect(summarizeCourse({...value,snapshot:{...value.snapshot,thumbnail:{status:'ready',asset:{id:'../../private'}}}}).thumbnailAssetId).toBeNull();
+});

@@ -1,5 +1,5 @@
 import type {SQL,ReservedSQL} from 'bun';
-import {isUuid,isEmbeddingDiscovery,type EmbeddingFence} from '@dorob/core';
+import {isUuid,isEmbeddingDiscovery,isDiscoverySort,type DiscoverySort,type EmbeddingFence} from '@dorob/core';
 import {hash,defaults,type Settings,type Pair,type DiscoveredSet} from '@dorob/embedding-engine';
 import {CatalogError,transaction,type Pagination,type GroupInput} from './catalog';
 import {embeddingFence,embeddingJSON} from './embeddings';
@@ -110,9 +110,10 @@ export function createEmbeddingResults(sql:SQL) {
    let current=true;try{await assertEducationalCurrent(tx,e.dependencies);}catch(error){if(error instanceof CatalogError&&error.status===409)current=false;else throw error;}
    const accepted=await tx`SELECT 1 FROM embedding_partial_acceptance WHERE run_id=${e.body.runId}::uuid UNION ALL SELECT 1 FROM embedding_suggestion_evidence ev JOIN embedding_deliveries d ON d.id=ev.delivery_id JOIN embedding_promotions p ON p.id=d.promotion_id WHERE ev.suggestion_id=${id}::uuid AND p.body->>'partialAccepted'='true'`;return {...e.body,current,partialAccepted:!!accepted.length};
   });},
-  async candidates(runId:string,page:Pagination,suppressed:boolean) {return transaction(sql,true,async tx=>{
+  async candidates(runId:string,page:Pagination,suppressed:boolean,sort:DiscoverySort='id') {check(isDiscoverySort(sort));return transaction(sql,true,async tx=>{
    const condition=suppressed?'IS NOT NULL':'IS NULL';
-   const items=await tx.unsafe(`SELECT d.id,d.run_id AS "runId",d.set_key AS "setKey",d.body,r.status,r.version,r.title,r.note,r.partial_accepted AS "partialAccepted" FROM embedding_discoveries d JOIN embedding_discovery_reviews r ON r.candidate_id=d.id JOIN embedding_runs run ON run.id=d.run_id WHERE d.run_id=$1 AND run.complete AND d.body->>'suppressedBy' ${condition} ORDER BY d.id LIMIT $2 OFFSET $3`,[runId,page.limit,page.offset]);
+   const ordering={id:'d.id',similarity:"(d.body->>'mean')::double precision DESC,d.id",'course-count':"jsonb_array_length(d.body->'members') DESC,d.id"}[sort];
+   const items=await tx.unsafe(`SELECT d.id,d.run_id AS "runId",d.set_key AS "setKey",d.body,r.status,r.version,r.title,r.note,r.partial_accepted AS "partialAccepted" FROM embedding_discoveries d JOIN embedding_discovery_reviews r ON r.candidate_id=d.id JOIN embedding_runs run ON run.id=d.run_id WHERE d.run_id=$1 AND run.complete AND d.body->>'suppressedBy' ${condition} ORDER BY ${ordering} LIMIT $2 OFFSET $3`,[runId,page.limit,page.offset]);
    const [{total}]=await tx.unsafe(`SELECT count(*)::int AS total FROM embedding_discoveries d JOIN embedding_runs run ON run.id=d.run_id WHERE d.run_id=$1 AND run.complete AND d.body->>'suppressedBy' ${condition}`,[runId]);const views=[];for(const item of items)views.push(await discoveryView(tx,item));return {items:views,total,...page};
   });},
   async candidate(id:string) {return transaction(sql,true,async tx=>{const [d]=await tx`SELECT d.*,r.status,r.version,r.title,r.note,r.partial_accepted FROM embedding_discoveries d JOIN embedding_discovery_reviews r ON r.candidate_id=d.id JOIN embedding_runs run ON run.id=d.run_id WHERE d.id=${id}::uuid AND run.complete`;check(d,404);return discoveryView(tx,embeddingJSON(d));});},
@@ -125,6 +126,14 @@ export function createEmbeddingResults(sql:SQL) {
    await tx`INSERT INTO embedding_discovery_history(candidate_id,from_version,version,request_id,request_hash,body) VALUES (${id}::uuid,${r.version},${body.version},${input.requestId}::uuid,${checksum},${body}::jsonb)`;return body;
   });},
   async history(id:string,page:Pagination) {return transaction(sql,true,async tx=>{const items=await tx`SELECT body,created_at AS "createdAt" FROM embedding_discovery_history WHERE candidate_id=${id}::uuid ORDER BY version DESC LIMIT ${page.limit} OFFSET ${page.offset}`;const [{total}]=await tx`SELECT count(*)::int AS total FROM embedding_discovery_history WHERE candidate_id=${id}::uuid`;return embeddingJSON({items,total,...page});});},
+  async promotion(id:string) {check(isUuid(id));return transaction(sql,true,async tx=>{
+   const [candidate]=await tx`SELECT id FROM embedding_discoveries WHERE id=${id}::uuid`;check(candidate,404);
+   const [p]=await tx`SELECT p.id,p.group_id AS "groupId",count(d.id)::int AS planned,
+    count(d.suggestion_id)::int AS delivered,count(d.id) FILTER(WHERE d.suggestion_id IS NULL)::int AS pending
+    FROM embedding_promotions p LEFT JOIN embedding_deliveries d ON d.promotion_id=p.id
+    WHERE p.candidate_id=${id}::uuid GROUP BY p.id`;
+   return {promotion:p?{...p,complete:p.pending===0}:null};
+  });},
   async promote(id:string,input:{requestId:string;expectedVersion:number;group:Omit<GroupInput,'isPublished'>}) {return transaction(sql,false,async tx=>{
    const checksum=hash({candidateId:id,...input});const [prior]=await tx`SELECT * FROM embedding_promotions WHERE candidate_id=${id}::uuid OR request_id=${input.requestId}::uuid`;
    if(prior){check(prior.request_hash===checksum&&prior.candidate_id===id,409);return {promotionId:prior.id,groupId:prior.group_id};}

@@ -1,8 +1,8 @@
 import {describe,test,expect} from 'bun:test';
 import {isolatedDatabase} from './helpers';
 import {migrate,readMigrations} from '../src/migrations';
-import {createCatalogRepository} from '../src/catalog';
-import {createSuggestionRepository} from '../src/group-suggestions';
+import {createCatalogRepository,transaction} from '../src/catalog';
+import {createSuggestionRepository,submitSuggestion} from '../src/group-suggestions';
 import {createEmbeddingRepository} from '../src/embeddings';
 import {createEmbeddingResults} from '../src/embedding-results';
 import {createIngestionRepository} from '../src/ingestion';
@@ -38,10 +38,27 @@ describe.skipIf(process.env.API_INTEGRATION!=='1')('embedding acceptance boundar
   const pairwise=[{a:members[0],b:members[1],score:.8},{a:members[0],b:members[2],score:.9},{a:members[1],b:members[2],score:.7}];
   await result.upload(f,crypto.randomUUID(),[{id:hash('pair'),courseId:members[0],groupId:g.id,score:.6}],[{id:hash(members),members,seeds:members,medoid:members[0],mean:(.8+.9+.7)/3,minimum:.7,pairwise,suppressedBy:null,reconciliation:[],status:'novel'}]);await result.finalize(f);await result.delivery(f);
   const matching=(await s.list(g.id,'pending',page)).items[0];await expect(s.review(matching.id,'approve',0)).rejects.toMatchObject({status:409});await result.acceptPartial(run.runId);await s.review(matching.id,'approve',0);
-  const candidate=(await result.candidates(run.runId,page,false)).items[0];const review={requestId:crypto.randomUUID(),expectedVersion:0,status:'approved' as const,title:null,note:null,acceptPartial:false};await result.review(candidate.id,review);
+  const candidate=(await result.candidates(run.runId,page,false)).items[0];
+  expect(await result.promotion(candidate.id)).toEqual({promotion:null});
+  await expect(result.promotion(crypto.randomUUID())).rejects.toMatchObject({status:404});
+  const review={requestId:crypto.randomUUID(),expectedVersion:0,status:'approved' as const,title:null,note:null,acceptPartial:false};await result.review(candidate.id,review);
   const promote={requestId:crypto.randomUUID(),expectedVersion:1,group:{slug:'three-members',title:'گروه سه دوره',description:'دامنه متفاوت برای بازبینی صریح',categoryId:'code' as const,targetLevel:null}};await expect(result.promote(candidate.id,promote)).rejects.toMatchObject({status:409});
-  await result.review(candidate.id,{...review,requestId:crypto.randomUUID(),expectedVersion:1,acceptPartial:true});const promotion=await result.promote(candidate.id,{...promote,expectedVersion:2});expect(await result.promote(candidate.id,{...promote,expectedVersion:2})).toEqual(promotion);await result.promotionDelivery(promotion.promotionId);
-  const inbox=await s.list(promotion.groupId,'pending',page);expect(inbox.total).toBe(3);for(const item of inbox.items){const edges=pairwise.filter(p=>p.a===item.courseId||p.b===item.courseId),mean=edges.reduce((sum,p)=>sum+p.score,0)/2;expect(item.confidencePercent).toBe(100*mean);expect((await result.evidence(item.id)).rawScore).toBe(mean);}
+  await result.review(candidate.id,{...review,requestId:crypto.randomUUID(),expectedVersion:1,acceptPartial:true});const promotion=await result.promote(candidate.id,{...promote,expectedVersion:2});expect(await result.promote(candidate.id,{...promote,expectedVersion:2})).toEqual(promotion);
+  const pending={promotion:{id:promotion.promotionId,groupId:promotion.groupId,planned:3,delivered:0,pending:3,complete:false}};
+  expect(await result.promotion(candidate.id)).toEqual(pending);expect(await createEmbeddingResults(sql).promotion(candidate.id)).toEqual(pending);
+  // Delivery remains explicit. Persist one real suggestion as an interrupted-batch fixture.
+  const [first]=await sql`SELECT id,course_id FROM embedding_deliveries WHERE promotion_id=${promotion.promotionId}::uuid ORDER BY id LIMIT 1`;
+  const firstEdges=pairwise.filter(p=>p.a===first.course_id||p.b===first.course_id),firstMean=firstEdges.reduce((sum,p)=>sum+p.score,0)/2;
+  const submitted=await transaction(sql,false,tx=>submitSuggestion(tx,promotion.groupId,{courseId:first.course_id,systemId:'dorob-embedding-discovery-v1',systemName:'میانگین شباهت اعضای مجموعه — امتیاز آزمایشی',submissionId:first.id,confidencePercent:100*firstMean}));
+  const fixtureEvidence={suggestionId:submitted.suggestion.id,runId:run.runId,candidateId:candidate.id,scoreKind:'discovery-member-mean-cosine-v1',rawScore:firstMean,mapping:'cosine-times-100-v1',revisionIds,inputHashes:[],configuration:cfg,partial:true};
+  await sql`INSERT INTO embedding_suggestion_evidence(suggestion_id,delivery_id,body) VALUES (${submitted.suggestion.id}::uuid,${first.id}::uuid,${fixtureEvidence}::jsonb)`;
+  await sql`UPDATE embedding_deliveries SET suggestion_id=${submitted.suggestion.id}::uuid WHERE id=${first.id}::uuid`;
+  const partial={promotion:{...pending.promotion,delivered:1,pending:2}};
+  expect(await result.promotion(candidate.id)).toEqual(partial);expect(await result.promotion(candidate.id)).toEqual(partial);
+  // Real retry advances only the remaining rows; persisted delivery is irreversible.
+  await result.promotionDelivery(promotion.promotionId);
+  expect(await result.promotion(candidate.id)).toEqual({promotion:{...pending.promotion,delivered:3,pending:0,complete:true}});
+  const inbox=await s.list(promotion.groupId,'pending',page);const generated=inbox.items.filter(i=>i.systemId==='dorob-embedding-discovery-v1');expect(generated).toHaveLength(3);for(const item of generated){const edges=pairwise.filter(p=>p.a===item.courseId||p.b===item.courseId),mean=edges.reduce((sum,p)=>sum+p.score,0)/2;expect(item.confidencePercent).toBe(100*mean);expect((await result.evidence(item.id)).rawScore).toBe(mean);}
   expect((await c.groupDetail(promotion.groupId,page))).toMatchObject({isPublished:false,courseCount:0});await s.review(inbox.items[0].id,'approve',0);expect((await result.promotionDelivery(promotion.promotionId)).pending).toBe(0);await r.finish(f,'complete',{});
  });});
 });
