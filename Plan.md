@@ -2,6 +2,15 @@
 
 Created: September 30, 2026
 
+October 18, 2026 — Owner-approved Python group page refinement: compact course
+metadata and offers, full-width balanced strengths/weaknesses, final-product copy,
+and a five-second slideshow with overlaid dots and hover/focus navigation.
+The intro action, redundant notices/labels, and expandable syllabus are removed.
+The eight saved courses, prices and fixed editorial ordering remain fixtures;
+AI-facing copy does not introduce live analysis or value-for-price computation.
+Contributor rules now require final-product UI copy and course-focused drawbacks.
+See [frontend behavior](docs/frontend.md) and [validation](docs/validation.md).
+
 October 17, 2026 — `add-discovered-group-review` implements the Persian
 `/admin/discoveries` review desk for saved runs, with retained/suppressed queues,
 current course inspection, frozen evidence and versioned editorial decisions.

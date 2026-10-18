@@ -869,3 +869,19 @@ Bun failure above. No successful frontend production build is claimed. Existing
 Happy DOM image-layout warnings persist; all assertions pass. Prior desktop/mobile,
 keyboard and mixed-direction visual acceptance remains recorded above; this
 archive/commit step does not change UI behavior.
+
+
+### Python group page refinement — October 18, 2026
+
+Root `bun run lint`, `bun run typecheck`, the route RTL detector (zero errors or
+warnings), and `git diff --check` passed during the page refinement. Production
+compilation and build TypeScript passed; page-data collection again failed with
+Bun's existing `Expected CommonJS module to have a function wrapper` error.
+
+The in-app browser verified the final desktop layout, balanced red/green panels,
+removed labels/metadata/disclosures, automatic slideshow advancement, next-slide
+navigation and clickable dot selection. Earlier iterations were inspected at
+667px; the final desktop view was inspected at 1063px. Final phone-width,
+reduced-motion, touch and full screen-reader acceptance were not rerun. Hover/focus
+pause, hidden-tab/reduced-motion guards, touch-visible arrows and RTL keyboard
+navigation are implemented; no production AI or course-order calculation is added.

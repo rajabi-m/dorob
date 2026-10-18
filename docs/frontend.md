@@ -1,6 +1,6 @@
 # Frontend: homepage and course groups
 
-Phase 2 is complete for now by owner decision on October 4, 2026. The homepage course results now read the local public API; surrounding regions retain dated provider samples, shared categories/course cards, the selected blue hero, and automatically cycling group covers. Group membership comes from snapshots; the Python route is an eight-offering topic prototype with manual cover selection and labeled editorial analysis. Search/filter state resets on reload. Dedicated results/detail/comparison routes, reconciliation of the Python route with the three-course homepage group, shared extraction of page-local components, and comprehensive accessibility review remain follow-ups. The design history below includes superseded layouts, controls, removed previews, and older build failures; [validation](validation.md) records current checks.
+Phase 2 is complete for now by owner decision on October 4, 2026. The homepage course results now read the local public API; surrounding regions retain dated provider samples, shared categories/course cards, the selected blue hero, and automatically cycling group covers. Group membership comes from snapshots; the Python route is an eight-offering topic prototype with an automatic cover slideshow and fixed editorial assessments presented in the owner-selected final-product copy. Search/filter state resets on reload. Dedicated results/detail/comparison routes, reconciliation of the Python route with the three-course homepage group, shared extraction of page-local components, and comprehensive accessibility review remain follow-ups. The design history below includes superseded layouts, controls, removed previews, and older build failures; [validation](validation.md) records current checks.
 
 ## Homepage design and implementation history
 
@@ -135,17 +135,23 @@ Removed the course-shelf footnote «گزینه‌ها را بررسی کن؛ د�
 
 ## Python course group prototype
 
-Updated October 3, 2026 after the owner selected the second card design.
+Updated October 18, 2026 after owner-directed refinements to the selected card design.
 
 Route: `/groups/python-beginner`. The URL is retained, but this prototype now shows all eight Python offerings found in the saved datasets, with their individual levels and purposes. It is a broad Python topic preview, not a claim that advanced design-pattern and data-science courses are equivalent to introductory Python. The homepage's existing three-course beginner group membership remains unchanged; reconciling topic/level navigation is deferred until the prototype scope is finalized.
 
 ### Selected layout
 
-Only the second design remains: cover and course information alongside a separate price/action column, with strengths and considerations beneath. The design switcher and unused layouts/styles are removed. New components remain local to `apps/web/src/app/groups/[id]/python-group-preview.tsx` as requested.
+The selected layout places the cover, course details and compact price/action area
+in the top row, with full-width strengths and weaknesses beneath. Green and red
+panels use equal tint/border intensity and identical heading weight. Mobile places
+the offer below the analysis. Cards show title, instructors, provider ratings,
+level and content duration; lesson counts, study effort, completion deadlines and
+expandable summary/syllabus are omitted. Missing duration/rating labels remain.
 
-The hero side card is replaced by a gallery with one selected cover, its course title, a position/count indicator, and eight thumbnail buttons. Selection is manual with native buttons and pressed-state semantics; covers do not rotate automatically. Images preserve their proportions. Failed images fall back to the course title and an icon. The layout adapts to mobile.
-
-Cards show original course covers, titles, instructor/team names and source roles, provider logos, provider ratings when collected, levels, durations, available lesson counts, dated offers, and outbound provider links. Unknown fields stay visibly unknown. Content time, estimated study effort, and completion windows remain separate. Summary/syllabus details can be expanded; only the two legacy export records have a saved syllabus in this fixture.
+The gallery is an automatic slideshow with overlaid dots and hover/focus arrows;
+its behavior is detailed below. The intro action, caption, sample/design labels,
+collection notice and repeated price label are removed. The list is titled
+«لیست دوره‌ها» with owner-selected AI/value-for-price copy.
 
 ### Saved course facts
 
@@ -164,7 +170,13 @@ Remote image URLs are retained and rendered unoptimized, consistent with the exi
 
 ### Prototype assessment boundaries
 
-Numbered positions follow a fixed editorial order, not a quality ranking. The page explicitly labels this. The analysis panels are hand-authored preview text grounded in saved fields, not results of a live analyzer. They distinguish educational tradeoffs from missing data in a combined considerations panel. Analytical project/practice tags carry a sample label; free access follows saved offer status. Satisfaction/economic badges and “start from zero” are not assigned without sufficient evidence.
+Numbered positions still follow a fixed editorial order. The AI review heading and
+value-for-price subtitle are presentation copy for this mock, not computed ranking
+or live analyzer results. Assessments are hand-authored from saved facts and
+course-scope tradeoffs; weaknesses no longer describe missing dataset fields.
+Negative reviews and unsupported missing-topic claims are not invented. Mock
+provenance remains in documentation, following the owner's final-product UI rule.
+Project/practice tags are editorial; free access follows saved offer status.
 
 Production assessment, evidence-backed badge validation, comparative ranking, and freshness handling remain governed by the proposed [analyzer specification](course-group-ai-assessment.md).
 
@@ -193,3 +205,14 @@ See [validation](validation.md) for measured browser coverage and outstanding ch
 Real catalog cards group natural-height, two-line-clamped titles with instructor summaries immediately below them. The first two source-ordered names are direction-isolated; additional names are counted with Persian digits. Null and empty lists have separate missing-data labels. Flexible space follows this text group, with bottom-aligned provider rows and consistent footers. The pale-blue «مشاهده دوره» button and the title open the existing details dialog; closing returns focus to the activating button. Full titles and instructor lists remain available there. Sample cards and global secondary buttons retain their existing presentation.
 
 The separate card collection-date row is replaced by a dotted-underlined price button. Its uniquely described tooltip exposes the course's own Tehran/Jalali `checkedAt` date through hover, focus or tap, stays open during pointer transfer, and closes on second activation, outside interaction, blur or Escape. Escape retains focus and a new interaction can reopen it. Unknown prices use «اطلاعات گردآوری‌شده در»; known prices use «قیمت ثبت‌شده در». These are retained observations, not current provider quotations. Details keep the visible collection date, noninteractive prices and source caveat. Real cards allow tooltip overflow while thumbnail corners remain clipped. See [validation](validation.md) for actual checks and browser coverage.
+
+### Python group gallery — October 18, 2026
+
+The Python group uses a looping slideshow instead of a thumbnail grid. It advances
+at five-second intervals, pauses on hover or keyboard focus, and includes explicit
+previous/next arrows, overlaid clickable dots and RTL arrow-key navigation.
+There is no caption below the image or playback button. Pagination
+shows at most seven dots around the current image, with the counter retaining the
+absolute position. Navigation arrows appear on hover/focus and remain visible on
+touch devices. Reduced-motion preferences and hidden tabs suspend automatic changes.
+Course order and assessments remain page-local fixtures, without runtime AI ranking.
