@@ -216,3 +216,12 @@ shows at most seven dots around the current image, with the counter retaining th
 absolute position. Navigation arrows appear on hover/focus and remain visible on
 touch devices. Reduced-motion preferences and hidden tabs suspend automatic changes.
 Course order and assessments remain page-local fixtures, without runtime AI ranking.
+
+### Course assessment badges — October 18, 2026
+
+The Python mock maps fixed `project_based`, `practice_based`, `popular` and
+`expensive` values to Persian labels. `popular` uses a filled rose heart and pale
+rose background; `expensive` uses a wallet and amber styling. The comprehensive
+Maktabkhooneh Python course demonstrates popularity, while introductory Quera
+shows the expensive badge beside its practice badge. These assignments demonstrate
+presentation only; no popularity threshold or comparative price rule is implemented.

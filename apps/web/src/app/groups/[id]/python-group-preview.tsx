@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check, ChevronLeft, ChevronRight, Clock3, Code2, Leaf, Sparkles, Star, TriangleAlert } from "lucide-react";
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Clock3, Code2, Heart, Leaf, Sparkles, Star, TriangleAlert, Wallet } from "lucide-react";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import { LogoPrototype, logoPrototypes } from "@/components/logo-prototypes";
 import snapshot from "@/data/python-course-snapshot.json";
@@ -11,15 +11,21 @@ import styles from "./python-group-preview.module.css";
 
 // Page-local prototype assessments. Provider facts come from saved snapshots;
 // ordering, tags, and analysis are editorial previews, not live AI results.
-const assessments: Record<string, { tags: string[]; goods: string[]; bads: string[] }> = {
-  "maktabkhooneh-mk346": { tags: [], goods: ["دامنه‌ی معرفی‌شده از مبانی تا شیءگرایی است", "۱۷ ساعت محتوای ثبت‌شده برای دنبال کردن آموزش"], bads: ["برای مرور سریع مبانی، مسیر ۱۷ ساعته‌ی نسبتاً طولانی دارد"] },
+const courseTags = {
+  project_based: { label: "پروژه‌محور", className: styles.analysisTag, icon: null },
+  practice_based: { label: "تمرین‌محور", className: styles.analysisTag, icon: null },
+  popular: { label: "محبوب کاربران", className: styles.popularTag, icon: Heart },
+  expensive: { label: "پر هزینه", className: styles.expensiveTag, icon: Wallet },
+} as const;
+const assessments: Record<string, { tags: (keyof typeof courseTags)[]; goods: string[]; bads: string[] }> = {
+  "maktabkhooneh-mk346": { tags: ["popular"], goods: ["دامنه‌ی معرفی‌شده از مبانی تا شیءگرایی است", "۱۷ ساعت محتوای ثبت‌شده برای دنبال کردن آموزش"], bads: ["برای مرور سریع مبانی، مسیر ۱۷ ساعته‌ی نسبتاً طولانی دارد"] },
   "toplearn-7ed1a6e4bb4d": { tags: [], goods: ["دسترسی رایگان طبق اطلاعات گردآوری‌شده", "بیش از ۲۹ ساعت محتوای آموزشی"], bads: ["بیش از ۲۹ ساعت ویدئو؛ برای یک شروع سریع زمان‌بر است"] },
-  "quera-12547": { tags: ["تمرین‌محور"], goods: ["بیش از ۱۰۵ تمرین عملی طبق اطلاعات ارائه‌دهنده", "درسنامه و ویدئو در کنار تمرین‌های پایتون"], bads: ["دامنه‌ی مقدماتی دوره برای یادگیری مباحث پیشرفته کافی نیست"] },
-  "toplearn-fa4cc5c2826a": { tags: ["پروژه‌محور"], goods: ["پنج پروژه‌ی عملی در معرفی دوره آمده است", "دوره‌ی رایگان و کوتاه با دو ساعت محتوا"], bads: ["تنها دو ساعت محتوا و پنج پروژه؛ دامنه‌ی تمرین‌ها محدود است"] },
-  "maktabkhooneh-mk9907": { tags: ["پروژه‌محور"], goods: ["سرفصل شامل خروجی‌هایی مثل دفترچه تلفن و ماشین‌حساب است", "ده مسئله‌ی کاربردی برای کار با ورودی‌ها و داده‌ها"], bads: ["پروژه‌ها در حد ابزارهای کوچک مثل ماشین‌حساب و دفترچه تلفن هستند", "برای تمرین پروژه‌های بزرگ‌تر و پیچیده‌تر انتخاب محدودی است"] },
+  "quera-12547": { tags: ["practice_based", "expensive"], goods: ["بیش از ۱۰۵ تمرین عملی طبق اطلاعات ارائه‌دهنده", "درسنامه و ویدئو در کنار تمرین‌های پایتون"], bads: ["دامنه‌ی مقدماتی دوره برای یادگیری مباحث پیشرفته کافی نیست"] },
+  "toplearn-fa4cc5c2826a": { tags: ["project_based"], goods: ["پنج پروژه‌ی عملی در معرفی دوره آمده است", "دوره‌ی رایگان و کوتاه با دو ساعت محتوا"], bads: ["تنها دو ساعت محتوا و پنج پروژه؛ دامنه‌ی تمرین‌ها محدود است"] },
+  "maktabkhooneh-mk9907": { tags: ["project_based"], goods: ["سرفصل شامل خروجی‌هایی مثل دفترچه تلفن و ماشین‌حساب است", "ده مسئله‌ی کاربردی برای کار با ورودی‌ها و داده‌ها"], bads: ["پروژه‌ها در حد ابزارهای کوچک مثل ماشین‌حساب و دفترچه تلفن هستند", "برای تمرین پروژه‌های بزرگ‌تر و پیچیده‌تر انتخاب محدودی است"] },
   "maktabkhooneh-mk1318": { tags: [], goods: ["تمرکز مشخص روی کاربرد پایتون در یادگیری ماشین", "۱۳ ساعت محتوای ثبت‌شده برای این موضوع تخصصی"], bads: ["تمرکز تخصصی روی یادگیری ماشین، کاربرد آن را برای یادگیری عمومی پایتون محدود می‌کند"] },
   "maktabkhooneh-mk11259": { tags: [], goods: ["سرفصل شامل آماده‌سازی داده و ارزیابی مدل است", "چند روش رگرسیون و بهینه‌سازی در سرفصل دیده می‌شود"], bads: ["سطح متوسط؛ برای شروع پایتون از صفر مناسب نیست", "تمرکز بر مدل‌های پیش‌بینی و رگرسیون، دامنه‌ی موضوعی محدودی دارد"] },
-  "quera-15166": { tags: ["تمرین‌محور"], goods: ["بیش از ده تمرین عملی طبق معرفی ارائه‌دهنده", "تمرکز مشخص روی الگوهای طراحی در پایتون"], bads: ["سطح پیشرفته؛ برای شروع برنامه‌نویسی مناسب نیست"] },
+  "quera-15166": { tags: ["practice_based"], goods: ["بیش از ده تمرین عملی طبق معرفی ارائه‌دهنده", "تمرکز مشخص روی الگوهای طراحی در پایتون"], bads: ["سطح پیشرفته؛ برای شروع برنامه‌نویسی مناسب نیست"] },
 };
 const providers: Record<string, string> = { maktabkhooneh: "مکتب‌خونه", toplearn: "تاپ‌لرن", quera: "کوئرا" };
 const courses = snapshot.courses;
@@ -92,7 +98,10 @@ function Price({ course }: { course: Course }) {
   return <div className={styles.price}>{amount !== null && originalAmount !== null && originalAmount > amount && <div className={styles.discount}><del>{number(originalAmount)}</del><span>{number(Math.round((1 - amount / originalAmount) * 100))}٪ تخفیف</span></div>}<div className={styles.amount}><strong>{amount === null ? "قیمت ثبت نشده" : amount === 0 ? "رایگان" : number(amount)}</strong>{amount !== null && amount > 0 && <span>تومان</span>}</div>{"type" in course.price && course.price.type === "content" && <small className={styles.priceLabel}>گزینه‌ی خرید محتوا</small>}</div>;
 }
 function CoursePreview({ course, index }: { course: Course; index: number }) {
-  return <article id={`course-${course.id}`} className={styles.course} aria-labelledby={`title-${course.id}`}><div className={styles.cover}><Thumbnail course={course} /><span className={styles.rank} aria-label={`ترتیب ${number(index + 1)}`}>#{number(index + 1)}</span></div><div className={styles.info}><div className={styles.tags}><span className={styles.level}>{course.level ?? "سطح ثبت نشده"}</span>{course.price.status === "free" && <span className={styles.value}><Leaf size={13} aria-hidden="true" />شروع رایگان</span>}{assessments[course.id].tags.map(tag => <span key={tag} className={styles.analysisTag}>{tag}</span>)}</div><h3 id={`title-${course.id}`} dir="auto">{text(course.title)}</h3><p className={styles.teacher}>مدرس یا تیم دوره: {course.instructors.length ? course.instructors.map((instructor, i) => <span key={`${instructor.name}-${i}`}>{i > 0 && "، "}<bdi>{instructor.name}</bdi>{instructor.role && <> ({instructor.role})</>}</span>) : "ثبت نشده"}</p><Provider course={course} /><div className={styles.metadata}><span><Clock3 size={14} aria-hidden="true" />{duration(course)}</span></div></div><Analysis course={course} /><div className={styles.offer}><Price course={course} /><a className={styles.sourceLink} href={course.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`مشاهده‌ی ${text(course.title)} در ${providers[course.providerId]}، پنجره‌ی جدید`}>مشاهده در {providers[course.providerId]}<ArrowRight size={15} className={styles.directional} aria-hidden="true" /></a></div></article>;
+  return <article id={`course-${course.id}`} className={styles.course} aria-labelledby={`title-${course.id}`}><div className={styles.cover}><Thumbnail course={course} /><span className={styles.rank} aria-label={`ترتیب ${number(index + 1)}`}>#{number(index + 1)}</span></div><div className={styles.info}><div className={styles.tags}><span className={styles.level}>{course.level ?? "سطح ثبت نشده"}</span>{course.price.status === "free" && <span className={styles.value}><Leaf size={13} aria-hidden="true" />شروع رایگان</span>}{assessments[course.id].tags.map(tag => {
+    const { label, className, icon: Icon } = courseTags[tag];
+    return <span key={tag} className={className}>{Icon && <Icon size={13} aria-hidden="true" />}{label}</span>;
+  })}</div><h3 id={`title-${course.id}`} dir="auto">{text(course.title)}</h3><p className={styles.teacher}>مدرس یا تیم دوره: {course.instructors.length ? course.instructors.map((instructor, i) => <span key={`${instructor.name}-${i}`}>{i > 0 && "، "}<bdi>{instructor.name}</bdi>{instructor.role && <> ({instructor.role})</>}</span>) : "ثبت نشده"}</p><Provider course={course} /><div className={styles.metadata}><span><Clock3 size={14} aria-hidden="true" />{duration(course)}</span></div></div><Analysis course={course} /><div className={styles.offer}><Price course={course} /><a className={styles.sourceLink} href={course.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`مشاهده‌ی ${text(course.title)} در ${providers[course.providerId]}، پنجره‌ی جدید`}>مشاهده در {providers[course.providerId]}<ArrowRight size={15} className={styles.directional} aria-hidden="true" /></a></div></article>;
 }
 export function PythonGroupPreview() {
   const logoIndex = logoPrototypes.findIndex(logo => logo.id === "reference");

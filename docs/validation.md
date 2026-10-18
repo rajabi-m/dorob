@@ -885,3 +885,13 @@ navigation and clickable dot selection. Earlier iterations were inspected at
 reduced-motion, touch and full screen-reader acceptance were not rerun. Hover/focus
 pause, hidden-tab/reduced-motion guards, touch-visible arrows and RTL keyboard
 navigation are implemented; no production AI or course-order calculation is added.
+
+
+### Python assessment badge previews — October 18, 2026
+
+Root lint and type checking, the route/global CSS RTL detector (zero findings),
+and diff checks passed. In-app desktop screenshots confirmed the rose filled-heart
+popular badge and amber wallet expensive badge on their assigned mock courses.
+No new badge eligibility calculation or backend integration is claimed. The final
+pre-commit build compiled and passed TypeScript, then failed collecting
+`/_not-found` with the existing Bun CommonJS function-wrapper error.

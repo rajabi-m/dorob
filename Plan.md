@@ -2,6 +2,11 @@
 
 Created: September 30, 2026
 
+October 18, 2026 — The Python group mock now demonstrates a fixed four-tag
+registry: project-based, practice-based, popular and expensive. Popular uses a rose
+heart; expensive uses an amber wallet. Assignments are presentation fixtures,
+without automatic eligibility or pricing/popularity calculations.
+
 October 18, 2026 — Owner-approved Python group page refinement: compact course
 metadata and offers, full-width balanced strengths/weaknesses, final-product copy,
 and a five-second slideshow with overlaid dots and hover/focus navigation.
