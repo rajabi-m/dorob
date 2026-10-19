@@ -459,6 +459,26 @@ in [validation](docs/validation.md).
 
 ### Private course-group judgments
 
+Feed the self-contained [AI judge role guide](docs/ai-judge.md) to an HTTP-capable
+agent for manually invoked judging. It covers complete evidence review,
+SEO-friendly Persian hero writing, substantive strengths/weaknesses and safe
+submission. Two or three supported points per list are a target, not a quota;
+a course may have no weaknesses. After supplying the file, invoke it with:
+
+```text
+Act as the Dorob AI judge using the supplied guide.
+API origin: http://127.0.0.1:3001
+Group UUID: <replace-with-selected-group-uuid>
+System ID: local-course-judge
+Mode: judge and submit
+Working location: use the permitted task working directory for recovery files.
+```
+
+Replace the UUID with an existing group's ID. Use `Mode: review only` to prepare
+content without submitting it. The guide is a Markdown role prompt, not an
+installed skill or automatic runner. No live judgment run is implied by its
+delivery; the API/database and migration must already be available.
+
 The backend now exposes revision-bound judge evidence and immutable judgment
 submission/history through seven operations under
 `/api/v1/manage/groups/:id/judge-input` and `/judgments`. Discover draft or published
@@ -490,3 +510,11 @@ with all 20 tasks complete. Its 14 requirements are synced to the
 specs pass strict validation. Pre-commit verification is recorded in
 [validation](docs/validation.md#judgment-pre-commit-verification--october-19-2026).
 Archival does not apply migration 007.
+
+The documentation-only `add-ai-judge-guide` change is
+[archived](openspec/changes/archive/2026-10-19-add-ai-judge-guide/) with all
+11 tasks complete. It has no delta specs to sync; the existing judgment contract
+is unchanged. The owner-authorized local database operation subsequently applied
+migration 007 after a full backup, with all 30 existing data-table fingerprints
+unchanged and the judgment history read verified. See
+[guide validation and operational results](docs/validation.md#ai-judge-guide-and-local-migration--october-19-2026).

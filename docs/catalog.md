@@ -551,6 +551,12 @@ the restored catalog, retained original Alpine volume and checksum-verified back
 
 ## Course-group judge evidence and judgments
 
+For a portable prompt to give an HTTP-capable agent, use the
+[AI judge role guide](ai-judge.md). It combines the traversal/delivery protocol
+with Persian hero and assessment writing rules. This section remains the
+transport and persistence reference; the guide does not change API validation
+or execute a model automatically.
+
 The backend standard is `packages/core/src/group-judgments.ts` and
 [`add-course-group-judgments`](../openspec/changes/archive/2026-10-19-add-course-group-judgments/).
 It supersedes the historical assessment draft's deterministic ranking, extra tags,

@@ -977,3 +977,44 @@ boundary. Fresh `bun run lint`, `bun run typecheck`, `bun run build:api` and
 PostgreSQL schemas. All 17 main specs passed. No required check was unavailable.
 A trailing space in the archived design artifact was removed during diff review.
 No working-catalog migration, model run, frontend change or publication is included.
+
+### AI judge guide and local migration — October 19, 2026
+
+The standalone `docs/ai-judge.md` role prompt was checked against the current
+shared judgment contracts and route definitions. Its synthetic request passes
+`parseJudgmentSubmission`, preserving an expensive-first order and a course with
+empty weaknesses. Checks cover all four tag labels, all five hero field limits
+and all seven judge operations. Manual protocol review covered complete member
+and feedback pagination, reference-only members, stale revisions, lost-response
+exact replay, key conflicts and stale readback. Persian copy guidance and examples
+were reviewed for concrete learner consequences, natural topic/level hero text,
+honest abstention and the absence of forced criticism or missing-data page copy.
+Local Markdown link targets and whitespace checks pass.
+
+The owner's trial produced ten saved requests covering 26 distinct courses.
+All ten passed the shared validator and matched their saved revision/member sets.
+Every course had two or three strengths; ten had supported weaknesses. This is a
+bounded review of saved outputs, not a factual quality certification. Initial
+delivery returned the generic 503 message because migration 007 had not been
+applied; no successful receipt was confirmed in that trial's recovery report.
+Private trial evidence and requests remain outside Git under
+`/private/tmp/dorob-judge-20261019/`.
+
+The owner then explicitly authorized the reviewed additive migration. A full
+custom-format PostgreSQL backup was saved at
+`apps/api/storage/backups/judgments-20261019/before-007.dump` (23,014,610 bytes;
+SHA-256 `ea3b69e34dc5229f73a7ae9761241e26e6edec610f41e87dc2ad0f41262e0caa`).
+Its archive listing was verified readable; a restore test was not performed in
+this operation. `bun run db:migrate` applied migration 007. Before/after row counts
+and content fingerprints matched for all 30 pre-existing data tables. The new
+empty judgment table, history index and immutability trigger were verified;
+the pending group's history GET returned an empty successful response.
+No pending judgment was replayed by this migration operation. Backup and local
+verification files remain ignored.
+
+All 11 guide tasks are complete. Strict change validation and all 17 main-spec
+validations passed before archiving to
+`openspec/changes/archive/2026-10-19-add-ai-judge-guide/`. There are no delta specs
+to sync (`skip_specs: true`). Pre-commit checks review the staged documentation
+and archive only. Application lint, type checking and builds are not applicable
+to these Markdown-only changes; no application source or dependencies changed.

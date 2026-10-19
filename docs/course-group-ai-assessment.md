@@ -2,6 +2,10 @@
 
 Historical draft — October 3, 2026. Superseded for backend judgments on October 18, 2026.
 
+For current agent instructions, use the standalone [AI judge role guide](ai-judge.md).
+It covers the implemented API and Persian editorial standards; this historical
+draft is not a role prompt.
+
 The authoritative implemented standard is [course-group judgments](catalog.md#course-group-judge-evidence-and-judgments), with [shared contracts](../packages/core/src/group-judgments.ts) and the [OpenSpec change](../openspec/changes/archive/2026-10-19-add-course-group-judgments/). The draft below is retained as history, not implementation requirements. Its weighted scoring, deterministic sorting, ranking reasons, additional badge vocabulary/eligibility machinery, output shapes and visible evidence/layout proposals are superseded. The AI owns exact course-array order under «اولویت با دوره‌هایی است که ارزش یادگیری بیشتر و قیمت کمتری دارند»; an expensive high-value course may lead. Only project_based, practice_based, popular and expensive are accepted. Empty bullets/tags are allowed; weaknesses must concern the course rather than missing data or collection limitations.
 
 The backend stores caller-supplied content against complete member/snapshot revisions. It does not execute a model, certify prose, render judgments or approve/publish them. Those are separate follow-up decisions. Evidence/privacy guidance below remains useful where compatible with the current standard; no provider fields or thresholds are promised by this historical draft.

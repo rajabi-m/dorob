@@ -476,3 +476,36 @@ working-catalog operation; archival does not apply it or publish judgments.
 
 The October 19 commit review retains the implemented backend-only scope and
 explicit migration boundary. See the [pre-commit checks](docs/validation.md#judgment-pre-commit-verification--october-19-2026).
+
+## Manual AI judge role guide — October 19, 2026
+
+`add-ai-judge-guide` delivers the standalone [judge instructions](docs/ai-judge.md)
+for an HTTP-capable agent. The operator supplies the trusted local API origin
+and selected group; the guide covers full revision-bound evidence/feedback
+traversal, qualitative value/price ordering, supported tags, natural SEO-friendly
+Persian hero writing and safe immutable submission/recovery/readback.
+Assessments target two or three distinct useful points when supported, without
+forced criticism, padding or missing-data commentary in page text. A course may
+have no weaknesses after thorough review.
+
+This is a manually supplied Markdown role prompt, not an automatic runner or
+an installed skill. The synthetic request is checked offline against the shared
+validator; no working-catalog judgment submission, migration or publication is
+part of this documentation change. Automated model execution, frontend hero/SEO
+integration, judgment rendering/approval/public selection and authentication
+remain separate follow-ups. API behavior and its main specification are unchanged.
+
+October 19, 2026 — Owner-authorized working-database operation applied additive
+migration 007 using `bun run db:migrate`. A full custom-format backup and
+verification records are retained locally under the ignored
+`apps/api/storage/backups/judgments-20261019/` directory. All 30 pre-existing data
+table fingerprints matched before/after; the new empty judgment table, history
+index and immutability trigger were verified. The judgment history API returned
+successfully with zero records. No pending judge request was replayed or submitted.
+
+The guide change is [archived](openspec/changes/archive/2026-10-19-add-ai-judge-guide/)
+with all 11 tasks complete. As a documentation-only change with `skip_specs: true`,
+it has no delta specs to sync; all 17 existing main specs pass strict validation.
+The guide's request example passes the shared validator and all seven judge
+operations match the route definitions. Link and whitespace checks pass. See
+[validation and migration results](docs/validation.md#ai-judge-guide-and-local-migration--october-19-2026).
