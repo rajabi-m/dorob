@@ -22,10 +22,11 @@ test('injected suggestion routes validate input and preserve success/replay/erro
  expect((await post(`/api/v1/manage/suggestions/${id}/reject`,{expectedReviewVersion:-1})).status).toBe(422);
  expect((await post(`/api/v1/manage/suggestions/${id}/reopen`,{})).status).toBe(422);
 });
-test('generated Swagger publishes review and provenance contracts without a judge endpoint',async()=>{
+test('generated Swagger publishes review and provenance contracts alongside the separate judgment contract',async()=>{
  const {createApp}=await import('../src/app');const app=createApp({ready:async()=>false,close:async()=>{}});
  const response=await app.handle(new Request('http://localhost/docs/json'));expect(response.status).toBe(200);
  const spec=await response.json();expect(spec.paths['/api/v1/manage/groups/{id}/suggestions'].post.requestBody).toBeDefined();
  expect(spec.paths['/api/v1/manage/suggestions/{id}/approve'].post.responses['409']).toBeDefined();
- expect(Object.keys(spec.paths).some(x=>x.includes('judge'))).toBe(false);
+ expect(spec.paths['/api/v1/manage/groups/{id}/judgments'].post).toBeDefined();
+ expect(Object.keys(spec.paths).some(x=>x.includes('suggestions')&&x.includes('judge'))).toBe(false);
 });

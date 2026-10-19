@@ -1,0 +1,11 @@
+import {parseJudgmentSubmission,type JudgeMember,type JudgmentGroupContext,type GroupJudgment} from '@dorob/core';
+import submissionExample from '../../../packages/core/examples/group-judgment.json';
+import {inputManifest,judgeContext,projectJudgeEvidence,projectJudgeFeedback} from './group-judgment-source';
+import {rich} from './ingestion-examples';
+const group:JudgmentGroupContext={id:'00000000-0000-4000-8000-000000000001',slug:'python',title:'پایتون',description:'آموزش پایتون',categoryId:'code',targetLevel:'mixed',isPublished:false};
+const members:JudgeMember[]=submissionExample.content.courses.map((c,i)=>({course:{id:c.courseId,providerId:c.courseId.split(':')[0],providerCourseId:c.courseId.split(':')[1],title:i?'مقدماتی':'کامل',sourceUrl:`https://example.org/${i}`},snapshotId:i?null:'00000000-0000-4000-8000-000000000002',checkedAt:i?null:'2026-10-18T00:00:00Z'}));
+const manifest=inputManifest(group,members),context=judgeContext(manifest);
+const submission=parseJudgmentSubmission({...submissionExample,inputRevision:context.inputRevision});
+const judgment:GroupJudgment={id:'00000000-0000-4000-8000-000000000003',groupId:group.id,systemId:submission.systemId,submissionId:submission.submissionId,receivedAt:'2026-10-18T00:00:00Z',inputRevision:context.inputRevision,groupContext:group,inputManifest:manifest,content:submission.content,isCurrent:true};
+const {groupContext:_,inputManifest:__,content:___,...summary}=judgment;void _;void __;void ___;
+export const judgmentExamples={context,members:{inputRevision:context.inputRevision,items:members,total:members.length,limit:20,offset:0},evidence:projectJudgeEvidence(members[0],context.inputRevision,rich()),feedback:projectJudgeFeedback(members[0],context.inputRevision,rich(),{limit:20,offset:0}),submission,judgment,history:{items:[summary],total:1,limit:20,offset:0}};

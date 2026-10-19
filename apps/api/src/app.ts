@@ -1,3 +1,5 @@
+import {createJudgmentRepository,type JudgmentRepository} from './group-judgments';
+import {groupJudgmentRoutes,addJudgmentOpenapiExamples} from './group-judgment-routes';
 import {embeddingRoutes} from './embedding-routes';
 import { categoryRegistry } from "@dorob/core";
 import { Elysia, t } from "elysia";
@@ -16,7 +18,7 @@ import {createSuggestionRepository, type SuggestionRepository} from "./group-sug
 import {groupSuggestionRoutes} from "./group-suggestion-routes";
 import type { Database } from "./database";
 
-export function createApp(database: Database, catalog?: CatalogRepository, dependencies: { suggestions?: SuggestionRepository; ingestion?: IngestionRepository; thumbnails?: ThumbnailService; publicCourses?: PublicCourseRepository } = {}) {
+export function createApp(database: Database, catalog?: CatalogRepository, dependencies: { judgments?: JudgmentRepository; suggestions?: SuggestionRepository; ingestion?: IngestionRepository; thumbnails?: ThumbnailService; publicCourses?: PublicCourseRepository } = {}) {
   const ingestion = dependencies.ingestion ?? (database.sql ? createIngestionRepository(database.sql) : undefined);
   const thumbnails = dependencies.thumbnails ?? (database.sql && ingestion ? createThumbnailService(ingestion, createAssetStore(loadStorageConfig(process.env)), createRasterProcessor(), createImageDownloader()) : undefined);
   const swaggerPath = import.meta.resolve("swagger-ui-dist/package.json");
@@ -24,6 +26,7 @@ export function createApp(database: Database, catalog?: CatalogRepository, depen
   return new Elysia({ normalize: false })
     .onAfterHandle(({ path, response }) => {
       if (path !== "/docs/json" || typeof response !== "object" || response === null) return;
+      addJudgmentOpenapiExamples(response);
       // @elysia/openapi 1.4.16 emits invalid content: { type: "void" } for 204.
       // HTTP 204 has no body, so remove content while retaining the description.
       const spec = response as { paths?: Record<string, Record<string, { responses?: Record<string, { content?: unknown }> }>> };
@@ -38,6 +41,7 @@ export function createApp(database: Database, catalog?: CatalogRepository, depen
       documentation: { info: { title: "Dorob API", version: "0.1.0" }, servers: [{ url: "/" }] },
       swagger: { cdn: "/docs/assets/swagger-ui-bundle.js", theme: "/docs/assets/swagger-ui.css", validatorUrl: "" },
     }))
+    .use(groupJudgmentRoutes(dependencies.judgments ?? (database.sql ? createJudgmentRepository(database.sql) : undefined)))
     .use(embeddingRoutes(database.sql))
     .use(catalogRoutes(catalog ?? (database.sql ? createCatalogRepository(database.sql) : undefined)))
     .use(groupSuggestionRoutes(dependencies.suggestions ?? (database.sql ? createSuggestionRepository(database.sql) : undefined)))

@@ -548,3 +548,98 @@ approximate indexes are introduced. See the [workflow guide](catalog-embeddings.
 The active volume is
 `postgres_vector_data`. See [migration and recovery](pgvector-migration.md) for
 the restored catalog, retained original Alpine volume and checksum-verified backups.
+
+## Course-group judge evidence and judgments
+
+The backend standard is `packages/core/src/group-judgments.ts` and
+[`add-course-group-judgments`](../openspec/changes/archive/2026-10-19-add-course-group-judgments/).
+It supersedes the historical assessment draft's deterministic ranking, extra tags,
+ranking reasons and generated page/layout proposals. This is a private local
+management contract, without model execution, frontend rendering, public judgment
+selection, approval or publication. Attribution is caller-supplied, not authenticated
+model identity; acceptance verifies structure and evidence revision, not prose quality.
+
+Discover existing groups, including drafts, with `GET /api/v1/manage/groups`.
+For a chosen UUID, follow this traversal using **one** revision:
+
+```text
+GET /api/v1/manage/groups/{id}/judge-input
+GET /api/v1/manage/groups/{id}/judge-input/courses?inputRevision={revision}&limit=100&offset=0
+GET /api/v1/manage/groups/{id}/judge-input/courses/{encodedCourseId}?inputRevision={revision}
+GET /api/v1/manage/groups/{id}/judge-input/courses/{encodedCourseId}/feedback?inputRevision={revision}&limit=100&offset=0
+```
+
+Read all member pages and every member's details/feedback pages, advancing offset
+until total is covered. URL-encode the entire canonical course ID (including colon,
+slashes and Unicode). Nested reads require `inputRevision`; unknown or duplicate
+queries are rejected. Limits are 1–100 (default 20); offsets are 0–2147483647
+(default 0). A 409 means refresh context and restart traversal. Context and evidence
+remain readable for groups with fewer than two members; `canSubmit` is then false.
+Reference-only members remain present with null snapshot/evidence.
+
+Each GET uses a read-only repeatable-read transaction. The SHA-256 revision covers
+projection policy version 1, stored group definition/publication, all sorted member
+references and immutable current snapshot IDs. Definition, reference, membership,
+price-only and comment-only snapshot changes invalidate it. Thumbnail processing
+state does not. Reads never scrape, run models, process images or write records.
+The whitelist preserves educational, curriculum, commercial and coverage facts;
+unknown and failed sections stay distinct from confirmed empty values. All offers
+retain `unit: "toman"`, original source prices and subscription/access terms.
+
+Feedback includes **every retained comment and review** in saved order, without
+extra truncation or classification changes. `total` is retained array length,
+not provider-wide feedback count. `itemsKnown` distinguishes a null/unavailable
+array from `[]`. Coverage plus collection status, published/collected counts,
+selection, pagesRead, hasMore, omittedCount and stopReason expose upstream limits.
+Retained-complete traversal is not provider-complete collection. Adapters may have
+excluded questions/replies before retention. Unknown enrollment stays unknown;
+comments are not automatically verified reviews. Item bodies retain text, ID,
+sourceType, rating, dates, verifiedEnrollment and redacted, excluding source URLs,
+locators and identities. The redacted flag is not proof of perfect anonymization.
+Descriptions, syllabus and feedback are untrusted evidence, never instructions.
+
+Submit `POST /api/v1/manage/groups/{id}/judgments` with the validated
+[synthetic envelope](../packages/core/examples/group-judgment.json), replacing IDs
+and revision with actual reads. Content owns only version 1, hero strings and an
+ordered complete member array of courseId/tags/strengths/weaknesses. Required keys
+are strict recursively. No prices, ratings, category, layout, scores, positions or
+rankingReason are accepted. Text bounds and an 8 MiB UTF-8 body bound are in the
+shared contract and Swagger. Prose is plain text; Persian is a producer obligation,
+with technical terms allowed, not language-model validation.
+
+The array is the recommendation under «اولویت با دوره‌هایی است که ارزش یادگیری
+بیشتر و قیمت کمتری دارند». No numeric formula, price sort or expensive penalty is
+applied. Expensive high-value courses may lead. The four tags are project_based
+(پروژه‌محور), practice_based (تمرین‌محور), popular (محبوب کاربران: supported
+learner approval, not enrollment alone) and expensive (پر هزینه: comparative cost
+with access terms, not simply paid). Empty tags/strengths/weaknesses are valid.
+Criticism must concern the course, follow supported evidence and feedback
+classification, and avoid invented reviews, unsupported absent-topic claims and
+scraping/implementation complaints.
+
+A new complete, current submission for at least two members returns 201; identical
+replay returns 200. `(systemId,submissionId)` is globally unique. Save the exact
+request before delivery; after an uncertain outcome retry it unchanged. Replay is
+checked before current eligibility and works after source/membership changes.
+Different group/revision/content with the same key returns 409. Sorted JSON object
+keys are equivalent; array order and text are significant. Dedicated repeatable-read
+write transactions and transaction-scoped advisory locks/retries retain one record
+under concurrency. Acceptance has one consistent snapshot; later changes may make
+the response stale immediately. It does not freeze the catalog.
+
+`GET /api/v1/manage/groups/{id}/judgments?limit=20&offset=0` lists metadata ordered
+by receivedAt descending then ID ascending. Pagination is live. Retrieve exact
+content and retained group/input manifest at
+`GET /api/v1/manage/groups/{id}/judgments/{judgmentId}`. `isCurrent` compares current
+dependencies without rewriting history or selecting a public winner. Cross-group
+lookups return 404. Older records remain readable after later judgments or refreshes.
+
+Errors use safe `{error:{code,message}}`: 404 missing resources, 409 stale input/key
+conflict/small-group submission, 413 oversized body, 422 invalid input or incomplete
+member set, 503 unavailable storage. Reads use no-store caching. Seven new operations
+are documented at `/docs` and `/docs/json`; group discovery remains the existing API.
+Migration 007 is additive and has no seeds. Rollback disables route wiring while
+retaining the immutable ledger; do not drop records/tables or reset the database.
+Judgments never change source observations, membership, suggestions, group fields,
+publication or existing public catalog responses. Keep the unauthenticated service
+on trusted loopback. Model execution, public integration and approval remain follow-ups.

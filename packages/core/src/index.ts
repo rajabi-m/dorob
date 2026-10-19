@@ -33,3 +33,4 @@ export * from './public-courses';
 export * from './group-admin';
 
 export * from "./embeddings";
+export * from './group-judgments';

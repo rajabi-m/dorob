@@ -1,8 +1,12 @@
 # Course group page: analyzer inputs, ranking, and outputs
 
-Draft specification — October 3, 2026. Requested for the Python group-page design and the eventual analyzer behind its course cards.
+Historical draft — October 3, 2026. Superseded for backend judgments on October 18, 2026.
 
-This document defines the information Dorob should collect, the context supplied to the analyzer, and the results needed by the group page. It is a proposed phase-3 assessment contract, not an implemented model or live integration. The current `/groups/python-beginner` page uses explicitly fictional, hardcoded examples.
+The authoritative implemented standard is [course-group judgments](catalog.md#course-group-judge-evidence-and-judgments), with [shared contracts](../packages/core/src/group-judgments.ts) and the [OpenSpec change](../openspec/changes/archive/2026-10-19-add-course-group-judgments/). The draft below is retained as history, not implementation requirements. Its weighted scoring, deterministic sorting, ranking reasons, additional badge vocabulary/eligibility machinery, output shapes and visible evidence/layout proposals are superseded. The AI owns exact course-array order under «اولویت با دوره‌هایی است که ارزش یادگیری بیشتر و قیمت کمتری دارند»; an expensive high-value course may lead. Only project_based, practice_based, popular and expensive are accepted. Empty bullets/tags are allowed; weaknesses must concern the course rather than missing data or collection limitations.
+
+The backend stores caller-supplied content against complete member/snapshot revisions. It does not execute a model, certify prose, render judgments or approve/publish them. Those are separate follow-up decisions. Evidence/privacy guidance below remains useful where compatible with the current standard; no provider fields or thresholds are promised by this historical draft.
+
+The historical proposal below describes information Dorob could collect, the context supplied to the analyzer, and the results needed by the group page. It is a proposed phase-3 assessment contract, not an implemented model or live integration. The current `/groups/python-beginner` page uses explicitly fictional, hardcoded examples.
 
 The [course data format](course-data-format.md) defines the owner-authorized version-2 adapter migration, including anonymous feedback, syllabus coverage, and educational evidence. This broader assessment specification also lists deferred optional fields; it does not promise that providers publish every field. Source-labeled reviews and unverified course comments are distinct: comment items must be filtered for experiential feedback before contributing to review themes, and must never be treated as verified enrollment.
 

@@ -895,3 +895,85 @@ popular badge and amber wallet expensive badge on their assigned mock courses.
 No new badge eligibility calculation or backend integration is claimed. The final
 pre-commit build compiled and passed TypeScript, then failed collecting
 `/_not-found` with the existing Bun CommonJS function-wrapper error.
+
+## Course-group judgment backend — October 18, 2026
+
+`add-course-group-judgments` is implemented with browser-safe schemas/examples,
+revision-bound retained evidence, immutable storage, seven local management
+operations and Swagger examples. Verification uses synthetic observations and
+explicitly isolated PostgreSQL schemas; no judge, provider requests or live
+collection are required.
+
+| Check | Result |
+| --- | --- |
+| `bun run lint` | Pass: web, utilities and API |
+| `bun run typecheck` | Pass: web route generation/types, utilities and API, including shared core imports |
+| `bun run test:api` | Pass: 43 tests, 34 intentional integration skips, 0 failures; 659 assertions across 27 files |
+| `API_INTEGRATION=1 bun run test:api` | Pass: 77 tests, 0 failures; 1,112 assertions across 27 files, 25.56 seconds |
+| `bun run build:api` | Pass: 372 modules bundled; API and raster-worker entry points |
+| `openspec validate add-course-group-judgments --strict` | Pass |
+| `openspec validate --all --strict` | Pass: active change plus all 16 main specs (17 items) |
+| Final scope/diff review | Backend, shared contracts, synthetic examples, tests, tracking and documentation only; no frontend, dependency or lockfile changes. `git diff --check` passes. |
+
+New boundary tests reject missing/extra/forbidden properties, invalid versions,
+null arrays, repeated/unknown tags, duplicate/noncanonical courses, blank/oversized
+text, controls and HTML/Markdown. Latin technical labels and Persian/ZWNJ prose
+remain valid. Both decoded JSON bytes and streaming bodies over 8 MiB return 413
+before repository work. Swagger examples validate against shared and runtime
+schemas; all seven method/path operations have request/response contracts.
+The historical suggestion Swagger assertion now checks coexistence with separate
+judgment routes instead of requiring their absence.
+
+Source tests preserve null/missing/failed coverage, all saved offers, hostile text
+as data and the original observation. Explicit recursive projection excludes raw
+HTML sections, providerData, feedback identities/locators and ingestion diagnostics.
+Comments-only and mixed feedback, null versus empty items, partial collection and
+135 retained items verify all-page traversal without extra text truncation.
+
+PostgreSQL tests cover additive migration/rerun, foreign keys, hash/object checks,
+immutable UPDATE/DELETE rejection, transaction rollback, 106-member paging,
+reference-only members and opaque Unicode/slash IDs. Definition, reference,
+membership and price/comment-only snapshot dependencies affect revision validity.
+Concurrent identical submissions retain one winner; sorted object keys replay,
+array-order and cross-group key changes conflict, accepted retries still recover
+after refresh or loss of minimum membership. Fresh database connections preserve
+exact content and manifests; equal-time history ties use ascending IDs.
+
+HTTP-to-PostgreSQL acceptance discovers a draft, traverses one revision, submits an
+expensive-first result, replays it, refreshes feedback, rejects a stale new submit
+and retrieves stale immutable history. Full row fingerprints of all existing
+catalog tables and existing public responses match before/after judgment acceptance.
+Safe missing/stale/invalid/oversized/unavailable responses and no-store reads pass.
+Local database access initially hit sandbox socket restrictions; the completed
+integration runs used authorized local access and cleaned their disposable schemas.
+
+The working catalog was not migrated or populated by this change. Migration 007
+remains available through the normal explicit migration command. No model runs,
+frontend/public judgment rendering, approval/publication or deployment were added.
+The existing unrelated frontend production-build limitation remains documented;
+this backend-only change was verified with its production API build. No commit,
+branch, push or archive was performed.
+
+### Judgment spec sync and archive — October 19, 2026
+
+All 14 added requirements and every scenario were compared verbatim with the new
+`openspec/specs/course-group-judgments/spec.md`. Its Purpose is copied verbatim
+from the delta, with canonical main-spec headings and no delta-operation headers.
+`openspec validate --specs --strict` passed all 17 main specs; strict validation
+of the completed change passed before archival. All artifacts and 20/20 tasks
+were complete. The change is archived at
+`openspec/changes/archive/2026-10-19-add-course-group-judgments/`, preserving
+`.openspec.yaml`. Documentation links/status were updated. No application code,
+working database, commit, branch or push was changed by this archival operation.
+
+### Judgment pre-commit verification — October 19, 2026
+
+After explicit commit authorization, Plan, README and affected documentation were
+reviewed and updated for the archived backend standard and explicit migration
+boundary. Fresh `bun run lint`, `bun run typecheck`, `bun run build:api` and
+`openspec validate --specs --strict` all passed. The fresh full
+`API_INTEGRATION=1 bun run test:api` run passed 77 tests, zero failures and
+1,112 assertions across 27 files in 26.58 seconds, using disposable local
+PostgreSQL schemas. All 17 main specs passed. No required check was unavailable.
+A trailing space in the archived design artifact was removed during diff review.
+No working-catalog migration, model run, frontend change or publication is included.

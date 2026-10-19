@@ -438,4 +438,41 @@ October 17, 2026 — Both embedding changes are archived:
 (20/20 tasks) and
 [`integrate-catalog-embedding-workflow`](openspec/changes/archive/2026-10-17-integrate-catalog-embedding-workflow/)
 (24/24 tasks). Their seven capability deltas are synced to main specs; all 16
-main specs pass strict validation. No active OpenSpec changes remain.
+main specs pass strict validation. This checkpoint predates the completed
+`add-course-group-judgments` change below.
+
+
+## Course-group judgment backend — October 18, 2026
+
+`add-course-group-judgments` has all 20 tracked tasks complete and verified. It
+implements the phase-3 backend standard for future
+judges: browser-safe versioned contracts, all-member revision-bound educational
+and commercial evidence, complete retained comment/review paging, and immutable
+attributed submission/history. The AI owns hero text, four permitted tags,
+course-focused strengths/weaknesses and exact recommendation-array order under
+«اولویت با دوره‌هایی است که ارزش یادگیری بیشتر و قیمت کمتری دارند».
+There is no numerical ranking, price sort or expensive-tag demotion.
+
+An additive migration 007 retains group context, complete input manifest and
+content. Repeatable-read consistency, global submission-key replay and computed
+freshness preserve history without modifying provider facts, editorial membership,
+suggestions, publication or public responses. The prior assessment draft's ranking,
+badges and output proposals are explicitly superseded; compatible evidence/privacy
+advice remains historical context. Backend acceptance is not model quality review.
+
+The seven private management operations are documented in Swagger and the
+[catalog guide](docs/catalog.md#course-group-judge-evidence-and-judgments).
+Model execution, frontend rendering, judgment approval/publication, authentication
+and public judgment APIs remain separate follow-ups. Working-catalog migration is
+an explicit operational step, not an implementation/test side effect. Validation
+results and environmental limits are recorded in [validation](docs/validation.md).
+
+October 19, 2026 — All 14 judgment requirements are synced to the new
+[main spec](openspec/specs/course-group-judgments/spec.md). All 17 main specs and
+the completed change passed strict validation. The spec-driven change is
+[archived](openspec/changes/archive/2026-10-19-add-course-group-judgments/) with
+all artifacts and 20/20 tasks complete. Migration 007 remains an explicit
+working-catalog operation; archival does not apply it or publish judgments.
+
+The October 19 commit review retains the implemented backend-only scope and
+explicit migration boundary. See the [pre-commit checks](docs/validation.md#judgment-pre-commit-verification--october-19-2026).

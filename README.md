@@ -452,6 +452,41 @@ change adds the browser review desk, recovery read and run-wide sorting. It is
 October 18, 2026 with all 23 tasks complete. Its ten added requirements are synced
 to the administration and discovery main specs; all 16 main specs pass strict
 validation.
-The latest verification passed 63 PostgreSQL API tests and 209 additional tests
+The discovery-review verification passed 63 PostgreSQL API tests and 209 additional tests
 in separate processes; the existing frontend Bun build limitation is recorded
 in [validation](docs/validation.md).
+
+
+### Private course-group judgments
+
+The backend now exposes revision-bound judge evidence and immutable judgment
+submission/history through seven operations under
+`/api/v1/manage/groups/:id/judge-input` and `/judgments`. Discover draft or published
+groups through the existing management list, obtain context, then traverse every
+member and retained comment/review with one inputRevision. New judgments require
+at least two members and the exact member set; 409 restarts stale traversals.
+The AI-owned array order is preserved, including expensive-first results. The
+four tags are project_based, practice_based, popular and expensive; empty
+assessments are valid. Generated prose cannot overwrite provider facts or layout.
+
+Migration 007 adds a private immutable ledger and runs through the usual explicit
+`bun run db:migrate` workflow; startup never migrates. `(systemId,submissionId)`
+is globally unique. Exact retries recover the original record after source changes;
+readback reports computed freshness and retains its complete input manifest.
+Acceptance does not certify quality or change membership/publication/public pages.
+Model execution, frontend judgment rendering, public selection and approval remain
+follow-up scope. Keep management on trusted loopback.
+
+See [traversal, bounds, recovery and rollback](docs/catalog.md#course-group-judge-evidence-and-judgments),
+[shared contract](packages/core/src/group-judgments.ts),
+[synthetic request](packages/core/examples/group-judgment.json), and `/docs`.
+The older assessment draft's numeric ranking and extra tags are superseded by this
+standard. Offline checks are included in `bun run test:api`; isolated PostgreSQL
+acceptance uses `API_INTEGRATION=1 bun run test:api` as documented above.
+
+The spec-driven judgment change is [archived](openspec/changes/archive/2026-10-19-add-course-group-judgments/)
+with all 20 tasks complete. Its 14 requirements are synced to the
+[judgment main spec](openspec/specs/course-group-judgments/spec.md); all 17 main
+specs pass strict validation. Pre-commit verification is recorded in
+[validation](docs/validation.md#judgment-pre-commit-verification--october-19-2026).
+Archival does not apply migration 007.
