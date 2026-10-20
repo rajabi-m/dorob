@@ -1,3 +1,6 @@
+import {addPublicGroupExamples} from './public-group-judgment-examples';
+import {createPublicGroupJudgmentRepository} from './public-group-judgments';
+import {publicGroupJudgmentRoutes} from './public-group-judgment-routes';
 import {createJudgmentRepository,type JudgmentRepository} from './group-judgments';
 import {groupJudgmentRoutes,addJudgmentOpenapiExamples} from './group-judgment-routes';
 import {embeddingRoutes} from './embedding-routes';
@@ -27,6 +30,7 @@ export function createApp(database: Database, catalog?: CatalogRepository, depen
     .onAfterHandle(({ path, response }) => {
       if (path !== "/docs/json" || typeof response !== "object" || response === null) return;
       addJudgmentOpenapiExamples(response);
+      addPublicGroupExamples(response);
       // @elysia/openapi 1.4.16 emits invalid content: { type: "void" } for 204.
       // HTTP 204 has no body, so remove content while retaining the description.
       const spec = response as { paths?: Record<string, Record<string, { responses?: Record<string, { content?: unknown }> }>> };
@@ -42,6 +46,7 @@ export function createApp(database: Database, catalog?: CatalogRepository, depen
       swagger: { cdn: "/docs/assets/swagger-ui-bundle.js", theme: "/docs/assets/swagger-ui.css", validatorUrl: "" },
     }))
     .use(groupJudgmentRoutes(dependencies.judgments ?? (database.sql ? createJudgmentRepository(database.sql) : undefined)))
+    .use(publicGroupJudgmentRoutes(database.sql && thumbnails ? createPublicGroupJudgmentRepository(database.sql,thumbnails) : undefined))
     .use(embeddingRoutes(database.sql))
     .use(catalogRoutes(catalog ?? (database.sql ? createCatalogRepository(database.sql) : undefined)))
     .use(groupSuggestionRoutes(dependencies.suggestions ?? (database.sql ? createSuggestionRepository(database.sql) : undefined)))

@@ -127,3 +127,11 @@
 .popularTag { color: var(--ds-popular); background: var(--ds-popular-soft); }
 .popularTag svg { fill: currentColor; }
 .expensiveTag { color: var(--ds-warning); background: var(--ds-warning-soft); }
+
+.analysisGrid > :only-child { grid-column: 1 / -1; }
+.page { overflow-wrap: anywhere; line-height: 1.9; }
+.page a:focus-visible, .page button:focus-visible, .page summary:focus-visible { outline: 2px solid var(--ds-primary); outline-offset: 3px; }
+.purchaseOptions { font-size: 11px; color: var(--ds-muted); }
+.purchaseOptions summary { cursor: pointer; }
+.purchaseOptions ul { display: grid; gap: 12px; margin-block-start: 8px; }
+.sourceLink { white-space: normal; flex-wrap: wrap; }

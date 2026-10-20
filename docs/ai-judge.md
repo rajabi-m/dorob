@@ -300,3 +300,27 @@ Do not confuse a structurally accepted judgment with an editorial quality certif
 This file is usable on its own. For maintenance, the authoritative schema and implemented transport are [shared contracts](../packages/core/src/group-judgments.ts), [API routes](../apps/api/src/group-judgment-routes.ts), the [catalog API reference](catalog.md#course-group-judge-evidence-and-judgments), and [judgment behavior specification](../openspec/specs/course-group-judgments/spec.md). Swagger is available at `/docs` and its JSON at `/docs/json` on the supplied origin. These references are not permission to execute provider collection or modify the backend.
 
 The old analyzer draft's weighted ranking, extra badges and output shapes are historical. Do not import them into this role. This guide adds no runtime validator, automated worker, public rendering or publication operation.
+
+
+## Public judged groups — October 19, 2026
+
+The additive `GET /api/v1/judged-groups?limit=12&offset=0` and
+`GET /api/v1/judged-groups/<slug>?limit=20&offset=0` project published
+groups with at least two members, a current judgment and ready current observations
+for every member. Publication is the editorial gate; the newest matching judgment
+is selected automatically (received time descending, ID ascending for ties).
+Existing public group-reference and course APIs retain their eligibility rules.
+
+For a public comparison, the operator should publish before requesting judging; the judge must never publish a group itself. Draft judging remains supported privately. Publication, definition, membership/reference or snapshot
+changes can invalidate judgments; reads never regenerate them. All courses remain
+in judge order, including expensive-first choices and empty assessments. Group
+publication does not certify the quality of generated prose.
+
+List limits default to 12, detail to 20; both cap at 100. Use `judgmentId` from
+detail for later course pages; 409 means restart from the unpinned first page.
+Missing/ineligible unpinned detail is 404; unavailable dependencies are 503.
+Public responses omit manifests, submission attribution and raw feedback.
+Read-only asset checks never invalidate associations. Candidate eligibility scans
+use batched source reads and at most four concurrent asset checks, before pagination;
+this is designed for the local catalog rather than unbounded production scale.
+No migration, startup inference or working-catalog mutation is required.

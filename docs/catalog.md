@@ -648,4 +648,28 @@ Migration 007 is additive and has no seeds. Rollback disables route wiring while
 retaining the immutable ledger; do not drop records/tables or reset the database.
 Judgments never change source observations, membership, suggestions, group fields,
 publication or existing public catalog responses. Keep the unauthenticated service
-on trusted loopback. Model execution, public integration and approval remain follow-ups.
+on trusted loopback. Automated model execution and a separate judgment approval workflow remain follow-ups; the public integration below selects current judgments automatically for eligible published groups.
+
+
+## Public judged groups — October 19, 2026
+
+The additive `GET /api/v1/judged-groups?limit=12&offset=0` and
+`GET /api/v1/judged-groups/<slug>?limit=20&offset=0` project published
+groups with at least two members, a current judgment and ready current observations
+for every member. Publication is the editorial gate; the newest matching judgment
+is selected automatically (received time descending, ID ascending for ties).
+Existing public group-reference and course APIs retain their eligibility rules.
+
+Publish before judging. Publication, definition, membership/reference or snapshot
+changes can invalidate judgments; reads never regenerate them. All courses remain
+in judge order, including expensive-first choices and empty assessments. Group
+publication does not certify the quality of generated prose.
+
+List limits default to 12, detail to 20; both cap at 100. Use `judgmentId` from
+detail for later course pages; 409 means restart from the unpinned first page.
+Missing/ineligible unpinned detail is 404; unavailable dependencies are 503.
+Public responses omit manifests, submission attribution and raw feedback.
+Read-only asset checks never invalidate associations. Candidate eligibility scans
+use batched source reads and at most four concurrent asset checks, before pagination;
+this is designed for the local catalog rather than unbounded production scale.
+No migration, startup inference or working-catalog mutation is required.

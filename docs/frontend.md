@@ -1,6 +1,6 @@
 # Frontend: homepage and course groups
 
-Phase 2 is complete for now by owner decision on October 4, 2026. The homepage course results now read the local public API; surrounding regions retain dated provider samples, shared categories/course cards, the selected blue hero, and automatically cycling group covers. Group membership comes from snapshots; the Python route is an eight-offering topic prototype with an automatic cover slideshow and fixed editorial assessments presented in the owner-selected final-product copy. Search/filter state resets on reload. Dedicated results/detail/comparison routes, reconciliation of the Python route with the three-course homepage group, shared extraction of page-local components, and comprehensive accessibility review remain follow-ups. The design history below includes superseded layouts, controls, removed previews, and older build failures; [validation](validation.md) records current checks.
+Phase 2 was closed by the owner on October 4, 2026. Current homepage course results use the public course API; group cards and group destinations now use real published groups with current judgments and complete presentation-ready membership. The selected Python layout is shared across categories, with source facts separate from generated content. Hero samples and design-system fixtures remain isolated. The dated design history below includes superseded fixture behavior and layouts; [validation](validation.md) records current checks.
 
 ## Homepage design and implementation history
 
@@ -225,3 +225,33 @@ rose background; `expensive` uses a wallet and amber styling. The comprehensive
 Maktabkhooneh Python course demonstrates popularity, while introductory Quera
 shows the expensive badge beside its practice badge. These assignments demonstrate
 presentation only; no popularity threshold or comparative price rule is implemented.
+
+## Public judged-group frontend — October 19, 2026
+
+The homepage group section now server-renders `/api/v1/judged-groups` data,
+independently of the individual-course grid. Cards show generated hero copy,
+actual membership counts, distinct providers and up to three hosted covers in judge
+order. Pagination, loading, empty and retry states never substitute fixture groups.
+The homepage hero sample interactions and design-system fixtures remain separate.
+
+Every eligible `/groups/<stored-slug>` uses the generalized selected Python layout:
+all five hero fields, shared category labels, actual totals, source instructors,
+rating scale/count, duration, retained prices/offers/terms and Jalali fact dates.
+Course rows follow exact judge order. Empty assessment columns are omitted; no
+missing-data complaint or invented weakness is inserted. AI assessment attribution
+and judgment date remain separate from provider facts. Source links open safely.
+
+Course pages default to 20 rows (maximum 100). URL paging carries the selected
+judgmentId; conflicting selection offers restart. Metadata and page share request-local
+loading without cross-request caching. The gallery uses the current course page's
+images and local image counter. It retains the five-second slideshow, controls,
+keyboard navigation, reduced-motion handling and hover/focus/hidden-tab pauses.
+`python-beginner` and `n8n` redirect to their real counterparts; other fixture-only
+slugs return 404 unless a matching real group exists. Upstream outages show retry
+instead of false 404s. Already rendered data stays visible until navigation/refresh.
+
+Data retry/paging and images use concrete same-origin web handlers; the API origin
+remains server-only via existing `DOROB_API_URL`. Deadlines are five seconds, list
+responses cap at 2 MiB and detail responses at 8 MiB. No extra setup or migration is
+needed. A published group needs current judgments and every member ready; source or
+publication changes require explicit rejudging. Visits never run models or collection.

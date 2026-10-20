@@ -34,3 +34,4 @@ export * from './group-admin';
 
 export * from "./embeddings";
 export * from './group-judgments';
+export * from './public-group-judgments';

@@ -1018,3 +1018,93 @@ validations passed before archiving to
 to sync (`skip_specs: true`). Pre-commit checks review the staged documentation
 and archive only. Application lint, type checking and builds are not applicable
 to these Markdown-only changes; no application source or dependencies changed.
+
+## Public judged-group integration — October 19, 2026
+
+`connect-public-group-judgments` connects the homepage and canonical group pages to
+retained current judgments and current provider observations. No working-catalog
+publication, membership, source or judgment submission was performed by this change.
+No schema migration is required.
+
+- Shared/query validation, safe web boundaries, route/metadata/redirect behavior,
+  actual facts and assessments, empty bullets, image fallback, gallery keyboard/timer
+  pauses and superseded-request guards have focused automated coverage.
+- Full PostgreSQL/API acceptance: `API_INTEGRATION=1 bun run test:api` passed
+  **80 tests**, including the new isolated group comparison acceptance. Tests use
+  temporary isolated schemas, real local image storage and synthetic observations.
+  They cover eligibility-before-paging, draft/small/unjudged groups, sources and
+  membership/reference changes, publish-after-judge staleness, older matching
+  revisions beyond 100 history rows, stable timestamp ties, pinned-page conflicts,
+  expensive-first ordering, optional ratings, pricing states, private-field exclusion
+  and absence of thumbnail invalidation writes. The final focused repository/routes
+  rerun passed **3 tests / 72 assertions** after batching/projection refinements.
+- `bun test packages/core/tests apps/web/tests` passed **59 tests / 615 assertions**
+  in the final run. Separate route acceptance passed **1 test / 11 assertions**. The route acceptance file lives
+  under `apps/web/acceptance/group-page.test.tsx` and can run separately with
+  `bun test apps/web/acceptance/group-page.test.tsx`, avoiding existing global
+  `next/navigation` mocks in discovery tests.
+- Default `bun run test:api`, root lint and root type checking pass. The API
+  production bundle builds. Strict OpenSpec validation and whitespace checks pass.
+  The RTL detector reports zero errors/warnings on all changed product UI files.
+- `bun run build` compiles and completes TypeScript checking, then fails collecting
+  page data for `/_not-found` with Bun 1.3.8's previously documented
+  `Expected CommonJS module to have a function wrapper` error. Production startup
+  is therefore not verified; this is still the existing runtime limitation.
+- Initial sandboxed loopback tests could not open sockets. The same tests passed
+  with approved local-network execution; no installation or VPN was needed.
+  DOM-only image tests emit the existing Next Image layout warnings because
+  happy-dom does not load CSS; actual browser images were verified independently.
+
+Read-only live acceptance found **eight** eligible groups: English A1 (2 courses),
+Excel (2), n8n (3), negotiation (2), Photoshop (2), PowerPoint (5), Python
+visualization (3), and starting Python (3). Every public hero and assessment array
+was compared to its selected private judgment, every course snapshot to its retained
+manifest, and provider/title/source URL/image/instructors/duration/price/offers to
+public course readback. Every canonical group page server-rendered its expected
+hero and course identities. This count is an observation, not a fixed expectation.
+
+Browser review verified the eight homepage cards and Python card-to-page navigation.
+The Python page preserves Sabzlearn → Roocket → Maktabkhooneh order, retains the
+expensive first result and omits the last course's empty weakness section. At 320px,
+390px and 1280px the document width matches the viewport, with no horizontal
+scroll overflow. Hosted images load; Persian/Latin titles, localized Jalali dates,
+provider ratings/scales and four tags remain legible. Keyboard gallery focus has a
+visible outline; RTL arrow navigation changes the selected slide. A limit=1 course
+page preserves the selected judgment in next-page links, displays absolute rank 2
+for Roocket, and back/forward restores the appropriate course page. Automated
+checks additionally cover reduced motion and focus/hidden-tab slideshow guards.
+
+Limits: eligibility scans are appropriate to the local catalog, not a production
+scale claim. Any current snapshot or publication change can hide a group until
+explicit rejudging. A missing member asset hides the entire comparison without
+mutating thumbnail associations. Files can disappear after eligibility checks;
+client fallbacks remain necessary. Already rendered pages retain their data until
+refresh/navigation. Structural judgment acceptance is not editorial certification.
+
+## Public judged-group pre-commit verification — October 20, 2026
+
+Owner-authorized commit review covers the public judged-group API, shared contracts,
+homepage/group integration, focused tests, synced main specs and completed archive.
+README fixture descriptions were reconciled with the delivered real-group behavior;
+Plan and catalog documentation record the current selection and archive boundaries.
+
+- `bun run lint` and `bun run typecheck` pass.
+- `bun test packages/core/tests apps/web/tests`: 59 passed, 615 assertions.
+- `bun test apps/web/acceptance/group-page.test.tsx`: 1 passed, 11 assertions.
+- Default `bun run test:api`: 45 passed, 35 integration tests skipped, 673 assertions.
+- `API_INTEGRATION=1 bun run test:api`: 80 passed, 1,184 assertions, using temporary
+  isolated PostgreSQL schemas and local image fixtures with cleanup.
+- `bun run build:api` passes. `bun run build` compiles and checks TypeScript, then
+  fails collecting `/_not-found` page data with the existing Bun 1.3.8
+  `Expected CommonJS module to have a function wrapper` limitation; production
+  startup remains unverified.
+- RTL detector: zero errors/warnings across all nine changed product UI files.
+  Browser acceptance at 320px, 390px and desktop remains the October 19 evidence
+  above; this commit review does not claim a new visual browser pass.
+- All 18 main specs pass strict OpenSpec validation. Both delta capabilities match
+  their main specs; the six change files were archived unchanged, including metadata.
+  No active OpenSpec changes remain.
+
+The first sandboxed core/web run could not open its loopback deadline-test server;
+the local-network rerun passed. Existing happy-dom Next Image layout warnings remain.
+No working-catalog publication, inference, migrations or source changes were performed.

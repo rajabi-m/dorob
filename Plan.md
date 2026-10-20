@@ -38,7 +38,7 @@ remain; storage availability is required for safe new browser promotion.
 
 Current checks and build limitations are maintained in [validation](docs/validation.md).
 
-Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 has begun with the owner-selected local backend foundation; the homepage course section is connected to the local public catalog. Other product integration remains deferred.
+Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 has begun with the owner-selected local backend foundation; the homepage course section is connected to the local public catalog. Homepage group cards and group destinations now use retained current judgments and provider facts; other integrations remain deferred.
 
 ## Product vision
 
@@ -509,3 +509,50 @@ it has no delta specs to sync; all 17 existing main specs pass strict validation
 The guide's request example passes the shared validator and all seven judge
 operations match the route definitions. Link and whitespace checks pass. See
 [validation and migration results](docs/validation.md#ai-judge-guide-and-local-migration--october-19-2026).
+
+
+## Public judged groups — October 19, 2026
+
+The additive `GET /api/v1/judged-groups?limit=12&offset=0` and
+`GET /api/v1/judged-groups/<slug>?limit=20&offset=0` project published
+groups with at least two members, a current judgment and ready current observations
+for every member. Publication is the editorial gate; the newest matching judgment
+is selected automatically (received time descending, ID ascending for ties).
+Existing public group-reference and course APIs retain their eligibility rules.
+
+Publish before judging. Publication, definition, membership/reference or snapshot
+changes can invalidate judgments; reads never regenerate them. All courses remain
+in judge order, including expensive-first choices and empty assessments. Group
+publication does not certify the quality of generated prose.
+
+List limits default to 12, detail to 20; both cap at 100. Use `judgmentId` from
+detail for later course pages; 409 means restart from the unpinned first page.
+Missing/ineligible unpinned detail is 404; unavailable dependencies are 503.
+Public responses omit manifests, submission attribution and raw feedback.
+Read-only asset checks never invalidate associations. Candidate eligibility scans
+use batched source reads and at most four concurrent asset checks, before pagination;
+this is designed for the local catalog rather than unbounded production scale.
+No migration, startup inference or working-catalog mutation is required.
+
+### Public group frontend integration — October 19, 2026
+
+`connect-public-group-judgments` replaces the public fixture group cards/routes
+with retained current judgments and source facts. The selected Python layout is
+reusable across categories; real slugs, counts, providers, hosted galleries,
+AI ordering/tags/bullets and source offers are wired without model execution.
+Legacy Python/n8n links redirect; unrelated fixture destinations are retired.
+Independent course discovery, hero samples and design-system fixtures remain.
+Detailed verification and remaining limitations are recorded in `docs/validation.md`.
+
+October 20, 2026 — `connect-public-group-judgments` is
+[archived](openspec/changes/archive/2026-10-20-connect-public-group-judgments/)
+with all planning artifacts and 21/21 tasks complete. Its ten public judged-group
+requirements are synced to the new main spec, and the existing homepage
+preservation requirement now covers real group navigation. All 18 main specs and
+the completed change pass strict OpenSpec validation. Archival does not publish
+groups, run inference or modify the working catalog.
+
+October 20, 2026 — The owner authorized committing the public judged-group
+integration and archive. README setup/status and affected documentation were
+reviewed and reconciled. [Pre-commit verification](docs/validation.md#public-judged-group-pre-commit-verification--october-20-2026)
+records passing checks and the unchanged Bun production-build limitation.

@@ -30,6 +30,10 @@ export function createThumbnailService(repository: IngestionRepository, store: A
   }
   return {
     store, initialize: cleanup, inspect,
+    async inspectReadOnlyAvailability(snapshot: CourseSnapshot, storageKey: string) {
+      const asset = snapshot.thumbnail.asset;
+      return snapshot.presentationReady && !!asset && await store.available(storageKey, asset.byteSize);
+    },
     async inspectAvailability(snapshot: CourseSnapshot, storageKey: string) {
       const asset = snapshot.thumbnail.asset;
       if (snapshot.thumbnail.status === "ready" && asset && !(await store.available(storageKey, asset.byteSize))) {

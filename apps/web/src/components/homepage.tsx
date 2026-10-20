@@ -10,7 +10,9 @@ import { categories, CoursePrice } from "./discovery-showcase";
 
 import { CompactCourseCard } from "./compact-course-card";
 import { CourseCard } from "./course-card";
-import { CyclingCourseGroupCard } from "./cycling-course-group-card";
+import { PublicGroupSection,GroupSectionLoading } from "./public-group-section";
+import type { PublicJudgedGroup } from "@dorob/core";
+import type { GroupResult } from "@/lib/group-result";
 import { CourseGroupArtwork } from "./course-group-artwork";
 import { LearningPathsArtwork } from "./learning-paths-artwork";
 import { HomeHeroVariant, type HeroVariant } from "./home-hero-variants";
@@ -25,7 +27,7 @@ const logoIndex = logoPrototypes.findIndex(logo => logo.id === "reference");
 const number = (value: number) => value.toLocaleString("fa-IR");
 const normalize = (value: string) => value.normalize("NFKC").replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/\u200c/g, " ").trim().toLocaleLowerCase("fa-IR"); // rtl-ignore
 
-export function Homepage({ groupId, heroVariant, realCourses }: { groupId?: string; heroVariant?: HeroVariant; realCourses?: Promise<CourseResult<Page<PublicCourse>>> }) {
+export function Homepage({ groupId, heroVariant, realCourses, realGroups }: { groupId?: string; heroVariant?: HeroVariant; realGroups?:Promise<GroupResult<Page<PublicJudgedGroup>>>; realCourses?: Promise<CourseResult<Page<PublicCourse>>> }) {
   const group = homeGroups.find(item => item.id === groupId);
   const available: HomepageCourse[] = group ? groupCourses[group.id] : providerHomepageCourses;
   const [draft, setDraft] = useState("");
@@ -77,7 +79,7 @@ export function Homepage({ groupId, heroVariant, realCourses }: { groupId?: stri
           <button className="ds-button" type="submit">جست‌وجو</button>
         </form>
         <nav aria-label="بخش‌های صفحه"><Link href="/#groups">مجموعه دوره‌ها</Link><a href="#courses">دوره‌ها</a></nav>
-        <span className="home-preview-label">نسخه‌ی نمایشی</span>
+
       </div>
     </header>
     <main id="main" className="home-container">
@@ -97,10 +99,7 @@ export function Homepage({ groupId, heroVariant, realCourses }: { groupId?: stri
         <div className="home-section-heading"><h2 id="topics-title">چه موضوعی را دنبال می‌کنی؟</h2></div>
         <CategoryGrid categories={categories} selectedId={category} onSelect={id => { setCategory(id); setQuery(""); setDraft(""); setFreeOnly(false); showResults(); }} />
       </section>
-      <section id="groups" className="home-section home-groups" aria-labelledby="groups-title">
-        <div className="home-section-heading"><div><h2 id="groups-title">مجموعه دوره‌های پرطرفدار</h2><p>یک موضوع مشترک؛ چند دوره با سطح و محتوای مشخص برای مقایسه.</p></div><span className="home-section-note">گروه‌بندی نمونه‌های گردآوری‌شده</span></div>
-        <div className="home-group-list">{homeGroups.map(item => <CyclingCourseGroupCard key={item.id} group={item} courses={groupCourses[item.id]} />)}</div>
-      </section>
+      {realGroups && <Suspense fallback={<GroupSectionLoading />}><PublicGroupSection initial={realGroups}/></Suspense>}
       </>}
 
       {realCourses && !group ? <Suspense fallback={<CourseSectionLoading />}><PublicCourseSection initial={realCourses} query={query} category={category} freeOnly={freeOnly} onFreeChange={setFreeOnly} onReset={() => { reset(); showResults(); }} headingRef={resultsHeading} /></Suspense> : <section id="courses" className="home-section" aria-labelledby="results-title">

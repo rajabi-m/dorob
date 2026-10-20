@@ -3,18 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { CourseGroupCard, type CourseGroup } from "./course-group-card";
-import type { HomepageCourse } from "./provider-homepage-data";
+export type GroupCover = { id:string;title:string;image?:{src:string;alt:string};provider:string;providerLogo?:{src:string;alt:string} };
 import styles from "./cycling-course-group-card.module.css";
 
-function Cover({ course }: { course: HomepageCourse }) {
+function Cover({ course }: { course: GroupCover }) {
   const [failed, setFailed] = useState(false);
   return course.image && !failed ? <Image src={course.image.src} alt="" fill unoptimized sizes="(max-width: 700px) 96px, 260px" onError={() => setFailed(true)} /> : <span className={styles.fallback} dir="auto">{course.title}</span>;
 }
 
 /** Snapshot covers and provider identities for a navigable group card. */
-export function CyclingCourseGroupCard({ group, courses }: { group: CourseGroup; courses: HomepageCourse[] }) {
+export function CyclingCourseGroupCard({ group, courses, href, providers: suppliedProviders }: { group: CourseGroup; courses: GroupCover[];href?:string;providers?:CourseGroup["providers"] }) {
   const covers = courses.slice(0, 3);
-  const providers = Array.from(new Map(courses.map(course => [course.provider, { name: course.provider, logo: course.providerLogo }])).values());
+  const providers = suppliedProviders ?? Array.from(new Map(courses.map(course => [course.provider, { name: course.provider, logo: course.providerLogo }])).values());
   const [active, setActive] = useState(0);
   const [reduced, setReduced] = useState(true);
   const [inView, setInView] = useState(false);
@@ -58,7 +58,7 @@ export function CyclingCourseGroupCard({ group, courses }: { group: CourseGroup;
 
 
   return <div ref={root} className={styles.root} onMouseEnter={() => setInteracting(true)} onMouseLeave={() => setInteracting(false)} onFocusCapture={() => setInteracting(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setInteracting(false); }}>
-    <CourseGroupCard headingLevel={3} group={{ ...group, providers }} href={`/groups/${group.id}`} placeholder={
+    <CourseGroupCard headingLevel={3} group={{ ...group, providers }} href={href ?? `/groups/${group.id}`} placeholder={
       <div className={styles.covers}>
         <div className={styles.slides}>
           {covers.map((course, index) => <div key={course.id} className={styles.tile} data-active={index === active}><Cover course={course} /></div>)}

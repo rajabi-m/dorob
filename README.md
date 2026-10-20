@@ -2,7 +2,7 @@
 
 نام فارسی پروژه «دورُب» است؛ ترکیبی از نام‌های «دوره» و «ترب».
 
-A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 includes an independent local API/PostgreSQL foundation and manual curated catalog APIs. The homepage course grid now reads the local public catalog; group routes and surrounding samples remain fixtures. Production deployment remains pending.
+A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 includes an independent local API/PostgreSQL foundation and manual curated catalog APIs. The homepage course grid reads the local public catalog; group cards and destinations use current retained judgments and provider facts. Hero samples and design-system fixtures remain separate. Production deployment remains pending.
 
 Start with the [documentation hub](docs/index.md), [project plan](Plan.md), and [contributor instructions](AGENTS.md).
 
@@ -26,11 +26,11 @@ The completed `migrate-remaining-providers-v3` change is [archived](openspec/cha
 
 ## Current experience
 
-- `/`: public-catalog course grid with Persian search, editorial category/free filtering, pagination and real-course details; the selected blue hero and cycling course-group covers retain saved samples.
+- `/`: public-catalog course grid with Persian search, editorial category/free filtering, pagination and real-course details; real judged-group cards show current eligible comparisons, while the selected blue hero retains saved samples.
 - `/design-system`: approved سنجش / لاجورد design, the supplied ring-and-cap logo, Vazirmatn, semantic tokens, interactive discovery examples, and component previews. Most examples are fictional; course-card snapshots are dated explicitly.
-- `/groups/[id]`: three topic destinations with course information and comparison interactions. `/groups/python-beginner` uses the selected eight-course Python prototype with real saved facts, an automatic cover slideshow, compact course cards, and full-width strengths/weaknesses panels. It also previews rose-heart «محبوب کاربران» and amber-wallet «پر هزینه» badges. Badge assignments, AI wording and value-for-price ordering are presentation fixtures; no runtime AI ranking is connected.
+- `/groups/[id]`: eligible stored-slug destinations reuse the selected Python layout with retained AI hero text, exact judgment order, tags and assessments alongside current provider facts. Galleries, pinned course pagination and retry states are supported. Legacy `/groups/python-beginner` and `/groups/n8n` redirect to their canonical real slugs; other fixture-only destinations return 404 unless an eligible real group has that slug.
 
-The hero and sample groups retain dated provider samples; its beginner Python group has three members, while the Python route previews eight offerings across levels. Reconciling that membership and dedicated results/detail/comparison routes remain follow-ups. Search/filter state resets on reload. Course prices are retained observations, not current provider quotations. The API orders courses by ingestion time; sample group popularity remains illustrative. No live AI, scheduled refresh or production backend is connected. See [frontend behavior and decisions](docs/frontend.md) and [snapshot provenance](docs/provider-snapshots.md).
+Hero cards retain dated provider samples independently of the real catalog. Search/filter state resets on reload. Course prices are retained observations, not current provider quotations. Individual course results use ingestion-time order; group comparisons preserve the selected judgment’s order. Visits do not run models, collect courses or refresh judgments. Scheduled refresh and production deployment remain deferred. See [frontend behavior and decisions](docs/frontend.md) and [snapshot provenance](docs/provider-snapshots.md).
 
 ## Local development
 
@@ -166,7 +166,7 @@ bun run build:api
 bun apps/api/tests/built-ingestion-smoke.ts
 ```
 
-The local catalog adds explicit SQL migrations, minimal course references, editor-defined groups, and many-to-many assignments. See [catalog setup and workflow](docs/catalog.md). It has no ORM, AI jobs, authentication or cloud deployment. The homepage course section reads eligible current observations; surrounding frontend regions retain saved fixtures.
+The local catalog adds explicit SQL migrations, minimal course references, editor-defined groups, and many-to-many assignments. See [catalog setup and workflow](docs/catalog.md). It has no ORM, AI jobs, authentication or cloud deployment. The homepage course section reads eligible current observations; group cards and destinations read current judgments. Hero samples and design-system fixtures remain separate.
 
 October 12 initial curation researched all 1,495 existing course references and
 created seven verified draft groups with 17 explicit memberships across all six
@@ -175,8 +175,8 @@ Photoshop, negotiation, A1 conversation and Excel currently have supported
 members from Maktabkhooneh only. The [curation report](docs/curation/initial-course-groups.md)
 records exact evidence, persisted IDs, category limits and the restore-tested
 pre-work database backup. Drafts await owner review and remain absent from
-public group/category eligibility. Publication, real group frontend integration
-and automatic assignment remain separate work.
+public group/category eligibility. Publication and automatic assignment remain separate editorial/automation work;
+public group frontend integration is delivered for eligible published judged groups.
 
 
 ## Standalone data utilities
@@ -339,7 +339,7 @@ DOROB_API_URL=http://127.0.0.1:3001 bun run dev --hostname 127.0.0.1
 Open [group administration](http://127.0.0.1:3000/admin/groups). Create a draft,
 edit its fields, select existing catalog courses manually, inspect retained source
 facts, and explicitly publish/unpublish. A saved publication flag needs at least
-two members for public eligibility. Public group cards/routes still use fixtures.
+two members for public eligibility. Public judged-group cards/routes additionally require a current judgment and ready facts/images for every member.
 The existing frontend-only startup remains available; admin reads show a retry
 state if the API is unavailable. The whole-app launcher also supplies the API URL;
 its web listener now binds explicitly to `127.0.0.1`.
@@ -493,9 +493,10 @@ Migration 007 adds a private immutable ledger and runs through the usual explici
 `bun run db:migrate` workflow; startup never migrates. `(systemId,submissionId)`
 is globally unique. Exact retries recover the original record after source changes;
 readback reports computed freshness and retains its complete input manifest.
-Acceptance does not certify quality or change membership/publication/public pages.
-Model execution, frontend judgment rendering, public selection and approval remain
-follow-up scope. Keep management on trusted loopback.
+Acceptance does not certify quality or change membership/publication. For published,
+fully presentation-ready groups, public comparison reads automatically select the
+newest current judgment. Model execution remains explicitly invoked; no separate
+judgment approval gate is added. Keep management on trusted loopback.
 
 See [traversal, bounds, recovery and rollback](docs/catalog.md#course-group-judge-evidence-and-judgments),
 [shared contract](packages/core/src/group-judgments.ts),
@@ -518,3 +519,22 @@ is unchanged. The owner-authorized local database operation subsequently applied
 migration 007 after a full backup, with all 30 existing data-table fingerprints
 unchanged and the judgment history read verified. See
 [guide validation and operational results](docs/validation.md#ai-judge-guide-and-local-migration--october-19-2026).
+
+### Public judged-group comparisons
+
+The homepage group cards and `/groups/<stored-slug>` now read retained judgments
+and current provider facts through same-origin handlers, using the existing
+server-only `DOROB_API_URL` and launcher setup. No additional configuration,
+migration or startup inference is required. Groups need explicit publication,
+at least two members, a current judgment and presentation-ready facts/images for
+all members. Publish before judging; source, membership or publication changes can
+hide a comparison until it is explicitly judged again. No fixture fallback fills
+empty or failed requests. See [frontend behavior](docs/frontend.md#public-judged-group-frontend--october-19-2026)
+and [public contracts](docs/catalog.md#public-judged-groups--october-19-2026).
+
+The completed `connect-public-group-judgments` change is
+[archived](openspec/changes/archive/2026-10-20-connect-public-group-judgments/)
+with all 21 tasks complete. Its public judged-group contract and homepage
+preservation update are synced to main specs; all 18 main specs pass strict
+validation. See [validation](docs/validation.md#public-judged-group-pre-commit-verification--october-20-2026)
+for the pre-commit checks and production-build limitation.

@@ -51,7 +51,7 @@ The course section and real-course dialog SHALL present Persian loading, empty, 
 - **THEN** real results return after recovery, or a distinct empty state appears for zero matches
 
 ### Requirement: Preserve surrounding sample frontend
-The hero and its course shelf/provider strip, groups, topic/category appearance, header/navigation/footer, group routes, and design-system previews SHALL retain their existing appearance, data, and behavior. Only control wiring necessary for real course queries SHALL change outside the course section. Hero sample-card details SHALL retain their sample facts and labels independently of real-course details.
+The hero and its course shelf/provider strip, topic/category appearance, header/navigation/footer and design-system previews SHALL retain their existing appearance, data and behavior, except removal of design-process labels from product screens. Homepage group cards and group routes SHALL use the public-group-judgments contract. Hero sample-card details SHALL retain their sample facts and provenance independently of real-course details.
 
 #### Scenario: Sample hero details
 - **WHEN** a visitor opens a hero sample card after viewing a database course
@@ -59,7 +59,7 @@ The hero and its course shelf/provider strip, groups, topic/category appearance,
 
 #### Scenario: Existing destinations
 - **WHEN** the homepage groups and existing group/design-system routes are visited
-- **THEN** their fixture content, links, presentation, and interactions remain unchanged
+- **THEN** group cards and destinations use real judged groups and documented legacy redirects, while design-system fixture content, links, presentation and interactions remain unchanged
 
 ### Requirement: Accessible Persian course presentation
 Integrated course content SHALL retain Persian RTL presentation, localized numbers and Jalali dates, isolated mixed-direction text, logical layout properties, and usable mobile layouts. Loading/results SHALL expose accessible status, paging/retry SHALL be keyboard usable, and real-course dialogs SHALL retain focus handling and return focus to their triggering control.
