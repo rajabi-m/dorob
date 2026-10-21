@@ -9,6 +9,6 @@ export const publicGroupDetailExample:PublicJudgedGroupDetail={...common,courses
 export const publicGroupSummaryExample:PublicJudgedGroup={...common,covers:courses.map(({course})=>({courseId:course.id,title:course.title,thumbnail}))};
 export function addPublicGroupExamples(document:{paths?:Record<string,Record<string,{responses?:Record<string,{content?:Record<string,{example?:unknown}>}>}>>}){
  for(const [path,example]of [['/api/v1/judged-groups',{items:[publicGroupSummaryExample],total:1,limit:12,offset:0}],['/api/v1/judged-groups/{slug}',publicGroupDetailExample]] as const){const responses=document.paths?.[path]?.get.responses;if(!responses)continue;const content=responses['200']?.content?.['application/json'];if(content)content.example=example;
- for(const [status,code]of [[404,'not_found'],[409,'conflict'],[422,'invalid_input'],[503,'unavailable']] as const){const error=responses[String(status)]?.content?.['application/json'];if(error)error.example={error:{code,message:status===409?'Judgment changed; restart comparison.':'Public comparison unavailable.'}};}
+ for(const [status,code]of [[404,'not_found'],[409,'conflict'],[422,'invalid_input'],[503,'unavailable']] as const){const error=responses[String(status)]?.content?.['application/json'];if(error)error.example={error:{code,message:status===409?'Comparison replaced or withdrawn; restart comparison.':'Public comparison unavailable.'}};}
  }
 }

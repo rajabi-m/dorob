@@ -38,7 +38,7 @@ remain; storage availability is required for safe new browser promotion.
 
 Current checks and build limitations are maintained in [validation](docs/validation.md).
 
-Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 has begun with the owner-selected local backend foundation; the homepage course section is connected to the local public catalog. Homepage group cards and group destinations now use retained current judgments and provider facts; other integrations remain deferred.
+Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 has begun with the owner-selected local backend foundation; the homepage course section is connected to the local public catalog. Homepage group cards and group destinations now use retained comparison editions and their evaluated provider facts; other integrations remain deferred.
 
 October 20, 2026 — `add-course-group-catalog` adds `/groups` with server-rendered
 judged groups, normalized text search, a single category filter and twelve results
@@ -130,6 +130,18 @@ frontend documentation and archived/synced OpenSpec artifacts. README now record
 the shared ownership and completed change. Unrelated scraper edits, curation
 notes and other active OpenSpec changes are excluded. The existing production
 build limitation remains recorded in `docs/validation.md`.
+
+October 22, 2026 — `retain-published-group-comparisons` separates working-group
+freshness from public comparison editions. Additions and source/reference/definition
+refreshes preserve the selected judgment with its exact evaluated immutable course
+snapshots, category, prices, images, dates, counts and order. Approved additions
+wait for a complete ready replacement; list/detail/homepage surfaces switch together.
+Existing current-only wording above describes the superseded behavior. Unpublishing
+and assessed-member withdrawal still hide an edition; selected asset loss cannot
+borrow facts or trigger historical fallback. Authoring revision checks and private
+`isCurrent` remain strict. No migration, source collection, inference, manual edition
+publication or duplicate course-data store is introduced. Verification is recorded
+in `docs/validation.md`; individual-course APIs continue exposing latest observations.
 
 ## Product vision
 
@@ -653,3 +665,10 @@ open the course's retained provider page directly in a new tab. The early-stage
 local details dialog has been removed from public course browsing; price-date
 tooltips remain. Public course detail APIs and independent design-system fixture
 previews retain their separate contracts.
+
+October 22, 2026 — `retain-published-group-comparisons` is archived with all
+13 tasks complete. Its seven modified and two added requirements are synced to
+`public-group-judgments`; strict validation passes. The immutable source/edition
+behavior and known Bun production-build limitation are recorded in
+`docs/validation.md`. This checkpoint includes only retained comparison scope;
+earlier scraper changes and other active proposals remain separate.

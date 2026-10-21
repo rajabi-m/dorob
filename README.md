@@ -2,7 +2,7 @@
 
 نام فارسی پروژه «دورُب» است؛ ترکیبی از نام‌های «دوره» و «ترب».
 
-A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 includes an independent local API/PostgreSQL foundation and manual curated catalog APIs. The dedicated course catalogue and bounded homepage shelf read the local public catalog; group cards and destinations use current retained judgments and provider facts. The homepage hero shelf also uses a selected real group; design-system fixtures remain separate. Production deployment remains pending.
+A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 includes an independent local API/PostgreSQL foundation and manual curated catalog APIs. The dedicated course catalogue and bounded homepage shelf read the local public catalog; group cards and destinations use retained comparison editions and their evaluated provider facts. The homepage hero shelf also uses a selected real group; design-system fixtures remain separate. Production deployment remains pending.
 
 Start with the [documentation hub](docs/index.md), [project plan](Plan.md), and [contributor instructions](AGENTS.md).
 
@@ -47,7 +47,7 @@ The frontend refactor is [archived](openspec/changes/archive/2026-10-22-refactor
 - `/groups`: server-rendered group catalogue with search and one category filter, twelve groups per page, URL-backed `q`, `category` and `page`, active chips and a mobile category panel. Example: `/groups?q=Python&category=code&page=2`. The duplicate results heading is visually hidden while its accessible label and keyboard focus target remain. No provider, price, level or sort filters.
 - `/courses`: server-rendered individual-course catalogue with normalized search, provider, pricing-status and content-duration filters, eighteen results per page, URL-backed state, chips and mobile filters. No category or level filter.
 - `/design-system`: approved سنجش / لاجورد design, the supplied ring-and-cap logo, Vazirmatn, semantic tokens, interactive discovery examples, and component previews. Most examples are fictional; course-card snapshots are dated explicitly.
-- `/groups/[id]`: eligible stored-slug destinations reuse the selected Python layout with retained AI hero text, exact judgment order, tags and assessments alongside current provider facts. Galleries, pinned course pagination and retry states are supported. Legacy `/groups/python-beginner` and `/groups/n8n` redirect to their canonical real slugs; other fixture-only destinations return 404 unless an eligible real group has that slug.
+- `/groups/[id]`: eligible stored-slug destinations reuse the selected Python layout with retained AI hero text, exact judgment order, tags and assessments alongside their exact evaluated provider facts. Galleries, pinned course pagination and retry states are supported. Legacy `/groups/python-beginner` and `/groups/n8n` redirect to their canonical real slugs; other fixture-only destinations return 404 unless an eligible real group has that slug.
 
 The hero shelf selects `python-starting-programming`, requires at least three eligible courses, and links its first three judged members to their comparison rows. Unavailable selections never fall back to dated samples. Homepage search targets groups; both catalogue conditions and page survive reload and Back/Forward in the URL. Course prices are retained observations, not current provider quotations. Individual course results use ingestion-time order; group comparisons preserve the selected judgment’s order. Visits do not run models, collect courses or refresh judgments. Scheduled refresh and production deployment remain deferred. See [frontend behavior and decisions](docs/frontend.md) and [snapshot provenance](docs/provider-snapshots.md).
 
@@ -207,7 +207,7 @@ bun run build:api
 bun apps/api/tests/built-ingestion-smoke.ts
 ```
 
-The local catalog adds explicit SQL migrations, minimal course references, editor-defined groups, and many-to-many assignments. See [catalog setup and workflow](docs/catalog.md). It has no ORM, AI jobs, authentication or cloud deployment. The homepage course section reads eligible current observations; group cards and destinations read current judgments. The real-group hero and independent design-system fixtures remain separate.
+The local catalog adds explicit SQL migrations, minimal course references, editor-defined groups, and many-to-many assignments. See [catalog setup and workflow](docs/catalog.md). It has no ORM, AI jobs, authentication or cloud deployment. The homepage course section reads eligible current observations; group cards and destinations read retained comparison editions. The real-group hero and independent design-system fixtures remain separate.
 
 October 12 initial curation researched all 1,495 existing course references and
 created seven verified draft groups with 17 explicit memberships across all six
@@ -326,7 +326,7 @@ Private journals and reports remain ignored under `apps/utils/output/`.
 
 The homepage `#courses` shelf and `/courses` catalogue read
 the public course API. The real hero, group catalogue and group routes read
-current judged-group data; design-system fixtures stay independent. `/courses`
+retained judged-group editions; design-system fixtures stay independent. `/courses`
 filters by provider, pricing status and content duration without category or level
 controls. The legacy API category filter uses published editorial memberships;
 unassigned ready courses remain discoverable without category inference.
@@ -385,7 +385,7 @@ DOROB_API_URL=http://127.0.0.1:3001 bun run dev --hostname 127.0.0.1
 Open [group administration](http://127.0.0.1:3000/admin/groups). Create a draft,
 edit its fields, select existing catalog courses manually, inspect retained source
 facts, and explicitly publish/unpublish. A saved publication flag needs at least
-two members for public eligibility. Public judged-group cards/routes additionally require a current judgment and ready facts/images for every member.
+two members for public eligibility. Public judged-group cards/routes additionally require a complete retained judgment and ready evaluated facts/images for every assessed member.
 The existing frontend-only startup remains available; admin reads show a retry
 state if the API is unavailable. The whole-app launcher also supplies the API URL;
 its web listener now binds explicitly to `127.0.0.1`.
@@ -541,7 +541,7 @@ is globally unique. Exact retries recover the original record after source chang
 readback reports computed freshness and retains its complete input manifest.
 Acceptance does not certify quality or change membership/publication. For published,
 fully presentation-ready groups, public comparison reads automatically select the
-newest current judgment. Model execution remains explicitly invoked; no separate
+newest complete ready retained edition. Model execution remains explicitly invoked; no separate
 judgment approval gate is added. Keep management on trusted loopback.
 
 See [traversal, bounds, recovery and rollback](docs/catalog.md#course-group-judge-evidence-and-judgments),
@@ -568,14 +568,22 @@ unchanged and the judgment history read verified. See
 
 ### Public judged-group comparisons
 
-The homepage group cards, `/groups` catalogue and `/groups/<stored-slug>` read retained judgments
-and current provider facts through same-origin handlers, using the existing
-server-only `DOROB_API_URL` and launcher setup. No additional configuration,
-migration or startup inference is required. Groups need explicit publication,
-at least two members, a current judgment and presentation-ready facts/images for
-all members. Publish before judging; source, membership or publication changes can
-hide a comparison until it is explicitly judged again. No fixture fallback fills
-empty or failed requests. See [frontend behavior](docs/frontend.md#public-judged-group-frontend--october-19-2026)
+The homepage group cards, `/groups` catalogue and `/groups/<stored-slug>` use one
+retained comparison edition: a judgment plus its exact immutable source snapshots.
+Working additions, source refreshes and definition edits leave that edition visible
+unchanged. Newly approved courses wait for the next complete ready judgment; prices,
+ratings, titles, images, dates, counts and order switch together on replacement.
+Individual-course results independently use latest retained observations.
+
+Existing `DOROB_API_URL` and launcher setup remain; no migration or extra data copy
+is needed. Publish before judging. Unpublishing or removing an assessed member
+hides the edition; removing a waiting member does not. Selected asset loss cannot
+borrow another snapshot or fall back to older history. Management `isCurrent`
+still flags working changes, and new judgments still require the current revision.
+Pins survive working changes and return 409 on replacement/withdrawal. Retain both
+historical source records and hosted assets in backups. No inference, collection,
+public stale notice or fixture fallback is added. Rollback restores current-only
+visibility without rewriting data. See [frontend behavior](docs/frontend.md#public-judged-group-frontend--october-19-2026)
 and [public contracts](docs/catalog.md#public-judged-groups--october-19-2026).
 
 The completed `connect-public-group-judgments` change is
@@ -590,3 +598,9 @@ open the course's retained provider page directly in a new tab. The early-stage
 local details dialog has been removed from public course browsing; price-date
 tooltips remain. Public course detail APIs and independent design-system fixture
 previews retain their separate contracts.
+
+The retained comparison change is [archived](openspec/changes/archive/2026-10-22-retain-published-group-comparisons/)
+with all 13 tasks complete. Its seven modified and two added public-judgment
+requirements are synced to the main spec. Verification and the existing Bun web
+production-build limitation are recorded in
+[validation](docs/validation.md#retained-public-comparison-editions--october-22-2026).

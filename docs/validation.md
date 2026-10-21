@@ -1541,3 +1541,71 @@ pass strict validation. The change is archived at
 `openspec/changes/archive/2026-10-22-unify-public-catalog-controls/`, including its
 `.openspec.yaml`. No implementation changes, commit, push or branch are included
 in this archival operation; the existing production-build limitation remains.
+
+
+## Retained public comparison editions — October 22, 2026
+
+`retain-published-group-comparisons` implements immutable comparison editions from
+retained judgments, group/member manifests and exact same-course snapshots. No
+migration, inference, scraping, membership change or judgment generation was run
+against the working catalogue. Existing authoring revision checks and private
+freshness remain strict. The seven modified and two added requirements are synced to the main spec; the
+change is archived at `openspec/changes/archive/2026-10-22-retain-published-group-comparisons/`
+with all 13 tasks complete.
+
+Checks:
+
+- `bun run lint`, `bun run typecheck`, and `bun run build:api`: passed. API lint,
+  type checking and build were also rerun after exact asset-hash verification.
+- `API_INTEGRATION=1 bun run test:api`: **87 passed**, zero skipped/failed,
+  including isolated database-backed tests. The final focused edition/public-group/
+  thumbnail suite passed **16 tests** after adding same-size asset-corruption checks.
+- `bun test packages/core/tests apps/web/tests`: **95 passed**, zero failed.
+  The first sandboxed invocation could not run the local-socket deadline test;
+  rerunning with local network access passed the full suite.
+- `API_INTEGRATION=1 bun test apps/web/acceptance/retained-comparison.test.tsx`:
+  passed, **31 assertions**, using actual isolated API responses and public
+  components for homepage cards, featured shelf, catalogue, comparison, breadcrumbs,
+  metadata, source links, original Persian dates and absent waiting-course copy.
+- `bun apps/web/node_modules/typescript/bin/tsc -p apps/web/tsconfig.integration.json`:
+  passed, including the new acceptance test. RTL detector on that file: zero errors
+  or warnings. Strict OpenSpec validation and whitespace checks passed.
+- `bun run build`: production compilation and TypeScript passed. Page-data
+  collection still fails with the previously documented Bun error
+  `Expected CommonJS module to have a function wrapper`, encountered in the admin
+  discovery promotion route. This is not a passing production build.
+
+Database regressions cover fourth-course suggestion approval without public change,
+all evaluated fact identities/values, newer failed/pending images, unchanged pins,
+strict stale submissions, complete ready replacement, shared courses assessed from
+different snapshots, retained categories after editorial edits, 102 newer incomplete
+judgments, deterministic ties, withdrawal without historical fallback, draft
+publication, safe corruption/integrity errors and read-only storage failures.
+
+Browser acceptance used a disposable isolated schema and temporary thumbnail
+storage at loopback API port 3011, plus an isolated copy of the frontend at port
+3012 (Next development with webpack). The working app at ports 3000/3001 was left
+running. A fourth synthetic course was approved through suggestion/review HTTP,
+then source data was refreshed. Working membership became four while the entire
+public three-course response remained identical. An unready replacement waited;
+processing its exact images switched all four courses and new facts together.
+The old pin returned 409. Removing a waiting member preserved the edition;
+removing an assessed member returned unpinned 404/pinned 409 without falling back.
+A complete replacement excluding that member restored the three-course comparison;
+unpublishing returned 404. Test schemas/assets and temporary listeners were cleaned
+up after acceptance, without changing the working Python group.
+
+Visual checks at 1280px desktop and 390px/320px mobile confirmed `lang=fa`, RTL,
+readable mixed Persian/Latin text, actual historical dates, coherent counts/rows,
+visible 2px solid keyboard focus and no horizontal overflow. Existing UI components
+needed no presentation changes. Read-only inspection also confirmed the working
+Python comparison is available again with its retained three assessed courses;
+the newly approved Jadi course waits for the next complete judgment.
+
+Operational limits: historical comparison prices/URLs can age; preserve visible
+source/judgment dates. Individual-course browsing can show newer values. Back up
+retained snapshots and hosted assets together. Read-only comparison asset checks
+now hash bounded files to detect same-size corruption, with at most four concurrent
+checks. This remains a local-catalogue scan; public histories and manual edition
+publication/revocation are not introduced. Rollback restores strict current-only
+visibility without rewriting retained data.

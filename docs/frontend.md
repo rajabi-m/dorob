@@ -1,6 +1,6 @@
 # Frontend: homepage and course groups
 
-Phase 2 was closed by the owner on October 4, 2026. The six-course horizontally scrollable homepage shelf and dedicated `/courses` catalogue use the public course API; group cards and group destinations now use real published groups with current judgments and complete presentation-ready membership. The selected Python layout is shared across categories, with source facts separate from generated content. The homepage hero uses a selected real group; design-system fixtures remain isolated. The dated design history below includes superseded fixture behavior and layouts; [validation](validation.md) records current checks.
+Phase 2 was closed by the owner on October 4, 2026. The six-course horizontally scrollable homepage shelf and dedicated `/courses` catalogue use the public course API; group cards and group destinations now use real published groups with retained judgments and exact presentation-ready evaluated snapshots. The selected Python layout is shared across categories, with source facts separate from generated content. The homepage hero uses a selected real group; design-system fixtures remain isolated. The dated design history below includes superseded fixture behavior and layouts; [validation](validation.md) records current checks.
 
 ## Maintained frontend ownership — October 21, 2026
 
@@ -252,7 +252,7 @@ presentation only; no popularity threshold or comparative price rule is implemen
 
 The homepage group section now server-renders `/api/v1/judged-groups` data,
 independently of the individual-course grid. Cards show generated hero copy,
-actual membership counts, distinct providers and up to three hosted covers in judge
+assessed edition counts, distinct providers and up to three hosted covers in judge
 order. The October 20 update moves group pagination to `/groups`; homepage loading, empty and retry states never substitute fixture groups.
 The static homepage hero showcase and design-system fixtures remain separate.
 
@@ -275,8 +275,14 @@ instead of false 404s. Already rendered data stays visible until navigation/refr
 Data retry/paging and images use concrete same-origin web handlers; the API origin
 remains server-only via existing `DOROB_API_URL`. Deadlines are five seconds, list
 responses cap at 2 MiB and detail responses at 8 MiB. No extra setup or migration is
-needed. A published group needs current judgments and every member ready; source or
-publication changes require explicit rejudging. Visits never run models or collection.
+needed. A published group uses its newest complete ready published-context edition, with
+exact retained source snapshots and assets for every assessed member. Working
+additions and source/definition edits leave it visible; new courses wait. Prices,
+ratings, names, category, covers, counts, order and source/judgment dates stay frozen
+until replacement. Individual-course results can show newer facts. Unpublishing or
+removing an assessed member hides the whole edition; removing a waiting course does
+not. Pins survive working changes and conflict on replacement/withdrawal. No public
+updating notice is added. Management freshness and strict new-submission checks remain. Visits never run models or collection.
 
 
 ## Shared group catalogue — October 20, 2026

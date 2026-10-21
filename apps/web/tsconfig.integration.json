@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": { "target": "ES2023", "incremental": false },
-  "include": ["next-env.d.ts", "acceptance/discovery-review.test.tsx"],
+  "include": ["next-env.d.ts", "acceptance/discovery-review.test.tsx", "acceptance/retained-comparison.test.tsx"],
   "exclude": ["node_modules"]
 }

@@ -7,67 +7,95 @@ Let visitors discover published, currently judged course groups and compare thei
 ## Requirements
 
 ### Requirement: Automatic public judgment selection
-Public judged-group reads SHALL require publication, at least two distinct members, a current judgment and presentation-ready current observations for every member under existing public course rules. Selection SHALL use newest receivedAt with ascending judgment ID ties. Eligibility SHALL precede list pagination and totals, without changing existing public group or course APIs.
+Public judged-group reads SHALL select the newest complete presentation-ready retained edition created for a published group, ordered by receivedAt descending and judgment ID ascending. Editions require at least two assessed members with exact retained snapshots. Current publication and assessed-member withdrawal gates SHALL apply. Eligibility SHALL precede totals and pagination; public individual-course APIs SHALL remain unchanged.
 
 #### Scenario: Multiple judgments
-- **WHEN** an eligible published group has multiple current judgments
-- **THEN** the newest current judgment is selected automatically without a separate approval action
+- **WHEN** an eligible published group has multiple complete presentation-ready judgments created while published
+- **THEN** the newest edition is selected automatically without a separate approval action, even when its input revision is no longer current
 
 #### Scenario: Ineligible group
-- **WHEN** a group is a draft, has fewer than two members, lacks a current judgment, or has an unready member
-- **THEN** it is absent from judged-group discovery and unpinned detail returns 404 without dropping members or borrowing historical facts
+- **WHEN** a group is a draft, lacks a complete ready edition, or fails the assessed-member withdrawal gate
+- **THEN** it is absent from judged-group discovery and unpinned detail returns 404 without dropping assessed members or substituting different source facts
+
+#### Scenario: Newly approved course waits
+- **WHEN** a fourth course is approved for a group with a public three-course edition
+- **THEN** the three-course edition remains selected unchanged and the fourth course is absent from its rows, count, providers and covers until included in a complete replacement
+
+#### Scenario: Replacement is not ready
+- **WHEN** a newer judgment has an absent source snapshot or a thumbnail not yet ready while the preceding edition remains complete and ready
+- **THEN** the preceding edition remains selected without combining either edition's members or facts
+
+#### Scenario: Complete replacement becomes available
+- **WHEN** a newer complete judgment covering the working membership and its exact retained snapshots is presentation-ready
+- **THEN** subsequent reads select its hero, courses, facts and summaries together with its new judgment identity
 
 ### Requirement: Strict freshness and read-only visibility
-Public selection SHALL use the existing inputRevision semantics, including publication status, group definition, member references and current snapshot identities. Reads SHALL NOT write, publish, run inference, scrape or process images. Stored judgments and management freshness SHALL remain unchanged.
+Public visibility SHALL be independent of working inputRevision equality. Public reads SHALL use only the selected judgment's retained group context, assessed membership and exact source snapshots, with current slug, publication and withdrawal gates. Reads SHALL NOT write, publish, infer, scrape or process images. Judgment submission revision checks, immutable history and management isCurrent SHALL remain unchanged.
 
 #### Scenario: Publish after judging
 - **WHEN** a draft is judged and then published
-- **THEN** that judgment is stale and the group remains absent until an explicit current judgment exists
+- **THEN** the draft-context judgment does not become a public edition and no comparison appears until a complete ready judgment created while published exists
 
 #### Scenario: Source or membership changes
-- **WHEN** a current snapshot, member reference, group definition or membership changes
-- **THEN** an older incompatible judgment cannot be combined with the changed facts and no automatic regeneration occurs
+- **WHEN** a source snapshot, member reference, group definition or added membership changes after an edition is available
+- **THEN** the edition remains visible with its original assessed members and facts, while management reports the retained judgment's actual freshness and no regeneration occurs
+
+#### Scenario: Working revision validation is preserved
+- **WHEN** a caller submits a new judgment using a revision invalidated by an approved addition or source refresh
+- **THEN** the submission returns 409 while the retained public edition remains available
 
 ### Requirement: Paginated public judged-group discovery
-GET `/api/v1/judged-groups` SHALL accept limit (default 12, maximum 100), offset (default zero), optional `q` and optional fixed-registry `category`, returning items, total, limit and offset. Eligibility and both filters SHALL precede totals and pagination. Groups SHALL sort by slug ascending with ID ties. Each item SHALL include stable group ID/slug/category, judgment hero, actual course count, distinct providers, up to three hosted covers in judge order, and selected judgment ID/time.
+GET `/api/v1/judged-groups` SHALL preserve limit (default 12, maximum 100), offset (default zero), optional q and category, returning items, total, limit and offset. Edition eligibility and filters SHALL precede totals/pagination. Groups SHALL sort by current slug and ID. Items SHALL contain stable ID/current slug, retained category/hero, assessed course count, distinct assessed providers, up to three covers in judge order, and selected judgment ID/time.
 
 #### Scenario: Cards beyond the first page
 - **WHEN** more eligible groups exist than the requested limit
 - **THEN** bounded pages expose all groups with accurate totals and deterministic ordering for unchanged data
 
 #### Scenario: Provider and cover derivation
-- **WHEN** a group contains several courses from one provider and courses from another
-- **THEN** providers are deduplicated, course count includes every member, and covers derive from actual members rather than fixture assets
+- **WHEN** an edition contains several courses from one provider and courses from another
+- **THEN** providers are deduplicated, course count includes every assessed member, and covers derive from the edition's exact source snapshots
 
 #### Scenario: Combined conditions before paging
 - **WHEN** a query and category are provided with an offset
-- **THEN** only eligible groups matching both conditions are counted and paginated in the existing stable order
+- **THEN** only eligible editions matching both conditions are counted and paginated in the existing stable order
 
 #### Scenario: Existing clients
 - **WHEN** a client omits search and category
 - **THEN** existing list defaults, response shape and ordering remain compatible
 
 ### Requirement: Consistent paginated judgment details
-GET `/api/v1/judged-groups/:slug` SHALL return group identity/category, selected judgment ID/time, hero and paginated assessed courses (default 20, maximum 100). Courses SHALL retain exact judgment order and each carry matching current provider facts. Later pages SHALL accept judgmentId to pin selection; an invalidated or superseded pin SHALL return 409 instead of mixing results.
+GET `/api/v1/judged-groups/:slug` SHALL return current group identity/slug, retained category, selected judgment ID/time, hero and paginated assessed courses (default 20, maximum 100). Courses SHALL retain exact judgment order and matching retained source facts. Later pages SHALL accept judgmentId to pin selection; withdrawn, unavailable or superseded pins SHALL return 409 instead of mixing editions.
 
 #### Scenario: Expensive course leads
 - **WHEN** the judge places an expensive course first
 - **THEN** the API and page retain it first without price-based reordering or tag penalties
 
 #### Scenario: Selection changes during traversal
-- **WHEN** a visitor requests another page pinned to a judgment that is no longer selected or eligible
-- **THEN** the response is 409 and the interface offers restarting from the current first page without appending mismatched courses
+- **WHEN** a visitor requests another page pinned to an edition that is no longer selected or eligible
+- **THEN** the response is 409 and the interface offers restarting from the selected first page without appending mismatched courses
+
+#### Scenario: Working data changes during traversal
+- **WHEN** memberships are added or sources refreshed between pages without replacing or withdrawing the selected edition
+- **THEN** its pinned next page succeeds with the same totals, ordering and retained snapshots
 
 ### Requirement: Separate provider facts and generated assessments
-Public assessed courses SHALL expose current observation identity/time, title, provider, hosted image, source URL, available instructors, level, content duration, accountable price/offers and rating with its original scale/count. Generated tags and bullets SHALL remain separate. Unknown facts SHALL stay explicit. Public payloads SHALL omit judge evidence, manifests, system/submission IDs, raw feedback and storage diagnostics.
+Public assessed courses SHALL expose the edition's exact observation identity/time, title, provider, hosted image, source URL, instructors, level, duration, price/offers and rating with original scale/count. Generated tags/bullets SHALL remain separate. Unknown facts SHALL stay explicit. Payloads SHALL omit judge evidence, manifests, system/submission IDs, raw feedback and storage diagnostics. Latest-course APIs SHALL remain independent.
 
 #### Scenario: Missing or subscription facts
-- **WHEN** a member lacks a rating or has unknown or subscription pricing
+- **WHEN** an assessed snapshot lacks a rating or has unknown or subscription pricing
 - **THEN** no rating is invented, unknown never becomes free, and subscription periods and available offer terms remain distinguishable
 
 #### Scenario: Snapshot consistency
-- **WHEN** data changes while a detail request is assembled
-- **THEN** the response uses one consistent group/judgment/source view or safely fails, rather than joining independently fetched management and course payloads
+- **WHEN** working data changes while a detail request is assembled
+- **THEN** the response uses one consistent edition/source view or safely fails rather than joining current management facts to retained assessment text
+
+#### Scenario: Price and reference refresh
+- **WHEN** an assessed course receives a new title, source URL, price, rating or thumbnail in the working catalogue
+- **THEN** the comparison retains all corresponding evaluated values and snapshot identities while the individual-course catalogue can expose newer facts
+
+#### Scenario: Same course appears in different editions
+- **WHEN** two groups assess the same course using different snapshots
+- **THEN** each group displays its own edition's snapshot without cross-group source substitution
 
 ### Requirement: Real homepage group navigation
 The homepage group section SHALL server-render up to three eligible judged groups in the existing stable list order, omit group pagination, and expose «مشاهده همه مجموعه‌ها» linking to `/groups`. Cards SHALL use generated title/subtitle/level text and actual counts/providers/covers, link to `/groups/<stored-slug>`, and retain the selected cycling presentation. Heading copy SHALL describe course groups without unsupported popularity or fixture claims.
@@ -89,7 +117,7 @@ The homepage group section SHALL server-render up to three eligible judged group
 - **THEN** only those groups render without fabricated cards and the catalogue link remains available
 
 ### Requirement: Reusable judgment group page
-Every eligible slug SHALL use the selected Python layout with generated hero fields, registry-owned category presentation, actual counts, gallery, ordered course rows, supported tag styles and AI assessment attribution. Empty assessment lists SHALL be omitted without filler or claims of no flaws. Metadata SHALL derive from eligible retained content. Product screens SHALL omit design-process labels.
+Every eligible slug SHALL use the selected Python layout with retained hero, category, assessed counts, gallery, ordered rows, supported tags and AI attribution. Empty assessment lists SHALL be omitted without filler. Metadata SHALL derive from the selected edition. Source and judgment dates SHALL remain accurate; public UI SHALL omit working-update notices and claims that retained prices are current quotations.
 
 #### Scenario: Empty weakness list
 - **WHEN** a course has strengths but no weakness bullets
@@ -101,7 +129,11 @@ Every eligible slug SHALL use the selected Python layout with generated hero fie
 
 #### Scenario: Course source action
 - **WHEN** a visitor follows a provider action
-- **THEN** it uses that course's retained source URL with safe new-window behavior, while compact metadata shows content duration without lesson counts or study-effort estimates
+- **THEN** it uses that assessed snapshot's retained source URL with safe new-window behavior, while compact metadata shows content duration without lesson counts or study-effort estimates
+
+#### Scenario: Working changes remain internal
+- **WHEN** an addition or source refresh makes the selected edition noncurrent in management
+- **THEN** visitors continue seeing the same comparison and original dates without a pending-course section or an updating warning
 
 ### Requirement: Accessible Persian interaction and resilient gallery
 Integrated views SHALL use Persian RTL, logical layout properties, isolated mixed-direction content, Persian numerals, Jalali dates and visible keyboard focus. Galleries SHALL preserve controls, honor reduced motion and pause on focus/hover or hidden tabs. Narrow layouts and long text SHALL avoid unintended horizontal overflow. Image failures SHALL use honest visual fallbacks.
@@ -140,16 +172,46 @@ Group list search SHALL match a literal substring in the group's selected hero t
 - **THEN** those characters are treated literally rather than as search wildcards
 
 ### Requirement: Validated group list filters
-List `q` SHALL accept at most 200 characters and `category` SHALL accept exactly one fixed-registry ID. Repeated or unknown API parameters, invalid categories and oversized queries SHALL return safe 422 responses. Category matching SHALL use the group's assigned category. List-only filters SHALL be rejected by the detail endpoint; existing detail paging and judgment pinning SHALL remain intact.
+List q SHALL accept at most 200 characters and category SHALL accept exactly one fixed-registry ID. Repeated or unknown parameters, invalid categories and oversized queries SHALL return safe 422 responses. Category matching SHALL use the selected edition's retained assigned category. List-only filters SHALL be rejected by detail; existing paging and judgment pinning SHALL remain intact.
 
 #### Scenario: Unsupported filter
-- **WHEN** a caller supplies an invalid category, duplicate `q`, or provider filter to the judged-group API
+- **WHEN** a caller supplies an invalid category, duplicate q, or provider filter to the judged-group API
 - **THEN** the API returns 422 without silently ignoring the invalid filter
 
 #### Scenario: Category boundary
-- **WHEN** a group belongs to `code` and a request selects `design`
-- **THEN** that group is excluded regardless of its member-course facts
+- **WHEN** the selected edition belongs to code and a request selects design
+- **THEN** that group is excluded regardless of its working category or member-course facts
 
 #### Scenario: Detail compatibility
 - **WHEN** callers use existing detail paging and judgment pinning without list filters
-- **THEN** the current detail contract and conflict behavior are preserved
+- **THEN** the existing detail contract and conflict behavior are preserved under retained edition selection
+
+### Requirement: Explicit comparison visibility overrides
+Current unpublishing SHALL hide all editions immediately. Removing a course assessed by the selected edition SHALL hide that edition as a whole, without partially rendering it or searching older editions to bypass withdrawal. Removing a waiting unassessed member SHALL leave the selected edition visible. A replacement that excludes a removed course SHALL be eligible under normal selection rules.
+
+#### Scenario: Unpublish retained comparison
+- **WHEN** an admin unpublishes a group with a retained edition
+- **THEN** it disappears from group discovery and detail regardless of retained judgment history
+
+#### Scenario: Remove assessed course
+- **WHEN** an admin removes one of the courses assessed in the selected edition
+- **THEN** the edition is hidden, unpinned detail returns 404, and pinned detail returns 409 without exposing an older edition instead
+
+#### Scenario: Remove waiting addition
+- **WHEN** an admin removes a newly approved course that is absent from the selected edition
+- **THEN** the selected edition and its assessed count remain unchanged
+
+### Requirement: Exact retained asset availability
+A public edition SHALL use only its assessed snapshots' hosted assets. Newer snapshot or image failures SHALL NOT invalidate an older ready edition. Missing/corrupt assets of the selected edition SHALL make it unavailable without borrowing another snapshot or selecting older history to mask the failure. Storage service outages SHALL retain safe 503 behavior.
+
+#### Scenario: New snapshot image fails
+- **WHEN** a working refresh has a failed thumbnail while the selected edition's retained thumbnail remains available
+- **THEN** the retained comparison stays visible with its original thumbnail
+
+#### Scenario: Evaluated image disappears
+- **WHEN** a selected edition's exact hosted asset is missing or corrupt
+- **THEN** the edition is unavailable under existing 404 or pinned 409 semantics, with no substitute image snapshot or older-edition fallback
+
+#### Scenario: Storage outage
+- **WHEN** required asset storage cannot be inspected
+- **THEN** the read returns safe 503 rather than silently selecting another edition or borrowing facts

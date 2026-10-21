@@ -304,23 +304,51 @@ The old analyzer draft's weighted ranking, extra badges and output shapes are hi
 
 ## Public judged groups — October 19, 2026
 
-The additive `GET /api/v1/judged-groups?limit=12&offset=0` and
-`GET /api/v1/judged-groups/<slug>?limit=20&offset=0` project published
-groups with at least two members, a current judgment and ready current observations
-for every member. Publication is the editorial gate; the newest matching judgment
-is selected automatically (received time descending, ID ascending for ties).
-Existing public group-reference and course APIs retain their eligibility rules.
+The `GET /api/v1/judged-groups?limit=12&offset=0` and
+`GET /api/v1/judged-groups/<slug>?limit=20&offset=0` endpoints select retained
+comparison editions. Each edition contains one immutable judgment, its stored
+group context/member manifest and the exact retained course snapshots and hosted
+thumbnail associations it evaluated. At least two assessed courses are required.
+Published-context candidates sort by received time descending, ID ascending for
+ties; the newest complete candidate with ready image associations is selected.
+A newer incomplete or image-unready candidate leaves the preceding ready edition
+selected. Candidate traversal can reach history beyond the first 100 records.
 
-For a public comparison, the operator should publish before requesting judging; the judge must never publish a group itself. Draft judging remains supported privately. Publication, definition, membership/reference or snapshot
-changes can invalidate judgments; reads never regenerate them. All courses remain
-in judge order, including expensive-first choices and empty assessments. Group
-publication does not certify the quality of generated prose.
+Working additions, source refreshes and group/reference edits do not hide or
+change the edition. Newly approved courses wait for a complete replacement;
+prices, offers, title, rating, instructors, duration, images, source URLs and dates
+remain tied to evaluated snapshots. Counts, providers and covers describe assessed
+members, not pending additions. Category/search use retained category/hero;
+routing uses the current slug. Independent individual-course APIs still use latest
+observations, so their data can be newer than a comparison's.
 
-List limits default to 12, detail to 20; both cap at 100. Use `judgmentId` from
-detail for later course pages; 409 means restart from the unpinned first page.
-Missing/ineligible unpinned detail is 404; unavailable dependencies are 503.
-Public responses omit manifests, submission attribution and raw feedback.
-Read-only asset checks never invalidate associations. Candidate eligibility scans
-use batched source reads and at most four concurrent asset checks, before pagination;
-this is designed for the local catalog rather than unbounded production scale.
-No migration, startup inference or working-catalog mutation is required.
+Publish before judging: a draft-context judgment cannot become public solely by
+publishing its group. New submissions still require the current revision and every
+working member; private `isCurrent` stays truthful and can be false for a visible
+edition. Reads never judge, collect, process images or write selection state.
+Group publication does not certify generated prose. No extra judgment approval
+step, stale notice or unassessed-course section is added.
+
+Current unpublishing hides the comparison. Removing an assessed member hides the
+whole selected edition without falling back to older history; removing a waiting
+addition does not. A new complete replacement excluding the removed course can
+restore visibility. Reapproving the member restores its gate; there is no permanent
+judgment revocation facility. Missing/corrupt selected files cannot borrow images
+or trigger older-edition fallback. Read-only checks verify metadata and content hash without invalidating database
+associations; storage outages return 503.
+
+List limits default to 12, detail to 20; both cap at 100. Pins survive working-only
+changes; a replacement/withdrawal or unavailable edition returns 409 for an old pin.
+Unpinned missing/ineligible detail is 404. Public responses omit manifests,
+submission attribution, raw feedback and storage diagnostics. Assets are checked
+read-only with at most four concurrent inspections. This is designed for the local
+catalogue rather than unbounded production scale.
+
+No migration, backfill or second provider-data copy is needed: immutable snapshots
+and manifests already exist. Retain and back up referenced source records and
+permanent thumbnail files together. Existing hidden published-context judgments
+can reappear when complete and eligible. Rolling back application code restores
+strict current-only visibility without changing retained data or memberships.
+
+The judge must never publish a group itself. Report storage and working freshness
+separately from visibility; acceptance alone does not guarantee presentation readiness.

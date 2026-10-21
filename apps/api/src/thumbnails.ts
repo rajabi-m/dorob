@@ -32,7 +32,11 @@ export function createThumbnailService(repository: IngestionRepository, store: A
     store, initialize: cleanup, inspect,
     async inspectReadOnlyAvailability(snapshot: CourseSnapshot, storageKey: string) {
       const asset = snapshot.thumbnail.asset;
-      return snapshot.presentationReady && !!asset && await store.available(storageKey, asset.byteSize);
+      if (!snapshot.presentationReady || !asset || !await store.available(storageKey, asset.byteSize)) return false;
+      // A retained edition must not expose damaged evaluated assets, including
+      // corruption that preserves the file size. Unlike inspect(), never mutate.
+      try { await store.read(storageKey, asset.hash); return true; }
+      catch (error) { if (error instanceof ImageError) return false; throw error; }
     },
     async inspectAvailability(snapshot: CourseSnapshot, storageKey: string) {
       const asset = snapshot.thumbnail.asset;
