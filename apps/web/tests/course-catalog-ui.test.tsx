@@ -69,17 +69,17 @@ test('catalogue actions link directly to the provider without a detail fetch or 
  expect(link.href).toBe(course.sourceUrl);expect(link.target).toBe('_blank');expect(link.rel).toBe('noopener noreferrer');
  expect(document.querySelector('.catalog-dialog')).toBeNull();expect(requests).toBe(0);
 });
-test('homepage shelf caps cards at three, retries only its bounded query and never shows catalogue controls',async()=>{
- const seed={ok:true as const,data:{items:Array.from({length:4},(_,i)=>({...item,id:'example:'+i})),total:100,limit:18,offset:0}};
+test('homepage shelf caps cards at six, retries only its bounded query and never shows catalogue controls',async()=>{
+ const seed={ok:true as const,data:{items:Array.from({length:7},(_,i)=>({...item,id:'example:'+i})),total:100,limit:18,offset:0}};
  const html=renderToStaticMarkup(<CourseShelfResults initial={seed}/>);
- expect((html.match(/<article/g)??[]).length).toBe(3);expect(html).toContain('مشاهده همه دوره‌ها');expect(html).not.toContain('۱۰۰');expect(html).not.toContain('صفحهٔ بعد');expect(html).not.toContain('checkbox');
- let query:unknown;browserCourses.list=async value=>{query=value;return {...seed,data:{...seed.data,items:seed.data.items.slice(0,3),limit:3}};};
+ expect((html.match(/<article/g)??[]).length).toBe(6);expect(html).toContain('مشاهده همه دوره‌ها');expect(html).not.toContain('۱۰۰');expect(html).not.toContain('صفحهٔ بعد');expect(html).not.toContain('checkbox');
+ let query:unknown;browserCourses.list=async value=>{query=value;return {...seed,data:{...seed.data,items:seed.data.items.slice(0,6),limit:6}};};
  await mount(<CourseShelfResults initial={{ok:false,error:{code:'unavailable',message:'دوباره تلاش کن.'}}}/>);
- await act(async()=>[...document.querySelectorAll('button')].find(b=>b.textContent==='تلاش دوباره')!.click());await flush();expect(query).toEqual({q:'',freeOnly:false,limit:3,offset:0});expect(document.querySelectorAll('article')).toHaveLength(3);
+ await act(async()=>[...document.querySelectorAll('button')].find(b=>b.textContent==='تلاش دوباره')!.click());await flush();expect(query).toEqual({q:'',freeOnly:false,limit:6,offset:0});expect(document.querySelectorAll('article')).toHaveLength(6);
 });
 test('homepage submits group search and preserves unfiltered shelf during typing',async()=>{
  let calls=0;browserCourses.list=async()=>{calls++;return result;};
- await mount(<Homepage realCourses={Promise.resolve(result)}/>);await flush();
+ await mount(<Homepage realCourses={Promise.resolve(result)} realGroups={Promise.resolve({ok:true,data:{items:[],total:0,limit:3,offset:0}})} featuredGroup={Promise.resolve({ok:false,error:{code:"not_found",message:""}})}/>);await flush();
  const search=document.querySelector<HTMLInputElement>('input[name=q]')!;expect(search.getAttribute('aria-label')).toBe('جست‌وجو در مجموعه دوره‌ها');
  // React's controlled input receives a native input event.
  const setter=Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype,'value')!.set!;

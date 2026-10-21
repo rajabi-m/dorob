@@ -11,7 +11,7 @@ test('featured shelf shows three actual members in judgment order with matching 
  expect(html).toContain(g.hero.topicLabel);expect(html).toContain('۳ دوره برای مقایسه');expect(html).toContain('رایگان');
  expect(html.indexOf('دوره اول')).toBeLessThan(html.indexOf('دوره دوم'));expect(html.indexOf('دوره دوم')).toBeLessThan(html.indexOf('دوره سوم'));
  for(const {course} of g.courses.items)expect(html).toContain('/groups/python#course-'+encodeURIComponent(course.id));
- expect(html).not.toContain('نمونه');expect(html).toContain('اطلاعات');
+ expect(html).not.toContain('نمونه');expect(html).toContain('۵ دقیقه');expect(html).toContain('catalog-price');
 });
 test('insufficient or unavailable groups never fall back to saved courses',()=>{
  const small=renderToStaticMarkup(<FeaturedGroupContents result={{ok:true,data:groupExample()}}/>);

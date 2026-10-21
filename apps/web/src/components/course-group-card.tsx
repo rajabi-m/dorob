@@ -1,4 +1,5 @@
 import Image from "next/image";
+import {ProviderMark} from "./provider-mark";
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 import type { ReactNode } from "react";
@@ -34,7 +35,7 @@ export function CourseGroupCard({ group, headingLevel = 4, placeholder, href, on
       </div>
       <p dir="auto">{group.description}</p>
       {group.providers && <ul className={styles.providers} aria-label={`ارائه‌دهنده‌های این مجموعه: ${group.providers.map(provider => provider.name).join("، ")}`}>{group.providers.map(provider => <li key={provider.name}>
-        {provider.logo && <Image src={provider.logo.src} alt="" width={22} height={22} />}<span>{provider.name}</span>
+        <ProviderMark src={provider.logo?.src} size={22}/><span>{provider.name}</span>
       </li>)}</ul>}
     </div>
       <div className={styles.footer}>

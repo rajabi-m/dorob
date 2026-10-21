@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { CourseCard } from "./course-card";
-import { CoursePrice } from "./discovery-showcase";
+import { CoursePrice } from "./fixture-price";
 import { providerHomepageCourses, providerSnapshotDisplayDate, courseDuration, type HomepageCourse } from "./provider-homepage-data";
 
 const examples = ["maktabkhooneh-mk346", "toplearn-7ed1a6e4bb4d", "quera-12547"]

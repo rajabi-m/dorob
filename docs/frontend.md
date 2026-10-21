@@ -1,12 +1,29 @@
 # Frontend: homepage and course groups
 
-Phase 2 was closed by the owner on October 4, 2026. The three-course homepage shelf and dedicated `/courses` catalogue use the public course API; group cards and group destinations now use real published groups with current judgments and complete presentation-ready membership. The selected Python layout is shared across categories, with source facts separate from generated content. The homepage hero uses a selected real group; design-system fixtures remain isolated. The dated design history below includes superseded fixture behavior and layouts; [validation](validation.md) records current checks.
+Phase 2 was closed by the owner on October 4, 2026. The six-course horizontally scrollable homepage shelf and dedicated `/courses` catalogue use the public course API; group cards and group destinations now use real published groups with current judgments and complete presentation-ready membership. The selected Python layout is shared across categories, with source facts separate from generated content. The homepage hero uses a selected real group; design-system fixtures remain isolated. The dated design history below includes superseded fixture behavior and layouts; [validation](validation.md) records current checks.
+
+## Maintained frontend ownership — October 21, 2026
+
+The frontend refactor extracts shared brand, provider/category presentation,
+Persian formatting, public price rendering, catalogue shell/controls/modal and
+bounded response mechanics. Product routes import `styles/product.css`; only the
+reference imports its lab layout. Real comparisons use `group-detail.module.css`.
+The [protected baseline and removal inventory](frontend-refactor.md) records exact
+owners, retained fixture adapters, deleted branches/assets and validation limits.
+The homepage retains its six-course horizontal shelf and real hero, without local
+fixture comparisons, filters, dialogs or a saved-course hero fallback. Public
+course detail APIs remain available. `/design-system` retains independent dated
+cards and interactive admin/discovery specimens, plus shared breadcrumb/provider/
+filter-panel examples. Backend contracts and persisted replay are unchanged.
 
 ## Homepage design and implementation history
 
 The homepage should put visitors straight into discovering and comparing courses. Keep the explanation short, show what Dorob does, and quickly give people useful things to browse. Avoid a long marketing introduction or sections that add scroll without helping users choose a course.
 
 The entire page is Persian and RTL, using the confirmed design system: سنجش, the لاجورد palette, Vazirmatn, the approved logo, and shared responsive components.
+
+The app favicon (`apps/web/src/app/icon.svg`) matches the approved ring-and-cap
+logo with the current لاجورد palette. Next.js supplies its icon metadata link.
 
 ### Header
 
@@ -40,6 +57,11 @@ The six existing categories are:
 - ابزار و بهره‌وری
 
 Reuse the shared `CategoryCard` and `CategoryGrid` components showcased at `/design-system#compact-categories`.
+
+At 700px and below, categories use two rows in one horizontally scrollable RTL
+grid with proximity scroll snapping. Compact 184px horizontal cards place 48px
+artwork beside the category title and a directional arrow. Descriptions are hidden on mobile.
+Desktop and tablet layouts stay unchanged.
 
 #### 4. Popular course groups — مجموعه دوره‌ها
 
@@ -155,7 +177,7 @@ collection notice and repeated price label are removed. The list is titled
 
 ### Saved course facts
 
-`apps/web/src/data/python-course-snapshot.json` is a curated browser-safe fixture; it is not a new scraper schema or live service. It contains all records with Python in their title from these existing sources:
+Historical note: the orphan Python preview and `python-course-snapshot.json` were removed in the October 21 frontend refactor. The following describes the retired prototype, preserved in Git history. It was a curated browser-safe fixture; it is not a new scraper schema or live service. It contains all records with Python in their title from these existing sources:
 
 | Source | Python records |
 | --- | --- |
@@ -259,6 +281,14 @@ publication changes require explicit rejudging. Visits never run models or colle
 
 ## Shared group catalogue — October 20, 2026
 
+The results heading is visually hidden after owner review; the compact count stays
+visible. Its semantic label and focus target remain for accessible paging.
+
+Shared group cards choose their layout from the card's available inline width
+using container queries. Narrow results beside the catalogue sidebar use the
+compact layout, preventing fixed image/action columns from squeezing Persian
+titles into a vertical strip at tablet widths.
+
 `/groups` shares the existing cycling cards with the homepage and renders real
 eligible judged groups on the server. Search submits explicitly against selected
 hero title/subtitle/description; category matches the group's single registry ID.
@@ -308,12 +338,15 @@ mobile rule still hides the shelf and strip at 700px and below.
 
 ## Restored real-group hero shelf — October 21, 2026
 
+The homepage hero course shelf omits the visible information-date labels by
+owner request. Retained source dates remain available in the underlying data.
+
 The owner's latest decision supersedes the earlier hero rollback. `/` passes the
 read-only detail request for `python-starting-programming` (limit three, offset
 zero) into its own Suspense shelf. The first three members retain judgment order;
 heading links to the group and each course links to its encoded comparison-row
 fragment. Provider identity, content duration, current retained price semantics
-(including free/subscription/unknown), and Persian source dates reuse the existing
+(including free/subscription/unknown) reuse the existing
 public presentation helpers. No provider collection or model execution occurs.
 
 The selected group must have at least three members and return three ready courses.
@@ -352,7 +385,8 @@ request. Reduced-motion preferences still show a static set.
 
 Homepage primary search now opens `/groups?q=...` (empty search opens `/groups`).
 The real featured-group hero and category links retain their behavior. After group
-discovery, `#courses` shows at most three recently accepted eligible courses with
+discovery, `#courses` shows at most six recently accepted eligible courses in one horizontally
+scrollable RTL row at every viewport size, with
 direct provider links and scoped retry; no course filters, global count or pagination.
 «مشاهده همه دوره‌ها» and public «همه دوره‌ها» navigation open `/courses`.
 The group catalogue's no-groups fallback also opens the course catalogue.

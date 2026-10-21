@@ -1,11 +1,11 @@
 import { isPublicCourseDetail,isPublicCoursePage,type CourseQuery,type PublicCourse,type PublicCourseDetail,type Page } from '@dorob/core';
+import {publicJson} from './public-transport';
 import { courseQueryString, failure,type CourseResult } from './course-result';
 async function request<T>(path:string,validate:(value:unknown)=>value is T,signal:AbortSignal):Promise<CourseResult<T>> {
   try {
-    const response=await fetch(path,{ signal,cache:'no-store',headers:{ accept:'application/json' } });
+    const response=await publicJson(path,{signal:AbortSignal.any([signal,AbortSignal.timeout(5000)])});
     if(!response.ok)return failure(response.status===404?'not_found':'unavailable');
-    if(!/^application\/json(?:;|$)/i.test(response.headers.get('content-type') ?? ''))return failure('unavailable');
-    const value=await response.json();return validate(value)?{ok:true,data:value}:failure('unavailable');
+    return validate(response.value)?{ok:true,data:response.value}:failure('unavailable');
   }catch{return failure('unavailable');}
 }
 export const browserCourses={

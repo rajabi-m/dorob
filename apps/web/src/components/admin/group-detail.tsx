@@ -6,7 +6,7 @@ import {isAdminPage,isCourseGroup,isCourseReference,isGroupSuggestion,isMemberRe
 import {adminRequest,useAdminRead,BrowserAdminError} from './admin-data';
 import {GroupForm} from './group-form';
 import {AdminDangerButton,AdminSectionHeading,AdminFeedback,AdminPagination,GroupEligibility,MemberProvenance,SuggestionRow,JudgeUnavailable,AdminDialog,CourseInspection,ReviewBadge,reviewLabels,faNumber} from './admin-components';
-import {sourceDate} from '../public-course-card';
+import {sourceDate} from '@/lib/persian-format';
 const groupGuard=(v:unknown):v is GroupDetail=>isCourseGroup(v)&&isAdminPage((v as GroupDetail).courses,isCourseReference);
 const memberGuard=(v:unknown):v is Page<MemberReview>=>isAdminPage(v,isMemberReview);
 const suggestionGuard=(v:unknown):v is Page<GroupSuggestion>=>isAdminPage(v,isGroupSuggestion);

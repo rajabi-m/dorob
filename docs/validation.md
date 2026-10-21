@@ -1365,3 +1365,111 @@ fails at `/_not-found` with the existing Bun CommonJS function-wrapper error.
 A successful production build/start remains unverified. Staging is restricted to
 the course catalogue implementation, its tests/docs, synced specs and archived
 change; no scraper proposal, generated output, dependency or lockfile is included.
+
+## Frontend refactor — October 21, 2026
+
+`refactor-frontend-components` preserves the apply-time working tree, including
+the newer six-course horizontal shelf, simplified real hero rows, category/group
+card edits and app icon. No branch, stash, commit, archive, backend/data mutation
+or scraper change is part of this implementation. Concurrent unrelated utility,
+curation and OpenSpec edits are left untouched. Ownership, retained exceptions and
+removal evidence are recorded in [frontend-refactor.md](frontend-refactor.md).
+
+- Root `bun run lint` and `bun run typecheck`: pass.
+- All 23 applicable web/core test files (including course route acceptance) run
+  in isolated `bun test <file>` processes: 89 tests pass after the catalogue modal
+  fix and focused reruns of both catalogue suites. Coverage includes public byte
+  bounds/cancellation/deadlines, validation/status mapping and judgment pins;
+  native modal focus, course paging focus, chips/history, providers/prices,
+  admin/discovery forms/conflicts and persisted exact promotion replay.
+- The apply-time featured-hero test's stale «اطلاعات» assertion is reconciled
+  with the protected simplified hero. Real order, links, duration/price and
+  unavailable/retry remain covered. The native transport deadline test requires
+  loopback server access outside the restricted sandbox and passes there.
+- Touched-source RTL audit: 53 files, zero errors/warnings; changed modal rechecked
+  after its final fix. Persian text, Latin isolation and logical CSS reviewed.
+- `git diff --check`: pass after removing trailing blank lines.
+- `bun run build`: compilation and TypeScript pass; page-data collection retains
+  the pre-existing Bun `Expected CommonJS module to have a function wrapper`
+  failure (observed on an admin embedding route). Production startup is unverified.
+
+Built-in browser review covers `/`, `/groups`, `/courses`, a real n8n comparison
+and `/design-system` at 1280, 659, 390 and 320 CSS pixels. Loaded public/reference
+pages have document width equal to viewport width. The category/course shelves
+retain their intentional local horizontal scrolling. Long Persian/Latin search,
+URL/history restoration, mobile modal Escape, visible focus return, reference
+modal selection/dismissal and repeated already-present `#groups` jumps work.
+Provider wheel/desktop strip rendering is retained; reduced-motion CSS/handlers
+and absence of pause controls/hover-pause rules were reviewed against the baseline.
+Judgment ordering is covered by fixtures and real comparison rendering.
+Screenshots and detailed check logs are retained locally in
+`/tmp/dorob-refactor-baseline/`.
+
+During acceptance, the live Python starter group changed eligibility and returned
+404 directly from the API; the homepage correctly showed its unavailable state.
+The n8n comparison was used for loaded responsive review. This is not a fixture
+fallback or a refactor write to the catalogue. Public detail endpoints remain.
+
+### Category artwork correction — October 21, 2026
+
+Owner review found a missed visual regression: `CourseArtwork`'s `--art-*` paint
+variables and base rules had remained in reference-only `preview.css`. Homepage
+SVGs therefore resolved their backgrounds to `fill: none` and lost illustration
+parts. The earlier no-overflow checks did not establish visual equivalence.
+
+The six shared artwork rules now live in `components/course-artwork.css`, imported
+by the artwork component itself; reference-only layout rules remain separate.
+A fresh built-in-browser homepage load confirms all six subject palettes have
+nonempty resolved variables and painted backgrounds at desktop and 390px, with
+76px/48px artwork sizing preserved. Screenshot:
+`/tmp/dorob-category-artwork-fixed.png`. Category navigation and shared-presentation
+suites pass (five tests), as do root lint/types and both touched-file RTL audits.
+Production compilation/types still succeed before the existing Bun page-data
+wrapper error. This correction adds no data, route or catalogue behavior change.
+
+### Business category illustration — October 21, 2026
+
+Owner review identified a trend line extending above the business chart panel
+with an arrowhead misaligned to the final segment. Updated the shared SVG path
+so its full stroked line/head stays inside the panel and the arrowhead follows
+the segment direction. Verified in the built-in browser at the reported 799px
+viewport; screenshot: `/tmp/dorob-business-chart-fixed.png`. Category navigation,
+root lint/types and the touched-file RTL audit pass. Production compilation/types
+retain the existing Bun page-data error. No card layout or navigation changed.
+
+### Hero provider-logo framing — October 21, 2026
+
+The tall Roocket SVG inherited automatic image height, making its 36px-wide image
+53.375px tall inside a 48px hero frame. Hero logo images now use an explicit
+36px square box with `object-fit: contain`; the existing 28px mobile sizing stays
+in force. Browser measurements at the reported 799px viewport confirm all three
+hero logos are 36×36 inside their 48×48 frames and retain source proportions.
+Screenshot: `/tmp/dorob-hero-logo-fixed.png`. The two featured-shelf tests, root
+lint/types, touched-file RTL audit and whitespace checks pass. The production
+build retains the documented Bun page-data wrapper error.
+
+### Frontend refactor archival — October 22, 2026
+
+Verified all four planning artifacts and 17/17 tracked tasks complete. Synced
+the one modified requirement to `homepage-course-catalog`, preserving main-spec
+title/Purpose and unrelated blocks; all six delta scenarios match the main spec.
+All 20 main specs and the change pass strict OpenSpec validation. Archived under
+`openspec/changes/archive/2026-10-22-refactor-frontend-components/`, preserving
+`.openspec.yaml`. The change no longer appears in the active CLI list.
+Documentation links and `git diff --check` pass. Application checks are unchanged
+by this documentation/spec-only archival; the Bun build limitation remains.
+
+### Frontend pre-commit review — October 22, 2026
+
+The owner requested removal of the visible redundant group-results heading and a
+commit of frontend work plus the archived refactor. The heading now uses the
+shared visually-hidden primitive, retaining its section label and paging focus
+target. Browser review at the reported catalogue viewport confirms only the
+compact count remains visible above cards. Root lint/types, 89 tests across all
+23 isolated web/core suites (including course route acceptance), touched-heading
+RTL audit, strict validation of all 20 main specs and whitespace checks pass.
+Production compilation/types pass before the existing Bun CommonJS-wrapper
+page-data error on an admin embedding handler. No production-startup claim.
+Commit scope includes `apps/web`, affected frontend docs, the archived refactor
+and its synced homepage spec. Scraper edits, curation data/report and other
+active OpenSpec changes remain excluded. No push or branch creation is included.

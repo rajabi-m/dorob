@@ -68,7 +68,7 @@ vertical logo/name wheel with reduced-motion handling. The hero action jumps to
 homepage `#groups` through a native anchor; provider animations have no pause
 button or hover pause. The restored real-group shelf described above supersedes the earlier static
 «پایتون مقدماتی» samples and is included in this checkpoint. `/design-system` remains the maintained component reference;
-frontend cleanup is under exploration and has not started.
+frontend cleanup is implemented by the October 21 refactor recorded below.
 
 October 21, 2026 — `add-course-catalog-page` moves full individual-course browsing
 onto `/courses` with normalized search, provider, pricing-status and exact content-
@@ -93,6 +93,19 @@ catalogue scope and documentation. Final checks pass for workspace lint/types,
 83 isolated core/web tests, focused database-backed course API tests, API build,
 RTL audit and all 20 main specs. Frontend compilation/types pass; production
 page-data collection remains blocked by the known Bun CommonJS-wrapper error.
+
+October 21, 2026 — `refactor-frontend-components` extracts maintained frontend
+primitives and transport mechanics, removes unreachable prototype branches/assets,
+and separates shared product styles from reference layout. The apply-time
+six-course horizontal shelf and existing product edits are preserved; no backend
+contracts, mutations, deployment, commit or archival are included. Shared reference
+examples remain independent. See [ownership/removals](docs/frontend-refactor.md)
+and [validation](docs/validation.md#frontend-refactor--october-21-2026).
+
+
+October 22, 2026 — `refactor-frontend-components` is [archived](openspec/changes/archive/2026-10-22-refactor-frontend-components/) with all 17 tasks and planning artifacts complete. Its homepage-preservation delta is synced to the main spec; all 20 main specs pass strict validation. The category artwork, business-chart arrow and hero logo-framing follow-up fixes are included in the documented implementation. The existing Bun production-build limitation remains. Archival includes no commit, push or working-catalogue operation.
+
+October 22, 2026 — Owner-authorized frontend commit review includes the archived refactor, preserved shelf/category/favicon refinements, illustration/logo fixes and removal of the visible redundant group-catalogue results heading. The accessible section label and paging focus target remain. Workspace lint/types, 89 tests in 23 isolated suites, RTL audit, strict main-spec validation and browser review pass; production compilation/types retain the documented Bun page-data blocker. Unrelated scraper, curation and active OpenSpec work are excluded.
 
 ## Product vision
 

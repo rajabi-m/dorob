@@ -1,6 +1,7 @@
 import 'server-only';
 import {discoveryTransport,type DiscoveryOperation} from './discovery-transport';
-import {apiOrigin,boundedBody} from './course-api';
+import {apiOrigin} from './api-origin';
+import {boundedBody} from './public-transport';
 import {isUuid,validCourseId,isCourseGroup,isCourseReference,isAdminPage,isGroupSuggestion,isReviewOutcome,isMemberReview,isReviewTransition,parseAdminQuery,parseSuggestionInput,isReviewVersion,categoryRegistry,targetLevels,type AdminCourseSummary} from '@dorob/core';
 export type AdminOperation=DiscoveryOperation|'groups'|'group'|'courses'|'course'|'suggestions'|'members'|'history'|'approve'|'reject'|'reopen'|'membership';
 type Guard=(v:unknown)=>boolean;

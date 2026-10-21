@@ -2,20 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CourseArtwork } from "./course-artwork";
-import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronLeft, Clock, Code2, Database, Globe, Info, Layers, Palette, Play, Search, SlidersHorizontal, Sparkles, TrendingUp, Workflow, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronLeft, Clock, Info, Layers, Play, Search, SlidersHorizontal, Sparkles, X } from "lucide-react";
 
-import { categoryRegistry, type CategoryId } from "@dorob/core";
+import {categories} from "@/lib/category-presentation";
 
-type CategoryPresentation = { description: string; icon: LucideIcon; artwork: "code" | "design" | "data" | "business" | "language" | "workflow" };
-const categoryPresentation: Record<CategoryId, CategoryPresentation> = {
-  code: { description: "از اولین خط کد تا ساخت محصول", icon: Code2, artwork: "code" },
-  design: { description: "رابط، تجربه‌ی کاربر و تصویر", icon: Palette, artwork: "design" },
-  data: { description: "تحلیل داده و یادگیری ماشین", icon: Database, artwork: "data" },
-  business: { description: "بازاریابی و رشد کسب‌وکار", icon: TrendingUp, artwork: "business" },
-  language: { description: "مکالمه، نوشتن و ارتباط", icon: Globe, artwork: "language" },
-  tools: { description: "اتوماسیون و مدیریت کارها", icon: Workflow, artwork: "workflow" },
-};
-export const categories = categoryRegistry.map(({ id, label }) => ({ id, name: label, ...categoryPresentation[id] }));
 export type Course = { id: string; title: string; category: string; level: string; hours: number; provider: string; price: number | null; before?: number; description: string; lessons: string[] };
 export const courses: Course[] = [
   { id: "python", title: "آموزش پایتون؛ از مبانی تا اولین پروژه", category: "code", level: "مقدماتی", hours: 24, provider: "آموزشگاه نمونه الف", price: 890000, before: 1200000, description: "آشنایی با متغیرها، حلقه‌ها و توابع با تمرین‌های کوتاه و ساخت یک پروژه‌ی ساده.", lessons: ["مبانی زبان و کار با داده‌ها", "حلقه‌ها و توابع", "ساخت پروژه‌ی نمونه"] },
@@ -26,12 +16,8 @@ export const courses: Course[] = [
   { id: "english", title: "مکالمه‌ی انگلیسی برای محیط کار", category: "language", level: "متوسط", hours: 16, provider: "آموزشگاه نمونه ب", price: 650000, description: "تمرین مکالمه در جلسه، معرفی ایده‌ها و نوشتن پیام‌های کوتاه کاری.", lessons: ["معرفی و شروع گفتگو", "مکالمه در جلسه", "نوشتن پیام کاری"] },
   { id: "systems", title: "استانداردسازی زیرساخت‌های بین‌المللی و طراحی معماری نرم‌افزار", category: "code", level: "پیشرفته", hours: 32, provider: "آموزشگاه نمونه الف", price: 1450000, description: "آشنایی با الگوهای معماری، مدیریت وابستگی‌ها و مستندسازی تصمیم‌ها در پروژه‌های نرم‌افزاری.", lessons: ["تصمیم‌های معماری", "مدیریت وابستگی‌ها", "مستندسازی تصمیم‌ها"] },
 ];
-const number = (value: number) => value.toLocaleString("fa-IR");
-export function CoursePrice({ course }: { course: Pick<Course, "price" | "before"> }) {
-  if (course.price === null) return <span className="discovery-price-missing">قیمت اعلام نشده</span>;
-  if (course.price === 0) return <strong className="discovery-price-free">رایگان</strong>;
-  return <div className={`discovery-price ${course.before ? "discovery-price-discounted" : ""}`}>{course.before && <div><del>{number(course.before)} <small>تومان</small></del><span className="ds-badge">{number(Math.round((1 - course.price / course.before) * 100))}٪ تخفیف</span></div>}<strong>{number(course.price)} <small>تومان</small></strong></div>;
-}
+import {persianNumber as number} from "@/lib/persian-format";
+import {CoursePrice} from "./fixture-price";
 function CategoryCard({ category, active, onSelect }: { category: typeof categories[number]; active: boolean; onSelect: () => void }) {
   const Icon = category.icon;
   return <button className={`discovery-category ${active ? "is-selected" : ""}`} aria-pressed={active} onClick={onSelect}><CourseArtwork subject={category.artwork} /><span className="discovery-category-top"><Icon size={26} aria-hidden="true" /><ChevronLeft size={17} aria-hidden="true" /></span><strong>{category.name}</strong><span>{category.description}</span><small>{number(courses.filter(course => course.category === category.id).length)} دوره‌ی نمونه</small></button>;

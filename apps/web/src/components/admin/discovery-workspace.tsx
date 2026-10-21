@@ -7,7 +7,7 @@ import {useAdminRead} from './admin-data';
 import {AdminFeedback,AdminPagination} from './admin-components';
 import {DiscoveryCollectionPreview,DiscoverySortControl} from './discovery-components';
 import {discoveryPages,runPages,discoveryAddress,discoveryOffset,useDiscoveryMembers} from './discovery-data';
-import {sourceDate} from '../public-course-card';
+import {sourceDate} from '@/lib/persian-format';
 import {DiscoveryDetail} from './discovery-detail';
 export function DiscoveryWorkspace(){
  const search=useSearchParams(),router=useRouter(),params=new URLSearchParams(search.toString());

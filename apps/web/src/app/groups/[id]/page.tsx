@@ -6,7 +6,7 @@ import {createGroupClient} from '@/lib/group-api';
 import {groupFailure} from '@/lib/group-result';
 import {JudgedGroupPage} from '@/components/judged-group-page';
 import {GroupRetry} from '@/components/group-retry';
-import '../../design-system/preview.css';import '../../home.css';
+import '@/styles/product.css';import '../../home.css';
 export const dynamic='force-dynamic';
 type Props={params:Promise<{id:string}>;searchParams:Promise<Record<string,string|string[]|undefined>>};
 const legacyGroupSlugs:Record<string,string>={'python-beginner':'python-starting-programming',n8n:'n8n-workflow-automation'};

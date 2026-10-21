@@ -7,7 +7,7 @@ import {AdminFeedback,AdminPagination,CourseInspection,faNumber} from './admin-c
 import {DiscoveryThumbnail,DiscoveryBadge,DiscoveryEvidenceSummary,discoveryLabels,discoveryProviderName,discoveryScore} from './discovery-components';
 import {historyPages,overlapPages,discoveryAddress,type useDiscoveryMembers} from './discovery-data';
 import {DiscoveryActions} from './discovery-actions';
-import {sourceDate,courseDuration} from '../public-course-card';
+import {sourceDate,courseDuration} from '@/lib/persian-format';
 const inputPages=(v:unknown):v is Page<EmbeddingFrozenInput>=>isAdminPage(v,isEmbeddingFrozenInput);
 export function DiscoveryDetail({candidate:c,run,members,address,refresh}:{candidate:EmbeddingDiscovery;run:EmbeddingRunDetail;members:ReturnType<typeof useDiscoveryMembers>;address:URLSearchParams;refresh:()=>void}){
  const heading=useRef<HTMLHeadingElement>(null);useEffect(()=>{heading.current?.focus();},[c.id]);

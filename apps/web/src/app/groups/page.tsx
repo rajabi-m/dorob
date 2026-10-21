@@ -3,7 +3,7 @@ import {redirect} from 'next/navigation';
 import {createGroupClient} from '@/lib/group-api';
 import {catalogHref,catalogQuery,lastCatalogPage,parseCatalogState,type CatalogState} from '@/lib/group-catalog';
 import {GroupCatalog,InvalidCatalog} from '@/components/group-catalog';
-import '../design-system/preview.css';
+import '@/styles/product.css';
 import '../home.css';
 import './catalog.css';
 export const dynamic='force-dynamic';

@@ -39,10 +39,12 @@ homepage discovery and public course filter deltas are synced to main specs;
 all 20 main specs pass strict validation. Direct provider navigation, explicit
 RTL search inputs and the restored compact course count are included.
 
+The frontend refactor is [archived](openspec/changes/archive/2026-10-22-refactor-frontend-components/) on October 22, 2026 with 17/17 tasks complete. Its homepage-preservation requirement is synced to main specs; all 20 main specs pass strict validation. Follow-up artwork and provider-logo fixes are included. See [ownership and verification](docs/frontend-refactor.md).
+
 ## Current experience
 
-- `/`: group-first search opening `/groups`, up to three judged-group cards, and a separate three-course shelf with direct provider links and an all-courses link. Category cards open the filtered group catalogue; the selected blue hero displays three courses from the real Python starter group.
-- `/groups`: server-rendered group catalogue with search and one category filter, twelve groups per page, URL-backed `q`, `category` and `page`, active chips and a mobile category panel. Example: `/groups?q=Python&category=code&page=2`. No provider, price, level or sort filters.
+- `/`: group-first search opening `/groups`, up to three judged-group cards, and a separate six-course horizontally scrollable shelf with direct provider links and an all-courses link. Category cards open the filtered group catalogue; the selected blue hero displays three courses from the real Python starter group.
+- `/groups`: server-rendered group catalogue with search and one category filter, twelve groups per page, URL-backed `q`, `category` and `page`, active chips and a mobile category panel. Example: `/groups?q=Python&category=code&page=2`. The duplicate results heading is visually hidden while its accessible label and keyboard focus target remain. No provider, price, level or sort filters.
 - `/courses`: server-rendered individual-course catalogue with normalized search, provider, pricing-status and content-duration filters, eighteen results per page, URL-backed state, chips and mobile filters. No category or level filter.
 - `/design-system`: approved سنجش / لاجورد design, the supplied ring-and-cap logo, Vazirmatn, semantic tokens, interactive discovery examples, and component previews. Most examples are fictional; course-card snapshots are dated explicitly.
 - `/groups/[id]`: eligible stored-slug destinations reuse the selected Python layout with retained AI hero text, exact judgment order, tags and assessments alongside current provider facts. Galleries, pinned course pagination and retry states are supported. Legacy `/groups/python-beginner` and `/groups/n8n` redirect to their canonical real slugs; other fixture-only destinations return 404 unless an eligible real group has that slug.
@@ -54,6 +56,13 @@ Breadcrumbs share «صفحه‌ی نخست» and clickable catalogue/category an
 The provider strip includes all five bundled provider identities; at 700px and
 below, a vertical logo/name wheel replaces it. Provider animation continues on
 hover, has no pause button, and honors reduced-motion preferences.
+
+The frontend refactor gives branding, provider/category presentation, Persian
+formatting, prices, catalogue controls and bounded public reads shared owners.
+Product styles are independent of reference layout; unused prototype branches and
+logo/Python fixture assets are retired. `/design-system` retains current isolated
+examples. See the [ownership/removal inventory](docs/frontend-refactor.md) and
+[verification results](docs/validation.md#frontend-refactor--october-21-2026).
 
 ## Local development
 

@@ -18,3 +18,12 @@ test('list boundary forwards encoded search/category and rejects invalid selecti
  for(const q of ['category=bad','q=a&q=b','q='+ 'x'.repeat(201)])expect((await groupListHandler(new Request('http://web.test/?'+q),client)).status).toBe(422);
  expect((await groupDetailHandler(new Request('http://web.test/?q=x'),'python',client)).status).toBe(422);
 });
+
+test('detail transport retains judgment pin and rejects a different returned revision',async()=>{
+ const g=groupExample();let seen='';
+ const client=createGroupClient({origin:'http://api.test',fetcher:async url=>{seen=url;return Response.json(g);}});
+ expect((await client.detail(g.slug,{limit:g.courses.limit,offset:0,judgmentId:g.judgmentId})).ok).toBe(true);
+ expect(new URL(seen).searchParams.get('judgmentId')).toBe(g.judgmentId);
+ const other=crypto.randomUUID();
+ expect((await client.detail(g.slug,{limit:g.courses.limit,offset:0,judgmentId:other})).ok).toBe(false);
+});

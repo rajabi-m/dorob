@@ -1,0 +1,12 @@
+.row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: clamp(260px, 30vw, 360px);
+  gap: var(--ds-gap);
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+  padding: 6px;
+}
+
+.row > article { scroll-snap-align: start; }

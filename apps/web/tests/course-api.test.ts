@@ -1,6 +1,7 @@
 import { test, expect, mock } from 'bun:test';
 mock.module('server-only',()=>({}));
-const { createCourseClient, apiOrigin, courseListHandler, courseDetailHandler }=await import('../src/lib/course-api');
+const { createCourseClient, courseListHandler, courseDetailHandler }=await import('../src/lib/course-api');
+const {apiOrigin}=await import('../src/lib/api-origin');
 import { example } from '../../../packages/core/tests/fixtures';
 import { parseCourseQuery } from '@dorob/core';
 const c=example(), { description,syllabus,offers,...item }=c;void description;void syllabus;void offers;

@@ -1,13 +1,13 @@
 import 'server-only';
 import {isPublicJudgedGroupPage,isPublicJudgedGroupDetail,parseGroupPageQuery,parseGroupListQuery,validGroupSlug,type GroupPageQuery,type GroupListQuery,type PublicJudgedGroup,type PublicJudgedGroupDetail,type Page} from '@dorob/core';
-import {apiOrigin,boundedBody} from './course-api';
+import {apiOrigin} from './api-origin';
+import {publicJson} from './public-transport';
 import {groupFailure,groupQueryString,type GroupResult} from './group-result';
 export function createGroupClient(options:{origin?:string;fetcher?:(url:string,init?:RequestInit)=>Promise<Response>;deadlineMs?:number}={}){
  async function request<T>(path:string,max:number,validate:(v:unknown)=>v is T):Promise<GroupResult<T>>{
-  try{const response=await (options.fetcher??fetch)(apiOrigin(options.origin)+path,{cache:'no-store',redirect:'error',headers:{accept:'application/json'},signal:AbortSignal.timeout(options.deadlineMs??5000)});
-   if(!response.ok){await response.body?.cancel();return groupFailure(response.status===404?'not_found':response.status===409?'conflict':response.status===422?'invalid_input':'unavailable');}
-   if(!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')??'')){await response.body?.cancel();return groupFailure('unavailable');}
-   const value=JSON.parse(new TextDecoder().decode(await boundedBody(response,max)));return validate(value)?{ok:true,data:value}:groupFailure('unavailable');
+  try{const response=await publicJson(apiOrigin(options.origin)+path,{fetcher:options.fetcher,redirect:'error',signal:AbortSignal.timeout(options.deadlineMs??5000),maximum:max});
+   if(!response.ok)return groupFailure(response.status===404?'not_found':response.status===409?'conflict':response.status===422?'invalid_input':'unavailable');
+   const value=response.value;return validate(value)?{ok:true,data:value}:groupFailure('unavailable');
   }catch{return groupFailure('unavailable');}
  }
  return {

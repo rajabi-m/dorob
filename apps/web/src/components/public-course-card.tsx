@@ -2,21 +2,11 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Clock, ImageOff } from 'lucide-react';
-import type { PriceSummary, PublicCourse } from '@dorob/core';
+import type { PublicCourse } from '@dorob/core';
 import styles from './course-card.module.css';
-const providerMarks:Record<string,string>={maktabkhooneh:'/providers/maktabkhooneh.svg',toplearn:'/providers/toplearn.svg',quera:'/providers/quera.svg',sabzlearn:'/providers/sabzlearn.svg',roocket:'/providers/roocket.svg'};
-export const persianNumber=(n:number)=>n.toLocaleString('fa-IR');
-export const courseDuration=(minutes:number|null)=>minutes === null ? 'مدت ثبت نشده' : `${persianNumber(Math.round(minutes))} دقیقه`;
-export const sourceDate=(date:string)=>new Intl.DateTimeFormat('fa-IR-u-ca-persian',{ year:'numeric',month:'long',day:'numeric',timeZone:'Asia/Tehran' }).format(new Date(date));
-export function PublicPrice({ price,inline=false }: { price:PriceSummary;inline?:boolean }) {
-  const Container=inline?'span':'div';
-  const Original=inline?'span':'div';
-  return <Container className="discovery-price catalog-price">
-    {price.originalAmount !== null && <Original><del>{persianNumber(price.originalAmount)} تومان</del></Original>}
-    <strong>{price.status === 'free' ? 'رایگان' : price.status === 'unknown' ? 'قیمت نامشخص' : <>{price.startingPrice && 'از '}{price.status === 'subscription' && 'اشتراک؛ '}{price.amount !== null ? <>{persianNumber(price.amount)} <small>تومان</small></> : 'مبلغ نامشخص'}</>}</strong>
-    {price.status === 'subscription' && <small>{price.billingPeriod === 'monthly' ? 'ماهانه' : price.billingPeriod === 'yearly' ? 'سالانه' : price.billingPeriod === 'other' ? 'دورهٔ پرداخت دیگر' : 'دورهٔ پرداخت نامشخص'}</small>}
-  </Container>;
-}
+import {ProviderMark} from './provider-mark';
+import {persianNumber,courseDuration,sourceDate} from '@/lib/persian-format';
+import {PublicPrice} from './public-price';
 function PriceProvenance({ course }: { course:PublicCourse }) {
   const id=useId();
   const container=useRef<HTMLDivElement>(null);
@@ -50,8 +40,6 @@ function PriceProvenance({ course }: { course:PublicCourse }) {
 }
 export function PublicCourseCard({ course }: { course:PublicCourse }) {
   const [failed,setFailed]=useState(false);
-  const [failedLogo,setFailedLogo]=useState(false);
-  const providerMark=providerMarks[course.provider.id];
   return <article className={`${styles.card} ${styles.realCard}`}>
     <div className={styles.thumbnail}>{failed ? <div className="catalog-image-placeholder"><ImageOff aria-hidden="true" /><span>تصویر در دسترس نیست</span></div> : <Image src={'/api/thumbnails/'+course.thumbnail.id} alt={course.thumbnail.alt} fill unoptimized sizes="(max-width: 700px) 100vw, (max-width: 1000px) 50vw, 33vw" onError={()=>setFailed(true)} />}
       <span className={`ds-badge ${styles.level}`} dir="auto">{course.level ?? 'سطح ثبت نشده'}</span></div>
@@ -63,7 +51,7 @@ export function PublicCourseCard({ course }: { course:PublicCourse }) {
           {course.instructors && course.instructors.length > 2 && <span className={styles.moreInstructors}>و {persianNumber(course.instructors.length - 2)} نفر دیگر</span>}
         </p>
       </div>
-      <div className={styles.info}><div className={styles.provider}>{providerMark && !failedLogo && <Image src={providerMark} alt="" width={32} height={32} className={styles.logo} onError={()=>setFailedLogo(true)} />}<bdi>{course.provider.name}</bdi></div><div className={styles.metadata}><Clock size={15} aria-hidden="true" /><span>{courseDuration(course.contentMinutes)}</span></div></div>
+      <div className={styles.info}><div className={styles.provider}><ProviderMark id={course.provider.id} className={styles.logo}/><bdi>{course.provider.name}</bdi></div><div className={styles.metadata}><Clock size={15} aria-hidden="true" /><span>{courseDuration(course.contentMinutes)}</span></div></div>
       <div className={styles.footer}><PriceProvenance course={course} /><a className={`ds-button ds-secondary ${styles.action} ${styles.realAction}`} href={course.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`مشاهده دوره ${course.title} (پنجره‌ی جدید)`}>مشاهده دوره</a></div>
     </div>
   </article>;

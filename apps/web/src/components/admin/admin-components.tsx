@@ -2,7 +2,7 @@
 import {CheckCircle2,Clock3,FilePenLine,Globe2,UsersRound,CircleDashed,Ban,ShieldCheck,Trash2,type LucideIcon} from 'lucide-react';
 import {useEffect,useRef,type ReactNode,type ButtonHTMLAttributes} from 'react';
 import type {CourseGroup,GroupSuggestion,MemberReview,ReviewStatus,AdminCourseSummary,ReviewAction} from '@dorob/core';
-import {sourceDate,courseDuration} from '../public-course-card';
+import {sourceDate,courseDuration} from '@/lib/persian-format';
 import './admin.css';
 export function AdminDangerButton({children,icon:Icon=Trash2,className='',type='button',...props}:ButtonHTMLAttributes<HTMLButtonElement>&{icon?:LucideIcon}){
  return <button {...props} type={type} className={`ds-button admin-danger-button ${className}`}><Icon size={16} aria-hidden="true"/>{children}</button>;
@@ -10,7 +10,8 @@ export function AdminDangerButton({children,icon:Icon=Trash2,className='',type='
 export function AdminSectionHeading({id,title,description,icon:Icon,tone='info',count}:{id:string;title:string;description?:string;icon:LucideIcon;tone?:'info'|'success'|'warning';count?:number}){
  return <div className={`admin-section-heading admin-section-${tone}`}><span className="admin-section-icon"><Icon size={22} aria-hidden="true"/></span><div><h2 id={id}>{title}{count!==undefined&&<span className="admin-section-count">{count.toLocaleString('fa-IR')}</span>}</h2>{description&&<p>{description}</p>}</div></div>;
 }
-export const faNumber=(n:number)=>n.toLocaleString('fa-IR');
+export {persianNumber as faNumber} from '@/lib/persian-format';
+import {persianNumber as faNumber} from '@/lib/persian-format';
 export const reviewLabels:Record<ReviewStatus,string>={pending:'در انتظار بررسی',approved:'تأییدشده',rejected:'ردشده'};
 export function AdminFeedback({children,error=false,retry}:{children:ReactNode;error?:boolean;retry?:()=>void}){return <div className={`admin-feedback ${error?'admin-error':''}`} role={error?'alert':'status'}>{children}{retry&&<button className="ds-button ds-secondary" onClick={retry}>تلاش دوباره</button>}</div>;}
 export function ReviewBadge({status}:{status:ReviewStatus}){const Icon=status==='approved'?CheckCircle2:status==='pending'?Clock3:Ban;return <span className={`ds-badge admin-state-pill admin-status-${status}`}><Icon size={14} aria-hidden="true"/>{reviewLabels[status]}</span>;}

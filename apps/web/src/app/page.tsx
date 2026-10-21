@@ -1,7 +1,7 @@
 import {createGroupClient} from "@/lib/group-api";
 import type { Metadata } from "next";
 import { Homepage } from "@/components/homepage";
-import "./design-system/preview.css";
+import "@/styles/product.css";
 import "./home.css";
 import { createCourseClient } from "@/lib/course-api";
 import { parseCourseQuery } from "@dorob/core";
@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <Homepage featuredGroup={createGroupClient().detail("python-starting-programming",{limit:3,offset:0})} heroVariant="discovery" realGroups={createGroupClient().list({limit:3,offset:0})} realCourses={createCourseClient().list(parseCourseQuery(new URLSearchParams({limit:"3"})))} />;
+  return <Homepage featuredGroup={createGroupClient().detail("python-starting-programming",{limit:3,offset:0})} realGroups={createGroupClient().list({limit:3,offset:0})} realCourses={createCourseClient().list(parseCourseQuery(new URLSearchParams({limit:"6"})))} />;
 }

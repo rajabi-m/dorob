@@ -1,3 +1,5 @@
+import "./course-artwork.css";
+
 type ArtworkSubject = "code" | "design" | "data" | "workflow" | "business" | "language";
 
 /** Decorative sample artwork; titles and course facts remain in accessible text. */
@@ -36,7 +38,7 @@ export function CourseArtwork({ subject, variant = "category" }: { subject: Artw
       {subject === "business" && <>
         <rect x="55" y="53" width="209" height="122" rx="10" fill="white" stroke="var(--art-line)" strokeWidth="2" />
         <rect x="74" y="112" width="28" height="43" rx="4" fill="var(--art-secondary)" /><rect x="117" y="90" width="28" height="65" rx="4" fill="var(--ds-primary)" /><rect x="160" y="73" width="28" height="82" rx="4" fill="var(--ds-accent)" />
-        <path d="M78 86L125 63L167 45L219 33M203 31L220 32L216 49" stroke="var(--ds-ink)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M78 98L125 78L167 69L228 65M217.4 55.7L228 65L218.7 75.6" stroke="var(--ds-ink)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx="251" cy="137" r="26" fill="var(--art-secondary)" /><path d="M242 138L249 145L262 130" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
       </>}
       {subject === "language" && <>

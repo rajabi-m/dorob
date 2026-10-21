@@ -25,7 +25,6 @@
 .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-block-end: 9px; }
 .tags > span { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; border-radius: 5px; padding: 2px 8px; }
 .level { color: var(--ds-muted); background: var(--ds-bg); }
-.value { color: var(--ds-success); background: #eef6f0; }
 .info h3 { font-size: 18px; font-weight: 750; line-height: 1.6; overflow-wrap: anywhere; }
 .teacher { color: var(--ds-muted); font-size: 11px; margin-block: 4px 12px; }
 .provider { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; font-size: 12px; }
@@ -49,13 +48,6 @@
 .analysis ul { list-style-type: disc; padding-inline-start: 16px; margin-block: 6px 0; font-size: 11px; line-height: 1.9; }
 .analysis li + li { margin-block-start: 4px; }
 .offer { grid-column: 3; grid-row: 1; align-self: center; border-inline-start: 1px solid var(--ds-border); padding-inline-start: 22px; min-inline-size: 0; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
-.priceLabel { color: var(--ds-muted); font-size: 10px; }
-.discount { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-block-start: 4px; font-size: 11px; }
-.discount del { color: var(--ds-muted); }
-.discount > span { background: var(--ds-soft); color: var(--ds-primary); border-radius: 4px; padding-inline: 5px; font-size: 9px; font-weight: 700; }
-.amount { display: flex; align-items: baseline; gap: 5px; }
-.amount strong { font-size: 22px; line-height: 1.8; font-weight: 800; }
-.amount > span { font-size: 11px; color: var(--ds-muted); }
 .sourceLink { display: flex; justify-content: center; align-items: center; gap: 8px; white-space: nowrap; min-block-size: 42px; padding: 8px 12px; border-radius: 6px; color: white; background: var(--ds-primary); font-size: 12px; font-weight: 650; cursor: pointer; list-style: none; }
 .footer { display: flex; justify-content: space-between; gap: 15px; padding-block: 24px; border-block-start: 1px solid var(--ds-border); color: var(--ds-muted); font-size: 11px; }
 .header a:hover, .footer a:hover { color: var(--ds-primary); }
@@ -88,7 +80,6 @@
   .course > .analysis { grid-column: 1 / -1; grid-row: 2; }
   .course .offer { grid-column: 1 / -1; grid-row: 3; border-inline-start: 0; border-block-start: 1px solid var(--ds-border); padding-inline-start: 0; padding-block-start: 14px; flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: center; }
   .sourceLink { min-inline-size: 125px; }
-  .amount strong { font-size: 19px; }
   .analysisGrid { gap: 8px; }
 }
 @media (max-width: 420px) {

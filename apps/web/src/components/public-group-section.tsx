@@ -6,7 +6,7 @@ import type {Page,PublicJudgedGroup} from '@dorob/core';
 import type {GroupResult} from '@/lib/group-result';
 import {browserGroups} from '@/lib/browser-groups';
 import {CyclingCourseGroupCard} from './cycling-course-group-card';
-export const providerLogo=(id:string)=>['maktabkhooneh','toplearn','quera','sabzlearn','roocket'].includes(id)?{src:`/providers/${id}.svg`,alt:''}:undefined;
+import {providerLogo} from '@/lib/provider-presentation';
 export function PublicGroupCard({group}:{group:PublicJudgedGroup}){return <CyclingCourseGroupCard group={{id:group.id,title:group.hero.title,description:group.hero.subtitle,level:group.hero.levelSummary,courseCount:group.courseCount}} href={`/groups/${group.slug}`} providers={group.providers.map(p=>({name:p.name,logo:providerLogo(p.id)}))} courses={group.covers.map(c=>({id:c.courseId,title:c.title,provider:'',image:{src:'/api/thumbnails/'+c.thumbnail.id,alt:c.thumbnail.alt}}))}/>;}
 export function PublicGroupSection({initial}:{initial:Promise<GroupResult<Page<PublicJudgedGroup>>>}){const seed=use(initial);return <GroupResults key={seed.ok?seed.data.items.map(g=>g.judgmentId).join(',')+':'+seed.data.total:seed.error.code} initial={seed}/>;}
 export function GroupResults({initial}:{initial:GroupResult<Page<PublicJudgedGroup>>}){

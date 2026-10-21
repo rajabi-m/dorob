@@ -3,7 +3,7 @@ import {redirect} from 'next/navigation';
 import {createCourseClient} from '@/lib/course-api';
 import {parseCourseCatalogState,courseCatalogHref,courseCatalogQuery,lastCoursePage,type CourseCatalogState} from '@/lib/course-catalog';
 import {CourseCatalog,InvalidCourseCatalog} from '@/components/course-catalog';
-import '../design-system/preview.css';
+import '@/styles/product.css';
 import '../home.css';
 import '../groups/catalog.css';
 import './catalog.css';

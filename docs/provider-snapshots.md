@@ -1,10 +1,10 @@
 # Provider snapshots and collection provenance
 
-These are dated, browser-safe fixtures for the completed phase 2 milestone, separate from the scraper contract. The homepage uses 18 saved courses and editorial groups drawn from those records. The Python prototype uses eight saved Python offerings; see [frontend behavior](frontend.md#python-course-group-prototype). Most design-system samples remain fictional. Collection checks below are historical, not fresh provider verification.
+These are dated, browser-safe fixtures for the completed phase 2 milestone, separate from the scraper contract. Public pages use the retained API catalogue and judgments. The maintained design-system cards use selected records from the 18-course provider fixture. The retired eight-course Python prototype and its separate JSON fixture were removed by the [frontend refactor](frontend-refactor.md). Most design-system samples remain fictional. Collection checks below are historical, not fresh provider verification.
 
 ## Snapshot fields and source assets
 
-`apps/web/src/data/provider-courses.json` contains 18 real course samples: six each from [Maktabkhooneh](https://maktabkhooneh.org/), [TopLearn](https://toplearn.com/), and [Quera College](https://quera.org/college). Collected on October 1, 2026 from public listings and course-page HTML, including embedded page data. This is a one-time fixture for phase 2, with no runtime collection, refresh job, or live integration. The homepage consumes this snapshot through `provider-homepage-data.ts`; homepage groups use editorial subsets of the snapshot; the Python route uses an additional curated fixture. Most design-system examples remain fictional.
+`apps/web/src/data/provider-courses.json` contains 18 real course samples: six each from [Maktabkhooneh](https://maktabkhooneh.org/), [TopLearn](https://toplearn.com/), and [Quera College](https://quera.org/college). Collected on October 1, 2026 from public listings and course-page HTML, including embedded page data. This is a one-time fixture for phase 2, with no runtime collection, refresh job, or live integration. Independent design-system cards consume this snapshot through the explicit `provider-homepage-data.ts` fixture adapter; public routes do not import it. Most design-system examples remain fictional.
 
 Import the JSON when needed:
 
