@@ -12,6 +12,8 @@ import { CourseCardShowcase } from "@/components/course-card-showcase";
 import {AdminShowcase} from "@/components/admin/admin-showcase";
 import {DiscoveryReviewShowcase} from "@/components/admin/discovery-showcase";
 import "./preview.css";
+import "../courses/catalog.css";
+import {CourseFilterShowcase} from "@/components/course-filter-showcase";
 
 const system = {
   id: "market", name: "سنجش", caption: "فشرده، دقیق، کاربردی",
@@ -55,6 +57,7 @@ export default function DesignSystem() {
           <CategoryShowcase />
           <CourseGroupShowcase />
           <CourseCardShowcase />
+          <CourseFilterShowcase />
           <AdminShowcase />
           <DiscoveryReviewShowcase />
           <DiscoveryShowcase query={query} onQueryChange={setQuery} />

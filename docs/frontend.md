@@ -1,6 +1,6 @@
 # Frontend: homepage and course groups
 
-Phase 2 was closed by the owner on October 4, 2026. Current homepage course results use the public course API; group cards and group destinations now use real published groups with current judgments and complete presentation-ready membership. The selected Python layout is shared across categories, with source facts separate from generated content. Hero samples and design-system fixtures remain isolated. The dated design history below includes superseded fixture behavior and layouts; [validation](validation.md) records current checks.
+Phase 2 was closed by the owner on October 4, 2026. The three-course homepage shelf and dedicated `/courses` catalogue use the public course API; group cards and group destinations now use real published groups with current judgments and complete presentation-ready membership. The selected Python layout is shared across categories, with source facts separate from generated content. The homepage hero uses a selected real group; design-system fixtures remain isolated. The dated design history below includes superseded fixture behavior and layouts; [validation](validation.md) records current checks.
 
 ## Homepage design and implementation history
 
@@ -347,3 +347,51 @@ the heading/wheel row. The desktop marquee and featured group shelf are preserve
 
 The horizontal hero provider strip continues animating on hover, at the owner’s
 request. Reduced-motion preferences still show a static set.
+
+### Individual courses and group-first discovery — October 21, 2026
+
+Homepage primary search now opens `/groups?q=...` (empty search opens `/groups`).
+The real featured-group hero and category links retain their behavior. After group
+discovery, `#courses` shows at most three recently accepted eligible courses with
+direct provider links and scoped retry; no course filters, global count or pagination.
+«مشاهده همه دوره‌ها» and public «همه دوره‌ها» navigation open `/courses`.
+The group catalogue's no-groups fallback also opens the course catalogue.
+
+`/courses` server-renders eighteen retained course cards per page with normalized
+title/provider/instructor search and single-choice provider, pricing-status and
+content-duration filters. No category or level control is exposed. The committed
+`q`, `provider`, `priceStatus`, `duration` and one-based `page` live in the URL;
+refresh and Back/Forward restore them. Search/filter changes and individual chip
+removal return to page one and preserve other conditions. Clear-all opens
+`/courses`; out-of-range positive pages redirect to the last matching page.
+Unsupported recognized selections produce a safe invalid state. Unrelated query
+fields, including category/level, are ignored and never forwarded to the API.
+
+Duration uses exact content minutes: less than 180, 180 to less than 600, or at
+least 600. Missing durations remain included only when duration is unrestricted.
+Pricing uses the card's selected summary; free, paid, subscription and unknown
+stay distinct. No filtering of only the loaded page, guessed source facts or
+quality/relevance ranking is introduced. Existing cards preserve instructors and price-date tooltips. Titles and «مشاهده دوره»
+open the exact retained provider URL in a new tab with safe opener behavior and an
+accessible notice; the retired local detail modal and its fetch are removed. Separate
+loading, empty, no-match and retry states never substitute fixture courses.
+
+Desktop controls use the right sidebar; mobile opens «فیلتر دوره‌ها», contains
+keyboard focus, closes with Escape/selection, and returns focus to its trigger.
+New filter controls have a local-state, backend-independent `/design-system`
+example. Public UI uses the existing tokens/Vazirmatn and Persian RTL conventions.
+
+October 21, 2026 — Owner follow-up: public course titles and «مشاهده دوره»
+open the course's retained provider page directly in a new tab. The early-stage
+local details dialog has been removed from public course browsing; price-date
+tooltips remain. Public course detail APIs and independent design-system fixture
+previews retain their separate contracts.
+
+October 21 catalogue polish: the course results keep a compact count without a
+second visible heading repeating the page title. The result section retains an
+accessible heading. Both course and group catalogue search inputs explicitly use
+RTL direction, keeping empty Persian placeholders aligned at inline start.
+
+October 21 follow-up: the owner restored the compact visible course result count.
+The duplicate result heading remains screen-reader-only; mobile filters and active-
+selection chips remain visible.

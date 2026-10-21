@@ -2,7 +2,7 @@
 
 نام فارسی پروژه «دورُب» است؛ ترکیبی از نام‌های «دوره» و «ترب».
 
-A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 includes an independent local API/PostgreSQL foundation and manual curated catalog APIs. The homepage course grid reads the local public catalog; group cards and destinations use current retained judgments and provider facts. The homepage hero shelf also uses a selected real group; design-system fixtures remain separate. Production deployment remains pending.
+A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 includes an independent local API/PostgreSQL foundation and manual curated catalog APIs. The dedicated course catalogue and bounded homepage shelf read the local public catalog; group cards and destinations use current retained judgments and provider facts. The homepage hero shelf also uses a selected real group; design-system fixtures remain separate. Production deployment remains pending.
 
 Start with the [documentation hub](docs/index.md), [project plan](Plan.md), and [contributor instructions](AGENTS.md).
 
@@ -32,14 +32,22 @@ All 19 main specs pass standard validation; strict validation reports one
 506-character preservation-requirement warning. The known Bun production-build
 limitation remains documented in [validation](docs/validation.md).
 
+The completed `add-course-catalog-page` change is
+[archived](openspec/changes/archive/2026-10-21-add-course-catalog-page/) on
+October 21, 2026 with 20/20 tasks complete. The new individual-course catalogue,
+homepage discovery and public course filter deltas are synced to main specs;
+all 20 main specs pass strict validation. Direct provider navigation, explicit
+RTL search inputs and the restored compact course count are included.
+
 ## Current experience
 
-- `/`: public-catalog course grid with Persian search, free filtering, pagination and real-course details; up to three judged-group cards and an all-groups action. Category cards open the filtered group catalogue; the selected blue hero displays three courses from the real Python starter group.
+- `/`: group-first search opening `/groups`, up to three judged-group cards, and a separate three-course shelf with direct provider links and an all-courses link. Category cards open the filtered group catalogue; the selected blue hero displays three courses from the real Python starter group.
 - `/groups`: server-rendered group catalogue with search and one category filter, twelve groups per page, URL-backed `q`, `category` and `page`, active chips and a mobile category panel. Example: `/groups?q=Python&category=code&page=2`. No provider, price, level or sort filters.
+- `/courses`: server-rendered individual-course catalogue with normalized search, provider, pricing-status and content-duration filters, eighteen results per page, URL-backed state, chips and mobile filters. No category or level filter.
 - `/design-system`: approved سنجش / لاجورد design, the supplied ring-and-cap logo, Vazirmatn, semantic tokens, interactive discovery examples, and component previews. Most examples are fictional; course-card snapshots are dated explicitly.
 - `/groups/[id]`: eligible stored-slug destinations reuse the selected Python layout with retained AI hero text, exact judgment order, tags and assessments alongside current provider facts. Galleries, pinned course pagination and retry states are supported. Legacy `/groups/python-beginner` and `/groups/n8n` redirect to their canonical real slugs; other fixture-only destinations return 404 unless an eligible real group has that slug.
 
-The hero shelf selects `python-starting-programming`, requires at least three eligible courses, and links its first three judged members to their comparison rows. Unavailable selections never fall back to dated samples. Homepage individual-course search/filter state resets on reload; group-catalogue conditions and page survive reload and Back/Forward in the URL. Course prices are retained observations, not current provider quotations. Individual course results use ingestion-time order; group comparisons preserve the selected judgment’s order. Visits do not run models, collect courses or refresh judgments. Scheduled refresh and production deployment remain deferred. See [frontend behavior and decisions](docs/frontend.md) and [snapshot provenance](docs/provider-snapshots.md).
+The hero shelf selects `python-starting-programming`, requires at least three eligible courses, and links its first three judged members to their comparison rows. Unavailable selections never fall back to dated samples. Homepage search targets groups; both catalogue conditions and page survive reload and Back/Forward in the URL. Course prices are retained observations, not current provider quotations. Individual course results use ingestion-time order; group comparisons preserve the selected judgment’s order. Visits do not run models, collect courses or refresh judgments. Scheduled refresh and production deployment remain deferred. See [frontend behavior and decisions](docs/frontend.md) and [snapshot provenance](docs/provider-snapshots.md).
 
 The hero action «دیدن مجموعه دوره‌ها» jumps to the homepage group section.
 Breadcrumbs share «صفحه‌ی نخست» and clickable catalogue/category ancestors.
@@ -75,7 +83,7 @@ frontend port; `--api-port` selects the backend port. `--db-port` overrides Comp
 also works by full path from another directory. Ctrl+C stops both app processes;
 it stops PostgreSQL only if this run started it, preserving its volume and data.
 If either app process exits, the launcher stops the other. Frontend fixtures
-retain their samples; the homepage course grid connects to the launched API.
+retain their samples; the homepage course shelf and `/courses` connect to the launched API.
 
 For frontend-only development, use `bun run dev` and open `http://localhost:3000`.
 Use `bun run dev --port 3002` to select another frontend port.
@@ -90,7 +98,7 @@ bun run start
 
 Run `build` successfully before `start`. Lint, type checking, and 134 utility tests pass. Production compilation/types pass, but page-data collection fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`. The experimental Turbopack worker-thread configuration resolves the earlier worker-port failure. The local Homebrew Node executable was previously unable to start because `libllhttp.9.3.dylib` was missing. See [current validation and limitations](docs/validation.md).
 
-The homepage course grid needs the local API/database; frontend-only development shows a scoped course error with retry. `DOROB_API_URL` is optional when using the default API port. No API keys or remote fonts are required. Vazirmatn is bundled locally; its license is included in the installed font package.
+The homepage course shelf and `/courses` need the local API/database; frontend-only development shows a scoped course error with retry. `DOROB_API_URL` is optional when using the default API port. No API keys or remote fonts are required. Vazirmatn is bundled locally; its license is included in the installed font package.
 
 ## Backend development
 
@@ -181,7 +189,7 @@ bun run build:api
 bun apps/api/tests/built-ingestion-smoke.ts
 ```
 
-The local catalog adds explicit SQL migrations, minimal course references, editor-defined groups, and many-to-many assignments. See [catalog setup and workflow](docs/catalog.md). It has no ORM, AI jobs, authentication or cloud deployment. The homepage course section reads eligible current observations; group cards and destinations read current judgments. Hero samples and design-system fixtures remain separate.
+The local catalog adds explicit SQL migrations, minimal course references, editor-defined groups, and many-to-many assignments. See [catalog setup and workflow](docs/catalog.md). It has no ORM, AI jobs, authentication or cloud deployment. The homepage course section reads eligible current observations; group cards and destinations read current judgments. The real-group hero and independent design-system fixtures remain separate.
 
 October 12 initial curation researched all 1,495 existing course references and
 created seven verified draft groups with 17 explicit memberships across all six
@@ -298,12 +306,14 @@ Private journals and reports remain ignored under `apps/utils/output/`.
 
 ### Homepage catalog configuration
 
-Only the homepage `#courses` grid and real-course details read the public API.
-The hero shelf/provider strip, topics, sample groups, group routes and design
-system retain their saved samples. Categories use published backend editorial
-group memberships, so ready unassigned courses can be visible unfiltered while
-category results remain empty. Pagination uses offsets and can shift during
-concurrent ingestion. API reads display retained facts; they do not scrape.
+The homepage `#courses` shelf and `/courses` catalogue read
+the public course API. The real hero, group catalogue and group routes read
+current judged-group data; design-system fixtures stay independent. `/courses`
+filters by provider, pricing status and content duration without category or level
+controls. The legacy API category filter uses published editorial memberships;
+unassigned ready courses remain discoverable without category inference.
+Pagination uses offsets and can shift during concurrent ingestion. API reads
+display retained facts and never scrape.
 
 `./run.sh` supplies its resolved API origin (including `--api-port`) to the web
 process as server-only `DOROB_API_URL`; wildcard bind hosts map to loopback.
@@ -319,11 +329,14 @@ and `/api/thumbnails/:assetId` on the web origin. No public API-origin variable,
 database setting or credentials are sent to the browser. Five-second deadlines,
 validated responses and scoped retry states keep other page regions usable when
 the backend is unavailable. Frontend-only mode therefore shows a course error
-with retry while fixture routes remain usable.
+with retry while static content and independent design-system examples remain usable.
 
-Focused shared/web verification: `bun test packages/core/tests apps/web/tests`.
+Focused shared/web verification: run each `*.test.ts`/`*.test.tsx` under
+`packages/core/tests` and `apps/web/tests` with `bun test <file>` in its own process
+to isolate module mocks. Route acceptance also includes
+`bun test apps/web/acceptance/course-catalog.test.tsx`.
 
-Real homepage cards now summarize source instructors below their titles and expose the retained Jalali collection date through the price button. «مشاهده دوره» continues to open the existing details dialog. Prices remain observations, not current provider quotations. Chrome acceptance for this refinement passed at mobile and desktop widths; see [validation](docs/validation.md#homepage-card-refinement--october-11-2026).
+Real public course cards summarize source instructors below their titles and expose the retained Jalali collection date through the price button. Titles and «مشاهده دوره» open the retained provider course page directly in a new tab; the retired details dialog is removed. Prices remain observations, not current provider quotations. Chrome acceptance for this refinement passed at mobile and desktop widths; see [validation](docs/validation.md#homepage-card-refinement--october-11-2026).
 
 The homepage card refinement is [archived](openspec/changes/archive/2026-10-11-refine-homepage-course-cards/) with its instructor, alignment, provenance and details-action contracts synced to the [homepage catalog spec](openspec/specs/homepage-course-catalog/spec.md).
 
@@ -553,3 +566,9 @@ with all 21 tasks complete. Its public judged-group contract and homepage
 preservation update are synced to main specs; all 18 main specs pass strict
 validation. See [validation](docs/validation.md#public-judged-group-pre-commit-verification--october-20-2026)
 for the pre-commit checks and production-build limitation.
+
+October 21, 2026 — Owner follow-up: public course titles and «مشاهده دوره»
+open the course's retained provider page directly in a new tab. The early-stage
+local details dialog has been removed from public course browsing; price-date
+tooltips remain. Public course detail APIs and independent design-system fixture
+previews retain their separate contracts.

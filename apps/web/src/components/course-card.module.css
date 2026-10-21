@@ -28,7 +28,7 @@
 .footer :global(.discovery-price) small { font-size: 9px; }
 .footer :global(.discovery-price) :global(.ds-badge) { font-size: 8px; padding: 1px 4px; }
 .card .action { min-block-size: 40px; padding: 7px 10px; white-space: normal; }
-.card button:focus-visible { outline: 3px solid var(--ds-primary); outline-offset: 3px; }
+.card :is(button, a):focus-visible { outline: 3px solid var(--ds-primary); outline-offset: 3px; }
 
 /* Public catalog overrides: sample cards and global buttons retain their defaults. */
 .realCard { overflow: visible; }

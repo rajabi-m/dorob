@@ -25,7 +25,7 @@ export function createPublicCourseRepository(sql: SQL, thumbnails: Pick<Thumbnai
     async list(query) {
       try {
         const search = normalizeSearch(query.q);
-        const matches = (await read()).filter(c => (!query.category || c.categoryIds.includes(query.category)) && (!query.freeOnly || c.price.status === 'free') && normalizeSearch(`${c.title} ${c.provider.id} ${c.provider.name} ${c.instructors?.map(i => i.name).join(' ') ?? ''}`).includes(search));
+        const matches = (await read()).filter(c => (!query.category || c.categoryIds.includes(query.category)) && (!query.freeOnly || c.price.status === 'free') && (!query.provider || c.provider.id === query.provider) && (!query.priceStatus || c.price.status === query.priceStatus) && (!query.duration || (c.contentMinutes !== null && (query.duration === 'under-3h' ? c.contentMinutes < 180 : query.duration === '3-to-10h' ? c.contentMinutes >= 180 && c.contentMinutes < 600 : c.contentMinutes >= 600))) && normalizeSearch(`${c.title} ${c.provider.id} ${c.provider.name} ${c.instructors?.map(i => i.name).join(' ') ?? ''}`).includes(search));
         // Literal in-memory substring normalization deliberately avoids SQL LIKE wildcards.
         const items = matches.slice(query.offset,query.offset+query.limit).map(c => { const { description,syllabus,offers,...item } = c; void description; void syllabus; void offers; return item; });
         return { items,total:matches.length,limit:query.limit,offset:query.offset };

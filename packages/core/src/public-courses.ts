@@ -17,18 +17,29 @@ export interface PublicCourse {
 export interface PublicCourseDetail extends PublicCourse {
   description: string | null; syllabus: SourceFactsV2['syllabus']; offers: PublicOffer[] | null;
 }
-export type CourseQuery = { q: string; category?: CategoryId; freeOnly: boolean; limit: number; offset: number };
+export const courseProviders = [
+  { id:'maktabkhooneh',name:'مکتب‌خونه' }, { id:'toplearn',name:'تاپ‌لرن' },
+  { id:'quera',name:'کوئرا' }, { id:'sabzlearn',name:'سبزلرن' }, { id:'roocket',name:'راکت' },
+] as const;
+export type CourseProvider = typeof courseProviders[number]['id'];
+export const coursePriceStatuses = ['free','paid','subscription','unknown'] as const;
+export const courseDurations = ['under-3h','3-to-10h','10h-plus'] as const;
+export type CoursePriceStatus = typeof coursePriceStatuses[number];
+export type CourseDuration = typeof courseDurations[number];
+export type CourseQuery = { q: string; category?: CategoryId; freeOnly: boolean; limit: number; offset: number; provider?:CourseProvider; priceStatus?:CoursePriceStatus; duration?:CourseDuration };
 export const uuidPattern = '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$';
 export const validCourseId = (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*:[^\u0000-\u001f]{1,200}$/u.test(value) && value.length <= 265 && value.indexOf(':') <= 64 && value.slice(value.indexOf(':')+1).trim() === value.slice(value.indexOf(':')+1);
 export function parseCourseQuery(params: URLSearchParams): CourseQuery {
-  if ([...params.keys()].some(key => !['q','category','freeOnly','limit','offset'].includes(key)) || [...new Set(params.keys())].some(key => params.getAll(key).length !== 1)) throw new Error('Invalid query');
+  if ([...params.keys()].some(key => !['q','category','freeOnly','limit','offset','provider','priceStatus','duration'].includes(key)) || [...new Set(params.keys())].some(key => params.getAll(key).length !== 1)) throw new Error('Invalid query');
   const q = params.get('q') ?? '', category = params.get('category') ?? undefined, free = params.get('freeOnly') ?? 'false';
   const integer = (key: string, fallback: number, min: number, max: number) => {
     const text = params.get(key); if (text !== null && !/^\d+$/.test(text)) throw new Error('Invalid query');
     const n = text === null ? fallback : Number(text); if (!Number.isSafeInteger(n) || n < min || n > max) throw new Error('Invalid query'); return n;
   };
   if (q.length > 200 || (category !== undefined && !categoryRegistry.some(item => item.id === category)) || !['true','false'].includes(free)) throw new Error('Invalid query');
-  return { q, category: category as CategoryId | undefined, freeOnly: free === 'true', limit: integer('limit',18,1,100), offset: integer('offset',0,0,2147483647) };
+  const provider=params.get('provider'),priceStatus=params.get('priceStatus'),duration=params.get('duration');
+  if ((provider !== null && !courseProviders.some(p => p.id === provider)) || (priceStatus !== null && !coursePriceStatuses.includes(priceStatus as CoursePriceStatus)) || (duration !== null && !courseDurations.includes(duration as CourseDuration)) || (free === 'true' && priceStatus !== null && priceStatus !== 'free')) throw new Error('Invalid query');
+  return { q, category: category as CategoryId | undefined, freeOnly: free === 'true', ...(provider ? {provider:provider as CourseProvider}:{}), ...(priceStatus ? {priceStatus:priceStatus as CoursePriceStatus}:{}), ...(duration ? {duration:duration as CourseDuration}:{}), limit: integer('limit',18,1,100), offset: integer('offset',0,0,2147483647) };
 }
 // Small JSON-schema subset shared by the runtime boundary and OpenAPI, with no server imports.
 export type PublicSchema = { type?: string; properties?: Record<string, PublicSchema>; required?: string[]; additionalProperties?: boolean; items?: PublicSchema; anyOf?: PublicSchema[]; enum?: unknown[]; pattern?: string; minLength?: number; maxLength?: number; minimum?: number; maximum?: number };

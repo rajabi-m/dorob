@@ -7,44 +7,52 @@ Display real retained backend courses in the existing homepage course section wh
 ## Requirements
 
 ### Requirement: Homepage course section integration
-The homepage `#courses` section SHALL obtain its course list from the public backend catalog. Initial results SHALL be server-rendered. Course cards SHALL preserve the existing visual language and display current provider facts, hosted images, accountable prices, and per-course collection dates through the price provenance interaction. Section headings/counts SHALL describe real catalog results without unsupported popularity claims.
+The homepage `#courses` section SHALL server-render at most three eligible courses from the public backend catalogue in acceptance-time order with stable ID ties. It SHALL preserve real cards, provider facts, hosted images, accountable prices and price-associated observation dates. The section SHALL expose «مشاهده همه دوره‌ها» linking to `/courses`, without course search, filters, totals or pagination. Copy SHALL avoid unsupported popularity or quality claims.
 
 #### Scenario: Initial real courses
 - **WHEN** a visitor opens the homepage with the backend available
-- **THEN** the course section renders the first eligible course page and matching total without importing its cards from fixtures
+- **THEN** the course section renders up to the first three eligible courses without importing fixture cards or showing full catalogue pagination
 
 #### Scenario: Missing metadata
 - **WHEN** an eligible course lacks level, duration, description, or instructor facts
 - **THEN** the associated course UI explicitly represents missing information without borrowing fixture facts or AI summaries
 
+#### Scenario: Fewer than three eligible courses
+- **WHEN** only one or two eligible courses exist
+- **THEN** only those courses render and the all-courses link remains available without fabricated filler
+
 ### Requirement: Catalog-wide course interactions
-Existing homepage search and free controls SHALL drive backend course queries without changing their layout or styling. Homepage category cards SHALL instead navigate to `/groups?category=<id>`. Individual-course pagination SHALL remain confined to the course section. A course filter change SHALL reset paging. Responses from superseded requests SHALL NOT overwrite newer results. Counts and empty states SHALL represent the entire matching eligible course catalog.
+Homepage header search SHALL navigate to `/groups` with submitted nonempty search in `q`, omitting `q` for empty normalized input. Its accessible name SHALL identify group search. Homepage category cards SHALL continue to navigate to `/groups?category=<id>`. Full individual-course discovery SHALL live at `/courses`; homepage search SHALL NOT filter the course shelf or initiate course-result paging.
 
 #### Scenario: Query and paging
-- **WHEN** a visitor searches or changes a course filter and moves to another page
-- **THEN** results use the selected conditions, show the matching total, and navigate bounded pages rather than filtering only loaded cards
+- **WHEN** a visitor submits homepage search
+- **THEN** the group catalogue opens on its first page with that search, while individual-course filters and pagination remain on `/courses`
 
 #### Scenario: Rapid query changes
-- **WHEN** an older request completes after a newer selection
-- **THEN** the course section retains the newer selection's results
+- **WHEN** a visitor edits homepage search before submitting
+- **THEN** typing does not issue course queries or replace the course shelf and submission uses the current input
 
 #### Scenario: Category navigation
 - **WHEN** a visitor activates a homepage category card
-- **THEN** the corresponding filtered group catalogue opens rather than changing the homepage course results
+- **THEN** the corresponding filtered group catalogue opens rather than changing homepage course results
+
+#### Scenario: Empty homepage search
+- **WHEN** a visitor submits empty or whitespace-only homepage search
+- **THEN** `/groups` opens without a search parameter or retained catalogue conditions
 
 ### Requirement: Real course details remain traceable
-Opening a database course card SHALL show public details for that stable course identity, with available description, syllabus, offers, provider link, and observation date. Missing fields SHALL remain explicit. If the current observation changed since the card loaded, details SHALL identify their own observation/time rather than implying that they are the card's earlier snapshot.
+Public course titles and «مشاهده دوره» SHALL link directly to the course's retained provider source URL in a new tab with noopener/noreferrer and an accessible new-window notice. Neither action SHALL open a local details dialog or fetch public course details. The price-associated observation-date interaction SHALL remain independent of navigation.
 
 #### Scenario: Open a real card
-- **WHEN** a visitor opens a database course card
-- **THEN** the dialog uses that course's public facts and provider URL without fixture content or sample-only labels
+- **WHEN** a visitor activates a database course title or «مشاهده دوره»
+- **THEN** the exact provider source URL opens without a local course dialog or detail lookup
 
 #### Scenario: Course becomes ineligible
-- **WHEN** a course's public detail returns 404 after its card was rendered
-- **THEN** the dialog explains that details are unavailable and permits closing or refreshing results without showing historical or sample substitutes
+- **WHEN** a previously rendered course later becomes ineligible for new public reads
+- **THEN** its existing source link still targets that card's retained provider URL and does not introduce a failed local-detail lookup
 
 ### Requirement: Scoped resilient course states
-The course section and real-course dialog SHALL present Persian loading, empty, and safe retryable error states. Backend failures, timeouts, or invalid responses SHALL NOT replace real results with fixtures or block surrounding homepage content. Image failures SHALL use an honest visual placeholder without claiming that a source image was retrieved.
+The course section SHALL present Persian loading, empty and safe retryable error states. Backend failures, timeouts or invalid responses SHALL NOT replace real results with fixtures or block surrounding homepage content. Image failures SHALL use an honest placeholder. Course source links SHALL navigate directly to providers without a local detail request or detail error state.
 
 #### Scenario: Backend unavailable on arrival
 - **WHEN** initial course fetching fails
@@ -55,11 +63,11 @@ The course section and real-course dialog SHALL present Persian loading, empty, 
 - **THEN** real results return after recovery, or a distinct empty state appears for zero matches
 
 ### Requirement: Preserve surrounding sample frontend
-The hero and its course shelf/provider strip, topic/category appearance, header/navigation/footer and design-system previews SHALL retain their existing appearance, data and behavior, except removal of design-process labels, homepage category links to the shared group catalogue, and the compact group showcase. Homepage group cards and group routes SHALL use the public-group-judgments contract. Hero sample-card details SHALL retain their sample facts and provenance independently of real-course details.
+The existing hero and its current real-group shelf/provider strip, topic/category appearance, group showcase and design-system previews SHALL retain their presentation and data behavior. Header search and public catalogue navigation SHALL follow the new discovery destinations. Homepage group cards and group routes SHALL continue to use the public-group-judgments contract. Independent design-system fixtures SHALL remain isolated from real public course details.
 
 #### Scenario: Sample hero details
-- **WHEN** a visitor opens a hero sample card after viewing a database course
-- **THEN** the sample dialog still shows that fixture's own data and sample provenance without triggering a public course-detail lookup
+- **WHEN** a visitor opens an independently maintained design-system hero sample card after viewing a database course
+- **THEN** the sample dialog retains its own fixture facts and provenance without triggering a real public course-detail lookup, while the public homepage continues to use its existing real-group hero
 
 #### Scenario: Existing destinations
 - **WHEN** the homepage groups and existing group/design-system routes are visited
@@ -67,14 +75,18 @@ The hero and its course shelf/provider strip, topic/category appearance, header/
 
 #### Scenario: Scoped homepage discovery update
 - **WHEN** the homepage is displayed
-- **THEN** category cards retain their presentation as catalogue links and the group section shows up to three cards and the all-groups action without group pagination
+- **THEN** category cards retain their group-catalogue links, the group section retains up to three cards and its all-groups action, and the individual-course section is a bounded shelf after group discovery
+
+#### Scenario: Real hero preserved
+- **WHEN** the featured real group's eligibility or current judgment changes
+- **THEN** the existing real-group hero contract determines its display or unavailable state without reintroducing saved sample courses
 
 ### Requirement: Accessible Persian course presentation
-Integrated course content SHALL retain Persian RTL presentation, localized numbers and Jalali dates, isolated mixed-direction text, logical layout properties, and usable mobile layouts. Loading/results SHALL expose accessible status, paging/retry SHALL be keyboard usable, and real-course dialogs SHALL retain focus handling and return focus to their triggering control.
+Integrated courses SHALL retain Persian RTL, localized numbers and Jalali dates, isolated mixed-direction text, logical layout and usable mobile layouts. Loading/results SHALL expose accessible status; paging, retry, provider links and price provenance SHALL remain keyboard usable with visible focus. Provider links SHALL identify new-window behavior without opening local details dialogs.
 
 #### Scenario: Keyboard and mobile discovery
-- **WHEN** a visitor uses paging, retries, and course details by keyboard or on a narrow viewport with long mixed Persian/Latin titles
-- **THEN** controls have visible focus, the dialog restores focus, announcements reflect request state, and content does not introduce unintended horizontal overflow
+- **WHEN** a visitor uses paging, retries, price provenance and course source links by keyboard or on a narrow viewport with long mixed Persian/Latin titles
+- **THEN** controls have visible focus, new-window behavior is announced, request states remain accessible and content does not introduce horizontal overflow
 
 ### Requirement: Environment-independent browser access
 Course requests and hosted thumbnails SHALL work through the web origin without exposing a browser dependency on the API's loopback address. Backend origin configuration SHALL remain server-only. The local launcher SHALL honor its selected API port for the web integration. Browser inputs SHALL NOT select arbitrary proxy upstream origins or paths.
@@ -126,12 +138,12 @@ Real homepage course cards SHALL omit the separate visible collection-date row a
 - **THEN** it remains inside the viewport, is not clipped by the card, can remain open while the pointer is over it, and does not obscure the focused price control
 
 ### Requirement: Secondary course details action
-Real homepage course cards SHALL expose a secondary action labeled «مشاهده دوره», with pale blue fill, dark brand-blue text, and visible keyboard focus. It SHALL open the existing course details dialog and preserve focus return to its trigger. Title activation SHALL retain its existing details behavior.
+Real homepage course cards SHALL expose a secondary link labeled «مشاهده دوره», with pale blue fill, dark brand-blue text and visible keyboard focus. It SHALL open the retained provider course URL in a new tab with noopener/noreferrer and an accessible new-window notice. Title activation SHALL use the same destination. Neither action SHALL open a local course-details dialog.
 
 #### Scenario: Activate the course action
 - **WHEN** a visitor clicks or keyboard-activates «مشاهده دوره»
-- **THEN** the existing dialog opens for that course and closing it restores focus to the action, without introducing course-page or provider navigation
+- **THEN** the provider course page opens in a new tab without a local details dialog or public course-detail fetch
 
 #### Scenario: Scoped appearance
-- **WHEN** the revised real homepage cards and surrounding sample frontend are displayed
-- **THEN** only the real cards receive the new instructor row, price provenance interaction, and secondary action appearance; sample cards and global secondary buttons retain their existing behavior and styling
+- **WHEN** real homepage cards and independent design-system fixtures are displayed
+- **THEN** real card source links retain their instructor rows, price provenance and secondary-action appearance while fixture-only dialogs and global secondary buttons retain their independent behavior

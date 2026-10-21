@@ -70,6 +70,30 @@ button or hover pause. The restored real-group shelf described above supersedes 
 «پایتون مقدماتی» samples and is included in this checkpoint. `/design-system` remains the maintained component reference;
 frontend cleanup is under exploration and has not started.
 
+October 21, 2026 — `add-course-catalog-page` moves full individual-course browsing
+onto `/courses` with normalized search, provider, pricing-status and exact content-
+duration filters, eighteen results per page and URL-backed controls/paging.
+No category/level filters, ranking, migrations or source refresh are introduced.
+Homepage search now targets `/groups`, while `#courses` is a three-course shelf
+with an all-courses link and direct provider course links. Both catalogues expose direct navigation;
+the group catalogue's course fallback opens `/courses`. The real-group hero and
+category/group presentation remain unchanged. See `docs/frontend.md` for behavior
+and `docs/validation.md` for verification and environment limits.
+
+October 21, 2026 — `add-course-catalog-page` is archived with all 20 tasks
+complete, including direct provider links and the owner-reviewed catalogue polish.
+Its three capability deltas are synced to main specs; all 20 main specs pass
+strict validation. The compact result count remains visible, duplicate course
+heading stays hidden, and both catalogue searches use explicit RTL direction.
+The existing Bun production-build limitation remains documented in
+`docs/validation.md`. No commit or push is included in archival.
+
+October 21, 2026 — Owner-authorized commit review confirms the completed course
+catalogue scope and documentation. Final checks pass for workspace lint/types,
+83 isolated core/web tests, focused database-backed course API tests, API build,
+RTL audit and all 20 main specs. Frontend compilation/types pass; production
+page-data collection remains blocked by the known Bun CommonJS-wrapper error.
+
 ## Product vision
 
 October 12, 2026 — `migrate-remaining-providers-v3` implementation and acceptance are complete. TopLearn, Sabzlearn and Roocket collect native v3 observations through the controlled shared base and explicitly invoked ingestion CLI, with persisted feedback bounds and immutable recovery. Real paid/free ingestion, hosted WebP images, public identity, replay and desktop/mobile keyboard checks passed for each provider. The standalone dashboard and aggregation CLI are retired; the owner approved retaining the pure aggregation helper for the unchanged Maktabkhooneh test. Protected Maktabkhooneh files and existing local outputs remain unchanged. Frontend changes add authentic Sabzlearn/Roocket logos and the owner-requested nearest-whole-minute duration display in cards/details, preserving source precision. Source limitations and the existing Bun web build error remain recorded in [validation](docs/validation.md). Both behavior contracts are synced to main specs and strictly validated; the change is [archived](openspec/changes/archive/2026-10-12-migrate-remaining-providers-v3/). No scheduled collection is included.
@@ -586,3 +610,9 @@ October 20, 2026 — The owner authorized committing the public judged-group
 integration and archive. README setup/status and affected documentation were
 reviewed and reconciled. [Pre-commit verification](docs/validation.md#public-judged-group-pre-commit-verification--october-20-2026)
 records passing checks and the unchanged Bun production-build limitation.
+
+October 21, 2026 — Owner follow-up: public course titles and «مشاهده دوره»
+open the course's retained provider page directly in a new tab. The early-stage
+local details dialog has been removed from public course browsing; price-date
+tooltips remain. Public course detail APIs and independent design-system fixture
+previews retain their separate contracts.

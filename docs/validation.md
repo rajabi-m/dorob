@@ -1,5 +1,32 @@
 # Validation and known limitations
 
+## Dedicated course catalogue — October 21, 2026
+
+`add-course-catalog-page` implements group-first homepage search, a bounded
+three-course shelf and `/courses` with eighteen-item pages and provider,
+pricing-status and exact content-duration filters. All data changes in tests use
+isolated schemas; no working-catalog ingestion, source refresh, publication,
+judgment generation, migration, commit or push was performed.
+
+| Check | Result |
+| --- | --- |
+| Core/web regression | 84 passing tests across 22 files run in separate Bun processes (including course/group catalogue route acceptance); isolated processes prevent module-mock interference. The final course UI suite has 8 tests/43 assertions. |
+| Full API regression | `API_INTEGRATION=1 bun run test:api`: 81 tests, 1,225 assertions, all pass with temporary PostgreSQL schemas and storage. Includes 45 assertions in the expanded public-course integration test. |
+| Filter contracts | Provider/status intersections, mixed free/paid offers, subscription/unknown separation, null/fractional content duration and 180/600-minute boundaries, totals before paging, stable order, legacy category/free-only behavior, invalid/conflicting/duplicate conditions and proxy forwarding pass. |
+| Page and interaction checks | Server query/response handling, eighteen-item paging, positive out-of-range correction, invalid states, chips/reset, restored controls, search/filter page reset, retry, details/provenance and focus return pass. Page changes focus and scroll to results in both directions. |
+| Live retained catalogue | In the existing local app, 1,493 eligible courses render without fixtures; Roocket filters show 104 courses, free shows 21, and free plus under-3h shows 9. Back/Forward and reload restore conditions; real details and Escape focus return pass. Homepage has exactly three course cards and no course pagination; Persian homepage search opens the matching group catalogue and a real Python comparison. Course-page paging and no-match recovery were exercised. |
+| Desktop/mobile review | Desktop plus 390px and 320px layouts reviewed with real mixed Persian/Latin titles, Persian digits and Jalali detail dates. Document scroll width equals viewport width. Sidebar is desktop-only; mobile trigger opens a labelled modal. Shift+Tab/Tab contain focus through selected radio controls, Escape restores the trigger, and selecting a condition dismisses the modal. |
+| Failure/empty coverage | Happy DOM interaction and route tests distinguish no eligible courses, zero matches, upstream failure, invalid response/selection and retry; live browser checks cover matching/no-match recovery. The working API was not stopped to manufacture an outage. |
+| RTL audit | All 11 touched UI files scanned individually/by directory: zero errors or warnings. New URL/label helpers preserve mixed-text isolation at presentation boundaries. |
+| Lint/types/API build | Workspace `bun run lint`, `bun run typecheck`, and `bun run build:api` pass. Web lint/types repeated after the final focus refinement. |
+| Frontend production build | Compilation and TypeScript pass. Page-data collection still fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`; this is the previously documented environment limitation, not a successful production build. |
+| Scope/validation | Strict OpenSpec validation and whitespace review pass. No dependencies, lockfile, scraped files, database schema or independent scraper-change artifacts changed. New filters are showcased using local state in `/design-system`. |
+
+The first sandboxed socket/database attempts were blocked by local networking
+restrictions; reruns with local network access passed. Happy DOM emits existing
+Next Image zero-layout and Link scheduling notices because it does not perform
+browser layout; actual responsive checks were performed in the browser.
+
 ## Ingestion CLI reporting — October 11, 2026
 
 `improve-ingestion-cli-output` replaces default per-selection JSON stdout with a
@@ -1272,3 +1299,69 @@ Final pre-commit verification for the complete frontend checkpoint:
   collection for `/api/admin/courses` with the existing Bun CommonJS-wrapper
   error. A successful production build/start remains unverified.
 - `/design-system` is retained; the proposed frontend cleanup has not begun.
+
+## Direct provider course links — October 21, 2026
+
+Owner follow-up replaces public titles and «مشاهده دوره» with native links to
+the exact retained provider source URL, opening a new tab with
+`noopener noreferrer` and an accessible new-window notice. The retired public
+course modal and all its selection wiring are removed; the detail API remains
+available. This supersedes modal-specific frontend behavior in the preceding
+catalogue checkpoint. Independent fixture previews are unchanged.
+
+- Card regression suite: 7 tests / 104 assertions pass; catalogue interaction
+  suite: 8 tests / 45 assertions pass. They verify exact source URLs, new-tab
+  attributes, absence of detail fetches/modals, and retained price provenance.
+- Workspace lint and type checking pass. RTL scans of all five affected card/UI
+  files report zero errors or warnings; whitespace and strict OpenSpec checks pass.
+- Live catalogue links resolve to the retained TopLearn course URL on both title
+  and action, with no local course dialog. At 390px, keyboard Tab reaches the
+  provider action with a visible solid outline; document width equals viewport.
+- Production compilation and TypeScript pass; page-data collection still hits the
+  previously recorded Bun CommonJS function-wrapper error. No backend behavior,
+  dependencies, source data or database schema changed in this follow-up.
+
+## Catalogue heading and search direction — October 21, 2026
+
+The course results use a compact total without repeating the page title; their
+accessible heading and mobile filter trigger remain. Both catalogue search fields
+now explicitly use `dir="rtl"`: `dir="auto"` had resolved empty fields to LTR,
+so `text-align: start` placed Persian placeholders on the left despite their RTL
+pseudo-element direction.
+
+Live browser checks at the owner's 799px viewport confirm right-aligned
+placeholders on `/courses` and `/groups`; computed input/placeholder direction is
+RTL with logical start alignment. The redundant course heading is no longer
+visible. Existing catalogue suites pass (8 course tests, 4 group tests), web lint
+and types pass, and all three touched UI files pass the RTL detector. Production
+compilation/types pass; page-data collection remains blocked by the documented
+Bun CommonJS function-wrapper error. No commit was made.
+
+## Course catalogue archival — October 21, 2026
+
+`add-course-catalog-page` is archived at
+`openspec/changes/archive/2026-10-21-add-course-catalog-page/` with all four
+planning artifacts and 20/20 tracked tasks complete. Three deltas are synced:
+`course-catalog` (new, eight requirements), `homepage-course-catalog` (seven
+modified requirements), and `public-course-catalog` (three added requirements and
+one modified). A post-sync comparison verified every changed requirement and
+scenario, preserved established purpose sections and untouched requirements, and
+confirmed canonical main-spec structure without delta headers. All 20 main specs
+pass strict validation. Archival preserves `.openspec.yaml` and leaves the
+independent scraper extraction change active. Prior implementation checks and the
+known Bun build limitation remain as recorded above. No commit or push occurred.
+
+## Course catalogue pre-commit verification — October 21, 2026
+
+The owner explicitly requested committing this completed scope after archival.
+`Plan.md`, `README.md` and affected frontend/API documentation were reviewed;
+the remaining stale README modal sentence now describes direct provider links.
+Final reruns passed workspace lint and types, 83 core/web tests across 22 isolated
+processes (including both catalogue route acceptance files), two focused course
+API tests with PostgreSQL (82 assertions), API build, all touched-file RTL checks
+and strict validation of all 20 main specs. The earlier complete API run remains
+81 passing tests. Production compilation/types pass; page-data collection still
+fails at `/_not-found` with the existing Bun CommonJS function-wrapper error.
+A successful production build/start remains unverified. Staging is restricted to
+the course catalogue implementation, its tests/docs, synced specs and archived
+change; no scraper proposal, generated output, dependency or lockfile is included.

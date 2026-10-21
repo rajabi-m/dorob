@@ -687,3 +687,23 @@ detail routes. Unfiltered defaults remain twelve items, offset zero, slug ascend
 with ID ties; existing strict eligibility and current-judgment rules still apply.
 Search does not execute models or update retained data. Eligibility still uses the
 local-scale batched scan; offset pages are current reads, not frozen snapshots.
+
+### Individual-course filters — October 21, 2026
+
+`GET /api/v1/courses` and same-origin `/api/courses` additionally accept one
+`provider` (`maktabkhooneh`, `toplearn`, `quera`, `sabzlearn`, `roocket`),
+`priceStatus` (`free`, `paid`, `subscription`, `unknown`) and `duration`
+(`under-3h`, `3-to-10h`, `10h-plus`). Conditions combine with normalized search
+before the matching total and paging. Duration uses exact content minutes:
+<180, >=180 and <600, or >=600; null matches no selected range. Display rounding,
+study effort and completion windows do not affect filtering.
+
+Pricing matches the displayed summary, not every detail offer. Unknown remains
+separate from free and subscription. Omitted filters preserve existing reads;
+`freeOnly=true` is compatible with absent/free `priceStatus` and conflicts with
+other statuses (422). Existing API category behavior remains available for older
+clients; the course catalogue does not expose category or level filters. Duplicate
+or unsupported API selections return 422.
+
+Example: `/api/v1/courses?q=Python&provider=roocket&priceStatus=free&duration=under-3h&limit=18&offset=0`.
+No scraping, inference, source refresh or catalogue writes occur during reads.

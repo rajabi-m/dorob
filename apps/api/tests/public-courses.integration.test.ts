@@ -46,10 +46,32 @@ describe.skipIf(process.env.API_INTEGRATION !== '1')('public catalog PostgreSQL/
       const response=await app.handle(new Request('http://localhost/api/v1/courses?limit=1')); expect(response.status).toBe(200); expect(isPublicCoursePage(await response.json())).toBe(true);
       const detail=await app.handle(new Request(`http://localhost/api/v1/courses/${encodeURIComponent('example:21')}`)); expect(detail.status).toBe(200); expect(isPublicCourseDetail(await detail.json())).toBe(true);
       const spec=await (await app.handle(new Request('http://localhost/docs/json'))).json(); expect(spec.paths['/api/v1/courses'].get.responses['200']).toBeDefined();
+      // New filters operate on current projected facts before totals and paging.
+      for(const [n,minutes] of [null,179.5,180,599.5,600].entries()) {
+        const input=rich(); input.providerId='roocket';input.providerCourseId='filter-'+n;input.submissionId='filters-'+n;
+        input.title='فیلتر Python';input.education!.data!.duration.contentMinutes=minutes;
+        if(n===0) input.pricing=minimal().pricing;
+        else if(n===2) input.pricing.data=[input.pricing.data![1]];
+        else if(n===3) input.pricing.data=[{...input.pricing.data![1],id:'subscription',type:'subscription',status:'subscription',billingPeriod:'monthly'}];
+        const snapshot=(await ingestion.ingest(input)).snapshot;await thumbnails.process(snapshot.courseId,snapshot.id);
+      }
+      expect((await publicRepo.list(query('provider=roocket'))).total).toBe(5);
+      expect((await publicRepo.list(query('provider=roocket&priceStatus=unknown'))).total).toBe(1);
+      expect((await publicRepo.list(query('provider=roocket&priceStatus=free'))).total).toBe(2);
+      expect((await publicRepo.list(query('provider=roocket&priceStatus=paid'))).items.map(c=>c.id)).toEqual(['roocket:filter-2']);
+      expect((await publicRepo.list(query('provider=roocket&priceStatus=subscription'))).total).toBe(1);
+      expect((await publicRepo.list(query('provider=roocket&duration=under-3h'))).items.map(c=>c.id)).toEqual(['roocket:filter-1']);
+      expect((await publicRepo.list(query('provider=roocket&duration=3-to-10h'))).total).toBe(2);
+      expect((await publicRepo.list(query('provider=roocket&duration=10h-plus'))).items.map(c=>c.id)).toEqual(['roocket:filter-4']);
+      const combined=await publicRepo.list(query('q=python&provider=roocket&duration=3-to-10h&limit=1&offset=1'));
+      expect(combined).toMatchObject({total:2,limit:1,offset:1});expect(combined.items).toHaveLength(1);
+      for(const invalid of ['provider=bad','priceStatus=free&priceStatus=paid','duration=bad','freeOnly=true&priceStatus=paid']) expect((await app.handle(new Request('http://localhost/api/v1/courses?'+invalid))).status).toBe(422);
+      const parameters=spec.paths['/api/v1/courses'].get.parameters.map((p:{name:string})=>p.name);
+      for(const name of ['provider','priceStatus','duration'])expect(parameters).toContain(name);
       const refresh=rich(); refresh.providerCourseId='00';refresh.submissionId='refresh';const pending=(await ingestion.ingest(refresh)).snapshot;
-      expect((await publicRepo.list(query())).total).toBe(21);await expect(publicRepo.detail('example:00')).rejects.toMatchObject({ status:404 });
-      const claim=await ingestion.claim(pending.courseId,pending.id);await ingestion.fail(pending.id,claim.leaseId!,'processing_failed');expect((await publicRepo.list(query())).total).toBe(21);
-      await thumbnails.process(pending.courseId,pending.id);expect((await publicRepo.list(query())).total).toBe(22);
+      expect((await publicRepo.list(query())).total).toBe(26);await expect(publicRepo.detail('example:00')).rejects.toMatchObject({ status:404 });
+      const claim=await ingestion.claim(pending.courseId,pending.id);await ingestion.fail(pending.id,claim.leaseId!,'processing_failed');expect((await publicRepo.list(query())).total).toBe(26);
+      await thumbnails.process(pending.courseId,pending.id);expect((await publicRepo.list(query())).total).toBe(27);
       const asset=await ingestion.asset(observations[1].thumbnail.asset!.id);await rm(join(store.config.assetDirectory,asset.storageKey));
       const missing=await publicRepo.list(query());expect(missing.total).toBe(0);expect(missing.items).toEqual([]);
       await rm(store.config.assetDirectory,{ recursive:true });

@@ -25,3 +25,10 @@ test('deterministic free, paid, starting price, subscription, unknown and discou
   const p = rich(); p.pricing.data = [{ ...p.pricing.data![1],originalAmount:100 }]; expect(example(p).price.originalAmount).toBeNull();
   const sparse = example(minimal()); expect(sparse.description).toBeNull(); expect(sparse.contentMinutes).toBeNull(); expect(sparse.offers).toBeNull(); expect(JSON.stringify(sparse)).not.toMatch(/requestHash|raw|fieldSources|submissionId|sourcePrice/);
 });
+
+test('additive course filters validate choices and preserve legacy query defaults',()=>{
+  expect(parseCourseQuery(new URLSearchParams('provider=roocket&priceStatus=free&duration=under-3h&freeOnly=true'))).toMatchObject({provider:'roocket',priceStatus:'free',duration:'under-3h',freeOnly:true});
+  for(const value of ['provider=bad','provider=','provider=roocket&provider=quera','priceStatus=bad','duration=bad','duration=under-3h&duration=10h-plus','freeOnly=true&priceStatus=paid','freeOnly=true&priceStatus=subscription','freeOnly=true&priceStatus=unknown']) expect(()=>parseCourseQuery(new URLSearchParams(value))).toThrow();
+  for(const status of ['free','paid','subscription','unknown']) expect(parseCourseQuery(new URLSearchParams('priceStatus='+status)).priceStatus).toBe(status);
+  for(const duration of ['under-3h','3-to-10h','10h-plus']) expect(parseCourseQuery(new URLSearchParams('duration='+duration)).duration).toBe(duration);
+});

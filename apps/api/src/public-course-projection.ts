@@ -1,5 +1,6 @@
+import { courseProviders } from '@dorob/core';
 import type { CategoryId, CourseSnapshot, PriceSummary, PublicCourseDetail, PublicOffer } from '@dorob/core';
-export const providerNames: Record<string,string> = { maktabkhooneh:'مکتب‌خونه', toplearn:'تاپ‌لرن', quera:'کوئرا', sabzlearn:'سبزلرن', roocket:'راکت' };
+export const providerNames: Record<string,string> = Object.fromEntries(courseProviders.map(p=>[p.id,p.name]));
 export const normalizeSearch = (text: string) => text.normalize('NFKC').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\u200c/g,' ').replace(/\s+/g,' ').trim().toLocaleLowerCase('fa-IR');
 export function selectPrice(offers: PublicOffer[] | null): PriceSummary {
   const sorted = [...(offers ?? [])].sort((a,b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);

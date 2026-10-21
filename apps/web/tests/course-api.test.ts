@@ -51,3 +51,20 @@ test('browser boundary rejects invalid content/identity/page responses without f
     expect((await browserCourses.list(parseCourseQuery(new URLSearchParams()),new AbortController().signal)).ok).toBe(false);
   }finally{globalThis.fetch=saved;}
 });
+
+test('new filters survive server and browser serialization; malformed filters fail safely',async()=>{
+  let received='';
+  const query=parseCourseQuery(new URLSearchParams('provider=roocket&priceStatus=paid&duration=3-to-10h'));
+  const client=createCourseClient({origin:'http://api.test',fetcher:async url=>{received=String(url);return Response.json(page);}});
+  expect((await courseListHandler(new Request('http://web.test/api/courses?provider=roocket&priceStatus=paid&duration=3-to-10h'),client)).status).toBe(200);
+  for(const [key,value] of Object.entries({provider:'roocket',priceStatus:'paid',duration:'3-to-10h'}))expect(new URL(received).searchParams.get(key)).toBe(value);
+  for(const q of ['provider=bad','duration=bad','priceStatus=paid&priceStatus=free','freeOnly=true&priceStatus=unknown'])expect((await courseListHandler(new Request('http://web.test/api/courses?'+q),client)).status).toBe(422);
+  const saved=globalThis.fetch;
+  try{
+    const {browserCourses}=await import('../src/lib/browser-courses');
+    globalThis.fetch=(async url=>{received=String(url);return Response.json(page);}) as typeof fetch;
+    expect((await browserCourses.list(query,new AbortController().signal)).ok).toBe(true);
+    expect(received).toStartWith('/api/courses?');
+    expect(received).toContain('provider=roocket');expect(received).toContain('priceStatus=paid');expect(received).toContain('duration=3-to-10h');
+  }finally{globalThis.fetch=saved;}
+});

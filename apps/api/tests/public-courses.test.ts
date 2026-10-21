@@ -13,7 +13,7 @@ test('public encoded IDs, safe input/missing/unavailable responses and OpenAPI',
   const app=createApp(health,undefined,{ publicCourses:{ list:async q=>({ items:[item],total:1,limit:q.limit,offset:q.offset }),detail:async id=>{ if(id===c.id)return c;throw new CatalogError(404); } } });
   const call=async(path:string)=>app.handle(new Request(`http://localhost${path}`));
   expect((await call(`/api/v1/courses/${encodeURIComponent(c.id)}`)).status).toBe(200);
-  for(const q of ['category=bad','limit=101','offset=-1','freeOnly=1','q='+ 'a'.repeat(201),'limit=1.5','upstream=private-secret']) {const r=await call('/api/v1/courses?'+q);expect(r.status).toBe(422);expect(await r.text()).not.toContain('private-secret');}
+  for(const q of ['provider=bad','duration=bad','priceStatus=free&priceStatus=paid','freeOnly=true&priceStatus=paid','category=bad','limit=101','offset=-1','freeOnly=1','q='+ 'a'.repeat(201),'limit=1.5','upstream=private-secret']) {const r=await call('/api/v1/courses?'+q);expect(r.status).toBe(422);expect(await r.text()).not.toContain('private-secret');}
   expect((await call('/api/v1/courses/example:missing')).status).toBe(404);expect((await call('/api/v1/courses/bad')).status).toBe(422);
   const unavailable=createApp(health,undefined,{ publicCourses:{ list:async()=>{throw new Error('SQL password private-secret');},detail:async()=>({raw:'private-secret'} as unknown as PublicCourseDetail) } });
   for(const path of ['/api/v1/courses','/api/v1/courses/example:bad']) {const r=await unavailable.handle(new Request('http://localhost'+path));expect(r.status).toBe(503);expect(await r.text()).not.toMatch(/SQL|private-secret/);}

@@ -48,7 +48,7 @@ function PriceProvenance({ course }: { course:PublicCourse }) {
     </div>
   </div>;
 }
-export function PublicCourseCard({ course,onDetails }: { course:PublicCourse;onDetails:(course:PublicCourse,trigger:HTMLButtonElement)=>void }) {
+export function PublicCourseCard({ course }: { course:PublicCourse }) {
   const [failed,setFailed]=useState(false);
   const [failedLogo,setFailedLogo]=useState(false);
   const providerMark=providerMarks[course.provider.id];
@@ -57,14 +57,14 @@ export function PublicCourseCard({ course,onDetails }: { course:PublicCourse;onD
       <span className={`ds-badge ${styles.level}`} dir="auto">{course.level ?? 'سطح ثبت نشده'}</span></div>
     <div className={styles.body}>
       <div className={styles.textGroup}>
-        <h3 className={styles.heading}><button className={styles.title} dir="auto" onClick={e=>onDetails(course,e.currentTarget)}>{course.title}</button></h3>
+        <h3 className={styles.heading}><a className={styles.title} dir="auto" href={course.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`${course.title} (پنجره‌ی جدید)`}>{course.title}</a></h3>
         <p className={styles.instructors}>
           <span className={styles.instructorNames}>{course.instructors === null ? 'مدرس ثبت نشده' : course.instructors.length === 0 ? 'بدون مدرس ثبت‌شده' : <>{course.instructors.length === 1 ? 'مدرس: ' : 'مدرسان: '}{course.instructors.slice(0,2).map((instructor,index)=><span key={index}>{index > 0 && '، '}<bdi>{instructor.name}</bdi></span>)}</>}</span>
           {course.instructors && course.instructors.length > 2 && <span className={styles.moreInstructors}>و {persianNumber(course.instructors.length - 2)} نفر دیگر</span>}
         </p>
       </div>
       <div className={styles.info}><div className={styles.provider}>{providerMark && !failedLogo && <Image src={providerMark} alt="" width={32} height={32} className={styles.logo} onError={()=>setFailedLogo(true)} />}<bdi>{course.provider.name}</bdi></div><div className={styles.metadata}><Clock size={15} aria-hidden="true" /><span>{courseDuration(course.contentMinutes)}</span></div></div>
-      <div className={styles.footer}><PriceProvenance course={course} /><button className={`ds-button ds-secondary ${styles.action} ${styles.realAction}`} aria-label={`مشاهده دوره ${course.title}`} onClick={e=>onDetails(course,e.currentTarget)}>مشاهده دوره</button></div>
+      <div className={styles.footer}><PriceProvenance course={course} /><a className={`ds-button ds-secondary ${styles.action} ${styles.realAction}`} href={course.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`مشاهده دوره ${course.title} (پنجره‌ی جدید)`}>مشاهده دوره</a></div>
     </div>
   </article>;
 }

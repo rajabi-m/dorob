@@ -2,7 +2,7 @@ import { test,expect,afterEach } from 'bun:test';
 import { Window } from 'happy-dom';
 import { act,createRef,Suspense,StrictMode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import type { Page,PublicCourse,PublicCourseDetail } from '@dorob/core';
+import type { Page,PublicCourse } from '@dorob/core';
 import type { CourseResult } from '../src/lib/course-result';
 import { example } from '../../../packages/core/tests/fixtures';
 import { minimal } from '../../api/src/ingestion-examples';
@@ -34,7 +34,7 @@ async function mounted(seed=initial){
 function button(text:string){const b=[...document.querySelectorAll('button')].find(b=>b.textContent===text);expect(b).toBeDefined();return b!;}
 test('real price/card variants and sparse facts leave fixture defaults unchanged',()=>{
   for(const status of ['free','paid','subscription','unknown'] as const){const html=renderToStaticMarkup(<PublicPrice price={{...c.price,status,amount:status==='free'?0:status==='unknown'?null:200,originalAmount:status==='paid'?300:null,billingPeriod:status==='subscription'?'monthly':null}} />);expect(html).toContain({free:'رایگان',paid:'۲۰۰',subscription:'ماهانه',unknown:'قیمت نامشخص'}[status]);}
-  const sparse=example(minimal());const html=renderToStaticMarkup(<PublicCourseCard course={sparse} onDetails={()=>{}} />);expect(html).toContain('سطح ثبت نشده');expect(html).toContain('مدت ثبت نشده');expect(html).toContain('۱۸ مهر ۱۴۰۵');expect(html).toContain('/api/thumbnails/');
+  const sparse=example(minimal());const html=renderToStaticMarkup(<PublicCourseCard course={sparse} />);expect(html).toContain('سطح ثبت نشده');expect(html).toContain('مدت ثبت نشده');expect(html).toContain('۱۸ مهر ۱۴۰۵');expect(html).toContain('/api/thumbnails/');
   const fixture=renderToStaticMarkup(<CourseCard course={providerHomepageCourses[0]} onDetails={()=>{}} />);expect(fixture).toContain(providerHomepageCourses[0].title);expect(fixture).not.toContain('/api/thumbnails/');expect(fixture).not.toContain('گردآوری:');
 });
 test('paging, filter reset and aborted older responses never overwrite a newer catalog query',async()=>{
@@ -57,38 +57,23 @@ test('initial and subsequent failures, retry recovery, honest category empty and
   browserCourses.list=async()=>error;await render('failed');expect(document.body.textContent).not.toContain(c.title);expect(document.body.textContent).toContain('خطا');
   browserCourses.list=async()=>({ok:true,data:{items:[],total:0,limit:18,offset:0}});await render('','code');expect(document.body.textContent).toContain('۰ دوره');expect(document.body.textContent).toContain('گروه‌های منتشرشده');
 });
-test('real detail 404/error/retry, refreshed observation, cancellation and focus return',async()=>{
-  let detail:CourseResult<PublicCourseDetail>={ok:false,error:{code:'not_found',message:'جزئیات این دوره در دسترس نیست.'}};
-  browserCourses.detail=async()=>detail;
-  await mounted();const trigger=button('مشاهده دوره');trigger.focus();await act(async()=>trigger.click());await flush();
-  expect(document.querySelector('dialog')?.hasAttribute('open')).toBe(true);expect(document.body.textContent).toContain('جزئیات این دوره در دسترس نیست');expect(document.body.textContent).toContain('تازه‌سازی نتایج');
-  detail={ok:false,error:{code:'unavailable',message:'خطا'}};await act(async()=>button('تلاش دوباره').click());await flush();expect(document.querySelector('dialog')?.textContent).toContain('خطا');
-  detail={ok:true,data:{...c,snapshotId:crypto.randomUUID(),description:'refreshed facts'}};await act(async()=>button('تلاش دوباره').click());await flush();expect(document.querySelector('dialog')?.textContent).toContain('تازه‌تر');expect(document.querySelector('dialog')?.textContent).toContain('refreshed facts');
-  await act(async()=>document.querySelector<HTMLDialogElement>('dialog')!.close());expect(document.activeElement).toBe(trigger);
-  const pending=deferred<CourseResult<PublicCourseDetail>>();let signal:AbortSignal|undefined;browserCourses.detail=(_id,s)=>{signal=s;return pending.promise;};
-  await act(async()=>trigger.click());await flush();await act(async()=>document.querySelector<HTMLDialogElement>('dialog')!.close());expect(signal?.aborted).toBe(true);await act(async()=>pending.resolve(detail));expect(document.querySelector('dialog')).toBeNull();
-});
-
 test('instructor summaries retain source order, isolate names and distinguish missing facts',()=>{
   for(const [instructors,label] of [[null,'مدرس ثبت نشده'],[[],'بدون مدرس ثبت‌شده'],[[{name:'Alex Example',role:null}],'مدرس: '],[[{name:'سارا',role:null},{name:'Alex Example',role:null},{name:'نام سوم',role:null},{name:'نام چهارم',role:null}],'مدرسان: ']] as const){
-    const html=renderToStaticMarkup(<PublicCourseCard course={{...item,instructors:instructors===null?null:[...instructors]}} onDetails={()=>{}} />);
+    const html=renderToStaticMarkup(<PublicCourseCard course={{...item,instructors:instructors===null?null:[...instructors]}} />);
     expect(html).toContain(label);expect(html).toContain('مشاهده دوره');
     if(instructors?.length){expect(html).toContain('<bdi>Alex Example</bdi>');}
     if(instructors?.length===4){expect(html).toContain('و ۲ نفر دیگر');expect(html).toContain('<bdi>سارا</bdi>');expect(html).not.toContain('نام سوم');}
   }
 });
-test('full long title and all instructors remain available in details and title restores focus',async()=>{
-  const course={...c,title:'استانداردسازی زیرساخت‌های بین‌المللی با Python و پیشرفته‌ترین قابلیت‌های شخصی‌سازی‌شده',instructors:[{name:'سارا',role:null},{name:'Alex Example',role:null},{name:'نام کامل سوم',role:null}]};
-  browserCourses.detail=async()=>({ok:true,data:course});
+test('course title and action open the exact provider URL without local details',async()=>{
+  let requests=0;browserCourses.detail=async()=>{requests++;return {ok:true,data:c};};
+  const course={...c,title:'استانداردسازی زیرساخت‌های بین‌المللی با Python و پیشرفته‌ترین قابلیت‌های شخصی‌سازی‌شده'};
   await mounted({ok:true,data:{items:[course],total:1,limit:18,offset:0}});
-  const title=button(course.title);expect(title.textContent).toBe(course.title);
-  expect(document.querySelector('article')?.textContent).toContain('و ۱ نفر دیگر');
-  const action=button('مشاهده دوره');expect(action.getAttribute('aria-label')).toBe(`مشاهده دوره ${course.title}`);
-  await act(async()=>{title.focus();title.click();});await flush();
-  expect(document.querySelector('dialog')?.textContent).toContain('نام کامل سوم');expect(document.querySelector('dialog h3')?.textContent).toBe(course.title);
-  await act(async()=>document.querySelector<HTMLButtonElement>('button[aria-label="بستن جزئیات دوره"]')!.click());expect(document.activeElement).toBe(title);
+  const links=[...document.querySelectorAll<HTMLAnchorElement>('article a')];expect(links).toHaveLength(2);
+  for(const link of links){expect(link.href).toBe(course.sourceUrl);expect(link.target).toBe('_blank');expect(link.rel).toBe('noopener noreferrer');expect(link.getAttribute('aria-label')).toContain('پنجره‌ی جدید');}
+  expect(links[0].textContent).toBe(course.title);expect(links[1].textContent).toBe('مشاهده دوره');
+  expect(requests).toBe(0);expect(document.querySelector('dialog')).toBeNull();
 });
-
 test('price provenance describes each observation uniquely across all price states',async()=>{
   const courses=(['paid','free','subscription','unknown'] as const).map((status,index)=>({...item,id:`price:${index}`,checkedAt:`2026-10-${String(index+1).padStart(2,'0')}T12:00:00Z`,price:{...item.price,status,amount:status==='unknown'?null:status==='free'?0:200,originalAmount:status==='paid'?300:null,startingPrice:status==='subscription',billingPeriod:status==='subscription'?'monthly' as const:null}}));
   await mounted({ok:true,data:{items:courses,total:4,limit:18,offset:0}});
@@ -126,6 +111,6 @@ test('provenance supports hover transfer, keyboard dismissal, click/tap toggle a
   await act(async()=>trigger.click());expect(tip.hidden).toBe(false);
   await act(async()=>pointer(document.body,'pointerdown','touch'));expect(tip.hidden).toBe(true);
   await act(async()=>trigger.click());expect(tip.hidden).toBe(false);
-  await act(async()=>button('مشاهده دوره').focus());expect(tip.hidden).toBe(true);
+  await act(async()=>document.querySelector<HTMLAnchorElement>('article a[aria-label^="مشاهده دوره"]')!.focus());expect(tip.hidden).toBe(true);
   expect(document.querySelector('dialog')).toBeNull();
 });

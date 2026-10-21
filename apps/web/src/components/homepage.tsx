@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import {useRouter} from "next/navigation";
+import {catalogHref} from "@/lib/group-catalog";
 import { ArrowRight, BookOpen, Search, X } from "lucide-react";
 import { BrandWordmark } from "./brand-wordmark";
 import { LogoPrototype, logoPrototypes } from "./logo-prototypes";
@@ -19,7 +21,7 @@ import { HomeHeroVariant, type HeroVariant } from "./home-hero-variants";
 import { homeGroups, groupCourses } from "./homepage-data";
 import { providerHomepageCourses, providerSnapshotDisplayDate, courseDuration, type HomepageCourse } from "./provider-homepage-data";
 
-import { PublicCourseSection, CourseSectionLoading } from "./public-course-section";
+import {PublicCourseShelf,CourseShelfLoading} from "./public-course-shelf";
 import type { CourseResult } from "@/lib/course-result";
 import type { Page, PublicCourse } from "@dorob/core";
 
@@ -28,6 +30,7 @@ const number = (value: number) => value.toLocaleString("fa-IR");
 const normalize = (value: string) => value.normalize("NFKC").replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/\u200c/g, " ").trim().toLocaleLowerCase("fa-IR"); // rtl-ignore
 
 export function Homepage({ groupId, heroVariant, realCourses, realGroups,featuredGroup }: { groupId?: string; heroVariant?: HeroVariant; featuredGroup?:Promise<GroupResult<PublicJudgedGroupDetail>>; realGroups?:Promise<GroupResult<Page<PublicJudgedGroup>>>; realCourses?: Promise<CourseResult<Page<PublicCourse>>> }) {
+  const router=useRouter();
   const group = homeGroups.find(item => item.id === groupId);
   const available: HomepageCourse[] = group ? groupCourses[group.id] : providerHomepageCourses;
   const [draft, setDraft] = useState("");
@@ -71,12 +74,12 @@ export function Homepage({ groupId, heroVariant, realCourses, realGroups,feature
     <header className="home-header">
       <div className="home-container home-header-inner">
         <Link href="/" className="ds-brand" aria-label="دورُب، صفحه‌ی نخست"><LogoPrototype index={logoIndex} className="ds-logo-mark" /><BrandWordmark /></Link>
-        <form className="ds-search home-search" role="search" onSubmit={event => { event.preventDefault(); search(draft); }}>
+        <form className="ds-search home-search" role="search" action={realCourses?"/groups":undefined} onSubmit={event => { event.preventDefault(); if(realCourses)router.push(catalogHref({q:draft,page:1}));else search(draft); }}>
           <Search size={21} aria-hidden="true" />
-          <input type="search" aria-label={realCourses ? "جست‌وجو در دوره‌ها" : "جست‌وجو در دوره‌های نمونه"} placeholder="چه چیزی می‌خواهی یاد بگیری؟" dir="rtl" value={draft} onChange={event => setDraft(event.target.value)} />
+          <input type="search" name="q" maxLength={200} aria-label={realCourses ? "جست‌وجو در مجموعه دوره‌ها" : "جست‌وجو در دوره‌های نمونه"} placeholder="چه چیزی می‌خواهی یاد بگیری؟" dir="rtl" value={draft} onChange={event => setDraft(event.target.value)} />
           <button className="ds-button" type="submit">جست‌وجو</button>
         </form>
-        <nav aria-label="بخش‌های صفحه"><Link href="/#groups">مجموعه دوره‌ها</Link><a href="#courses">دوره‌ها</a></nav>
+        <nav aria-label="بخش‌های صفحه"><Link href="/groups">مجموعه دوره‌ها</Link><Link href="/courses">همه دوره‌ها</Link></nav>
 
       </div>
     </header>
@@ -100,7 +103,7 @@ export function Homepage({ groupId, heroVariant, realCourses, realGroups,feature
       {realGroups && <Suspense fallback={<GroupSectionLoading />}><PublicGroupSection initial={realGroups}/></Suspense>}
       </>}
 
-      {realCourses && !group ? <Suspense fallback={<CourseSectionLoading />}><PublicCourseSection initial={realCourses} query={query} category="" freeOnly={freeOnly} onFreeChange={setFreeOnly} onReset={() => { reset(); showResults(); }} headingRef={resultsHeading} /></Suspense> : <section id="courses" className="home-section" aria-labelledby="results-title">
+      {realCourses && !group ? <Suspense fallback={<CourseShelfLoading/>}><PublicCourseShelf initial={realCourses}/></Suspense> : <section id="courses" className="home-section" aria-labelledby="results-title">
         <div className="home-section-heading">
           <div><h2 id="results-title" ref={resultsHeading} tabIndex={-1}>{query ? <>نتیجه‌ی جست‌وجو برای «<bdi>{query}</bdi>»</> : group ? "دوره‌های این مجموعه" : "دوره‌های پرطرفدار این روزها"}</h2><p role="status">{number(visible.length)} دوره‌ی نمونه؛ ترتیب نمایش بر اساس داده‌ی زنده نیست</p></div>
           <label className="ds-checkbox home-free"><input type="checkbox" checked={freeOnly} onChange={event => setFreeOnly(event.target.checked)} /> فقط دوره‌های رایگان</label>
