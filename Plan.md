@@ -107,6 +107,30 @@ October 22, 2026 — `refactor-frontend-components` is [archived](openspec/chang
 
 October 22, 2026 — Owner-authorized frontend commit review includes the archived refactor, preserved shelf/category/favicon refinements, illustration/logo fixes and removal of the visible redundant group-catalogue results heading. The accessible section label and paging focus target remain. Workspace lint/types, 89 tests in 23 isolated suites, RTL audit, strict main-spec validation and browser review pass; production compilation/types retain the documented Bun page-data blocker. Unrelated scraper, curation and active OpenSpec work are excluded.
 
+October 22, 2026 — `unify-public-catalog-controls` implements shared public
+catalogue layout, count/filter toolbar and component-owned responsive styles.
+Both pages use common transition navigation and pagination focus/scroll behavior,
+retain committed cards while pending, and preserve their existing domain filters,
+URLs, cards and page sizes. Independent design-system examples and shared
+interaction tests are added. All ten implementation tasks are verified; see
+`docs/frontend.md` for behavior and `docs/validation.md` for acceptance evidence.
+Workspace lint/types, 98 tests and RTL checks pass; the known Bun production
+page-data collection blocker remains.
+No commit, branch or archival is included.
+
+October 22, 2026 — `unify-public-catalog-controls` is [archived](openspec/changes/archive/2026-10-22-unify-public-catalog-controls/)
+with all four artifacts and ten implementation tasks complete. Its five added
+requirements are synced to the new `public-catalog-controls` main specification;
+all 21 main specs pass strict validation. The documented Bun production page-data
+blocker remains. No commit, push or branch is included in sync or archival.
+
+October 22, 2026 — Owner-authorized commit review covers only the unified public
+catalogue components, shared styles/interactions, reference examples, tests,
+frontend documentation and archived/synced OpenSpec artifacts. README now records
+the shared ownership and completed change. Unrelated scraper edits, curation
+notes and other active OpenSpec changes are excluded. The existing production
+build limitation remains recorded in `docs/validation.md`.
+
 ## Product vision
 
 October 12, 2026 — `migrate-remaining-providers-v3` implementation and acceptance are complete. TopLearn, Sabzlearn and Roocket collect native v3 observations through the controlled shared base and explicitly invoked ingestion CLI, with persisted feedback bounds and immutable recovery. Real paid/free ingestion, hosted WebP images, public identity, replay and desktop/mobile keyboard checks passed for each provider. The standalone dashboard and aggregation CLI are retired; the owner approved retaining the pure aggregation helper for the unchanged Maktabkhooneh test. Protected Maktabkhooneh files and existing local outputs remain unchanged. Frontend changes add authentic Sabzlearn/Roocket logos and the owner-requested nearest-whole-minute duration display in cards/details, preserving source precision. Source limitations and the existing Bun web build error remain recorded in [validation](docs/validation.md). Both behavior contracts are synced to main specs and strictly validated; the change is [archived](openspec/changes/archive/2026-10-12-migrate-remaining-providers-v3/). No scheduled collection is included.

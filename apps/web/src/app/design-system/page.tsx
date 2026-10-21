@@ -15,7 +15,6 @@ import "@/styles/product.css";
 import "./preview.css";
 import "../courses/catalog.css";
 import {PresentationShowcase} from "@/components/presentation-showcase";
-import "../groups/catalog.css";
 import {CourseFilterShowcase} from "@/components/course-filter-showcase";
 
 const system = {

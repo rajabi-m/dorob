@@ -1,3 +1,4 @@
+import './catalog.css';
 import Link from 'next/link';
 import type {ReactNode} from 'react';
 import {BrandLockup} from './brand-lockup';

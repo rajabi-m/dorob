@@ -1,4 +1,5 @@
 'use client';
+import './catalog.css';
 import Link from 'next/link';
 import type {ReactNode} from 'react';
 import {Search,X,ArrowRight,ArrowLeft} from 'lucide-react';

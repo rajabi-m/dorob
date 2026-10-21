@@ -64,6 +64,15 @@ logo/Python fixture assets are retired. `/design-system` retains current isolate
 examples. See the [ownership/removal inventory](docs/frontend-refactor.md) and
 [verification results](docs/validation.md#frontend-refactor--october-21-2026).
 
+The public `/groups` and `/courses` catalogues share their results toolbar,
+responsive sidebar/modal layout, loading feedback and pagination focus behavior.
+Their filters, cards, URLs and page sizes remain domain-specific. The completed
+[unify-public-catalog-controls](openspec/changes/archive/2026-10-22-unify-public-catalog-controls/)
+change is archived with all ten tasks complete and five requirements synced to
+[public-catalog-controls](openspec/specs/public-catalog-controls/spec.md).
+All 21 main specs pass strict validation; see [catalogue validation](docs/validation.md#unified-public-catalogue-controls--october-22-2026)
+for tests, responsive checks and the existing production-build limitation.
+
 ## Local development
 
 Use Bun 1.3.8 or a compatible release. From the repository root:

@@ -1473,3 +1473,71 @@ page-data error on an admin embedding handler. No production-startup claim.
 Commit scope includes `apps/web`, affected frontend docs, the archived refactor
 and its synced homepage spec. Scraper edits, curation data/report and other
 active OpenSpec changes remain excluded. No push or branch creation is included.
+
+## Unified public catalogue controls — October 22, 2026
+
+Implemented `unify-public-catalog-controls` across `/groups` and `/courses`.
+The two callers share results presentation, component-owned catalogue CSS and
+navigation/focus mechanics. No backend, ingestion, data mutation or lockfile
+changes are part of this work; unrelated scraper/curation changes were preserved.
+
+- Workspace `bun run lint` and `bun run typecheck` pass after the final source edits.
+- 28 isolated core/web/route-acceptance suites cover 98 passing tests. The native
+  deadline test in `apps/web/tests/course-api.test.ts` initially could not bind a
+  socket in the sandbox; all five tests passed when rerun with local binding
+  available. The six affected presentation/interaction/catalogue/route suites were
+  rerun after the final modal-focus change: 21 tests pass. Existing happy-dom
+  image-layout/React act warnings remain non-failing diagnostics.
+- Shared tests cover both toolbar label variants, status placement, retained cards
+  during a controlled pending transition, failure without numeric totals, both
+  paging directions, initial direct-page rendering, same-page filter changes,
+  later-page filter resets, close-before-navigation and delayed native close-event
+  focus precedence. Existing domain tests retain URL/card/filter/page-size checks.
+- RTL detector is clean on every touched UI file. Strict change validation and
+  `git diff --check` pass.
+- `bun run build` compiles successfully and completes TypeScript, then retains the
+  pre-existing Bun `Expected CommonJS module to have a function wrapper` error
+  during page-data collection (reported for `/api/admin/courses`). A complete
+  production build remains unavailable; this change does not bypass that blocker.
+
+Browser acceptance used an isolated temporary copy of the current frontend and a
+loopback fixture API, leaving the running catalogue/backend unchanged. Schema-valid
+fixtures supply 13 groups and 19 courses for pagination; a 2.2-second delay and
+503 mode exercise pending/failure states without altering retained provider data.
+This harness checks presentation and interaction, not backend filter correctness.
+
+Both routes were inspected at 320, 390, 760, 761 and 1280 CSS pixels in unfiltered,
+long Persian/Latin filtered, pending and failure states (40 route/state/width
+combinations). No page overflow occurred. Mobile toolbars have a 44px height with
+the count at the right and trigger at the left; desktop toolbars have a 22.8px
+count row with the trigger hidden. Sidebar/trigger visibility switches at the
+760/761 boundary on both routes. The toolbar bottom gap and non-empty chip bottom
+gap are each 20px. Checks caught and corrected a general-button CSS ordering
+conflict by giving the shared filter-trigger selector explicit toolbar scope.
+Search styling also uses explicit shared search scope to avoid import-order drift.
+
+Pending checks retain all twelve/eighteen committed cards with localized status
+and `aria-busy=true` at every width. Failure checks show retry, no numeric total
+and no overflow at every width. Browser keyboard checks cover modal Tab containment,
+Escape, close-button and backdrop dismissal with trigger focus return; selections
+close the panel, and committed paging/reset focuses the results heading and
+scrolls the visible results region. Direct later-page loads do not take focus.
+The API-independent design-system example renders and switches pending/error
+states without catalogue requests. Final live `/groups` and `/courses` review at
+390px confirms the same toolbar arrangement with real retained data.
+
+Local evidence: `/tmp/dorob-catalog-browser-evidence.json`,
+`/tmp/dorob-groups-controls.png`, `/tmp/dorob-courses-controls.png`, and
+`/tmp/dorob-catalog-{suites,final-focused,lint,types,build}.log`.
+
+### Catalogue controls sync and archive — October 22, 2026
+
+All four planning artifacts and ten implementation tasks are complete. The five
+ADDED requirements and their scenarios are synced to
+`openspec/specs/public-catalog-controls/spec.md`; the delta Purpose is preserved
+verbatim and the main spec contains only canonical Requirements formatting.
+Content comparison confirms nothing remains to sync. All 21 main specifications
+pass strict validation. The change is archived at
+`openspec/changes/archive/2026-10-22-unify-public-catalog-controls/`, including its
+`.openspec.yaml`. No implementation changes, commit, push or branch are included
+in this archival operation; the existing production-build limitation remains.

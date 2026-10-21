@@ -143,3 +143,14 @@ requirement is synced to the main spec, retaining the four existing scenario
 headings and adding provider-navigation/animation and public-course-navigation
 coverage. Title, Purpose and unrelated requirements are unchanged. All 20 main
 specs pass strict validation. No commit or push is included.
+
+## Shared catalogue controls — October 22, 2026
+
+`CatalogResults` owns the sidebar/results frame, accessible results heading,
+count/status toolbar, mobile filter trigger and active-chip placement for both
+public catalogues. `components/catalog.css` owns their shared responsive styling
+and is imported by the consuming primitives, shell and dialog. Group category
+links retain route-specific styling; course filters/grid retain their own styles.
+Neither route imports the other route's catalogue stylesheet. The design-system
+presentation section includes an API-independent layout example with success,
+pending, empty and failure status choices alongside the standalone modal example.

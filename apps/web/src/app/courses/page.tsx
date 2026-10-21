@@ -5,7 +5,6 @@ import {parseCourseCatalogState,courseCatalogHref,courseCatalogQuery,lastCourseP
 import {CourseCatalog,InvalidCourseCatalog} from '@/components/course-catalog';
 import '@/styles/product.css';
 import '../home.css';
-import '../groups/catalog.css';
 import './catalog.css';
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'همه دوره‌ها — دورُب',description:'دوره‌های آموزشی را جست‌وجو کن و بر اساس ارائه‌دهنده، هزینه و مدت محتوا انتخاب کن.'};

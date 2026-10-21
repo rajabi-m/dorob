@@ -429,3 +429,29 @@ RTL direction, keeping empty Persian placeholders aligned at inline start.
 October 21 follow-up: the owner restored the compact visible course result count.
 The duplicate result heading remains screen-reader-only; mobile filters and active-
 selection chips remain visible.
+
+## Unified public catalogue controls — October 22, 2026
+
+`/groups` and `/courses` now use `CatalogResults` and the component-owned
+`catalog.css` for the same RTL sidebar/results layout. The count is on the right
+and mobile filter trigger on the left, with one 20px toolbar-to-content gap;
+active chips wrap beneath the toolbar and have a 20px bottom gap when present.
+The sidebar is shown above 760 CSS pixels; at 760px and below the filter button
+opens the shared native modal. Category links and provider/pricing/duration radio
+controls remain separate domain content.
+
+`useCatalogNavigation` closes the modal before navigation and owns transition
+status, retry and pagination effects. Pending navigation keeps committed cards
+visible while the toolbar announces loading and the results region is busy.
+Successful empty results show zero; failed requests show retry without a numeric
+count. Selection applies immediately and returns modal focus to its trigger.
+A committed page-number change in either direction focuses the hidden results
+heading and scrolls the visible results region to its start, including a filter
+reset from a later page. Initial rendering and condition changes that stay on
+page one do not force focus or scrolling. A queued modal close event cannot
+steal focus back from the results heading after a page change.
+
+Query serializers, URL restoration, group/course eligibility, cards and twelve/
+eighteen result page sizes are unchanged. The independent `/design-system`
+example exercises the shared layout with local success, pending, empty and error
+choices; it does not query the catalogue API.
