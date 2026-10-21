@@ -24,13 +24,22 @@ The completed `connect-homepage-courses` change is archived at [2026-10-11-conne
 
 The completed `migrate-remaining-providers-v3` change is [archived](openspec/changes/archive/2026-10-12-migrate-remaining-providers-v3/). All 28 tasks are complete; its provider collection and worker contracts are synced to main specs, and all ten main specs pass strict validation. Bounded paid/free ingestion, hosted images, replay and mobile/desktop browser evidence are recorded in [validation](docs/validation.md#remaining-provider-migration-acceptance--october-12-2026).
 
+The completed `add-course-group-catalog` change is
+[archived](openspec/changes/archive/2026-10-21-add-course-group-catalog/) on
+October 21, 2026, with all 20 tasks complete. Its four delta capabilities are
+synced to main specs, including the new [course-group catalogue](openspec/specs/course-group-catalog/spec.md).
+All 19 main specs pass standard validation; strict validation reports one
+506-character preservation-requirement warning. The known Bun production-build
+limitation remains documented in [validation](docs/validation.md).
+
 ## Current experience
 
-- `/`: public-catalog course grid with Persian search, editorial category/free filtering, pagination and real-course details; real judged-group cards show current eligible comparisons, while the selected blue hero retains saved samples.
+- `/`: public-catalog course grid with Persian search, free filtering, pagination and real-course details; up to three judged-group cards and an all-groups action. Category cards open the filtered group catalogue; the selected blue hero retains saved samples.
+- `/groups`: server-rendered group catalogue with search and one category filter, twelve groups per page, URL-backed `q`, `category` and `page`, active chips and a mobile category panel. Example: `/groups?q=Python&category=code&page=2`. No provider, price, level or sort filters.
 - `/design-system`: approved سنجش / لاجورد design, the supplied ring-and-cap logo, Vazirmatn, semantic tokens, interactive discovery examples, and component previews. Most examples are fictional; course-card snapshots are dated explicitly.
 - `/groups/[id]`: eligible stored-slug destinations reuse the selected Python layout with retained AI hero text, exact judgment order, tags and assessments alongside current provider facts. Galleries, pinned course pagination and retry states are supported. Legacy `/groups/python-beginner` and `/groups/n8n` redirect to their canonical real slugs; other fixture-only destinations return 404 unless an eligible real group has that slug.
 
-Hero cards retain dated provider samples independently of the real catalog. Search/filter state resets on reload. Course prices are retained observations, not current provider quotations. Individual course results use ingestion-time order; group comparisons preserve the selected judgment’s order. Visits do not run models, collect courses or refresh judgments. Scheduled refresh and production deployment remain deferred. See [frontend behavior and decisions](docs/frontend.md) and [snapshot provenance](docs/provider-snapshots.md).
+Hero cards retain dated provider samples independently of the real catalog. Homepage individual-course search/filter state resets on reload; group-catalogue conditions and page survive reload and Back/Forward in the URL. Course prices are retained observations, not current provider quotations. Individual course results use ingestion-time order; group comparisons preserve the selected judgment’s order. Visits do not run models, collect courses or refresh judgments. Scheduled refresh and production deployment remain deferred. See [frontend behavior and decisions](docs/frontend.md) and [snapshot provenance](docs/provider-snapshots.md).
 
 ## Local development
 
@@ -522,7 +531,7 @@ unchanged and the judgment history read verified. See
 
 ### Public judged-group comparisons
 
-The homepage group cards and `/groups/<stored-slug>` now read retained judgments
+The homepage group cards, `/groups` catalogue and `/groups/<stored-slug>` read retained judgments
 and current provider facts through same-origin handlers, using the existing
 server-only `DOROB_API_URL` and launcher setup. No additional configuration,
 migration or startup inference is required. Groups need explicit publication,

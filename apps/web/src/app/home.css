@@ -94,3 +94,7 @@
 .catalog-dialog li { margin-block-end: 12px; }
 
 .group-paging { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:16px; margin-block:24px; }
+
+.home-all-groups { display: inline-flex; align-items: center; gap: 8px; min-block-size: 44px; color: var(--ds-primary); font-weight: 600; font-size: 13px; }
+.home-all-groups:hover { text-decoration: underline; text-underline-offset: 5px; }
+.home-all-groups:focus-visible { outline: 3px solid var(--ds-primary); outline-offset: 4px; border-radius: var(--ds-radius); }

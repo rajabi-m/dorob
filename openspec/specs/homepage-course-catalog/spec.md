@@ -18,15 +18,19 @@ The homepage `#courses` section SHALL obtain its course list from the public bac
 - **THEN** the associated course UI explicitly represents missing information without borrowing fixture facts or AI summaries
 
 ### Requirement: Catalog-wide course interactions
-Existing homepage search, category, and free controls SHALL drive backend course queries without changing their layout or styling. New pagination controls SHALL be confined to the course section. A filter change SHALL reset paging. Responses from superseded requests SHALL NOT overwrite newer results. Counts and empty states SHALL represent the entire matching eligible catalog.
+Existing homepage search and free controls SHALL drive backend course queries without changing their layout or styling. Homepage category cards SHALL instead navigate to `/groups?category=<id>`. Individual-course pagination SHALL remain confined to the course section. A course filter change SHALL reset paging. Responses from superseded requests SHALL NOT overwrite newer results. Counts and empty states SHALL represent the entire matching eligible course catalog.
 
 #### Scenario: Query and paging
-- **WHEN** a visitor searches or changes a filter and moves to another page
+- **WHEN** a visitor searches or changes a course filter and moves to another page
 - **THEN** results use the selected conditions, show the matching total, and navigate bounded pages rather than filtering only loaded cards
 
 #### Scenario: Rapid query changes
 - **WHEN** an older request completes after a newer selection
 - **THEN** the course section retains the newer selection's results
+
+#### Scenario: Category navigation
+- **WHEN** a visitor activates a homepage category card
+- **THEN** the corresponding filtered group catalogue opens rather than changing the homepage course results
 
 ### Requirement: Real course details remain traceable
 Opening a database course card SHALL show public details for that stable course identity, with available description, syllabus, offers, provider link, and observation date. Missing fields SHALL remain explicit. If the current observation changed since the card loaded, details SHALL identify their own observation/time rather than implying that they are the card's earlier snapshot.
@@ -51,7 +55,7 @@ The course section and real-course dialog SHALL present Persian loading, empty, 
 - **THEN** real results return after recovery, or a distinct empty state appears for zero matches
 
 ### Requirement: Preserve surrounding sample frontend
-The hero and its course shelf/provider strip, topic/category appearance, header/navigation/footer and design-system previews SHALL retain their existing appearance, data and behavior, except removal of design-process labels from product screens. Homepage group cards and group routes SHALL use the public-group-judgments contract. Hero sample-card details SHALL retain their sample facts and provenance independently of real-course details.
+The hero and its course shelf/provider strip, topic/category appearance, header/navigation/footer and design-system previews SHALL retain their existing appearance, data and behavior, except removal of design-process labels, homepage category links to the shared group catalogue, and the compact group showcase. Homepage group cards and group routes SHALL use the public-group-judgments contract. Hero sample-card details SHALL retain their sample facts and provenance independently of real-course details.
 
 #### Scenario: Sample hero details
 - **WHEN** a visitor opens a hero sample card after viewing a database course
@@ -60,6 +64,10 @@ The hero and its course shelf/provider strip, topic/category appearance, header/
 #### Scenario: Existing destinations
 - **WHEN** the homepage groups and existing group/design-system routes are visited
 - **THEN** group cards and destinations use real judged groups and documented legacy redirects, while design-system fixture content, links, presentation and interactions remain unchanged
+
+#### Scenario: Scoped homepage discovery update
+- **WHEN** the homepage is displayed
+- **THEN** category cards retain their presentation as catalogue links and the group section shows up to three cards and the all-groups action without group pagination
 
 ### Requirement: Accessible Persian course presentation
 Integrated course content SHALL retain Persian RTL presentation, localized numbers and Jalali dates, isolated mixed-direction text, logical layout properties, and usable mobile layouts. Loading/results SHALL expose accessible status, paging/retry SHALL be keyboard usable, and real-course dialogs SHALL retain focus handling and return focus to their triggering control.

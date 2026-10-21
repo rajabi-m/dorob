@@ -188,7 +188,7 @@ Firefox desktop review confirmed real covers, the selected layout, and gallery s
 
 ## Fixed category ownership
 
-`packages/core/src/categories.ts`, re-exported by `index.ts`, owns the ordered category IDs and Persian labels. Changing categories requires a code change; the API does not provide category administration. `discovery-showcase.tsx` retains a `Record<CategoryId, CategoryPresentation>` for icons, descriptions, and SVG artwork. Artwork lookup uses IDs, never translated labels (`tools` retains the `workflow` artwork). The frontend consumes the category registry locally; homepage course filtering uses the public course API. Saved sample groups retain their editorial fixture categories.
+`packages/core/src/categories.ts`, re-exported by `index.ts`, owns the ordered category IDs and Persian labels. Changing categories requires a code change; the API does not provide category administration. `discovery-showcase.tsx` retains a `Record<CategoryId, CategoryPresentation>` for icons, descriptions, and SVG artwork. Artwork lookup uses IDs, never translated labels (`tools` retains the `workflow` artwork). The frontend consumes the category registry locally. Homepage category cards link to `/groups?category=<id>`; design-system category examples retain isolated selection callbacks. Individual-course API category support remains available independently.
 
 ## Homepage public course integration — October 11, 2026
 
@@ -196,7 +196,7 @@ Only `#courses` on `/` opts into the public catalog. Initial results come direct
 
 Cards display actual retained title/provider, known level/duration, selected price and Persian Jalali source date. Missing values remain unknown; failed images show a neutral text/icon placeholder. Free, paid, subscription and unknown summaries are distinct. Real details fetch the latest eligible observation and show missing fields, offers/access terms, syllabus and outbound source links; newer observations are disclosed. Hero samples keep the original sample-detail dialog. Native modal dismissal restores trigger focus, including React development effect replay.
 
-Search, category and free selection reset pagination. Abort signals and active-request guards prevent older responses from replacing a new query. Loading/status/error/retry and empty states affect only the course section. Published backend groups determine category membership; an empty category does not mean no unassigned courses exist. Stable offset paging can still shift if ingestion changes between requests. Reads never scrape or imply fresh provider pricing. The hero/provider strip, topics, group cards/routes, navigation/footer and design-system fixtures retain their prior presentation.
+Homepage search and free selection reset individual-course pagination; homepage categories now navigate to group discovery (see the October 20 update below). Abort signals and active-request guards prevent older responses from replacing a new query. Loading/status/error/retry and empty states affect only the course section. Published backend groups determine category membership; an empty category does not mean no unassigned courses exist. Stable offset paging can still shift if ingestion changes between requests. Reads never scrape or imply fresh provider pricing. The hero/provider strip, topics, group cards/routes, navigation/footer and design-system fixtures retain their prior presentation.
 
 See [validation](validation.md) for measured browser coverage and outstanding checks.
 
@@ -231,7 +231,7 @@ presentation only; no popularity threshold or comparative price rule is implemen
 The homepage group section now server-renders `/api/v1/judged-groups` data,
 independently of the individual-course grid. Cards show generated hero copy,
 actual membership counts, distinct providers and up to three hosted covers in judge
-order. Pagination, loading, empty and retry states never substitute fixture groups.
+order. The October 20 update moves group pagination to `/groups`; homepage loading, empty and retry states never substitute fixture groups.
 The homepage hero sample interactions and design-system fixtures remain separate.
 
 Every eligible `/groups/<stored-slug>` uses the generalized selected Python layout:
@@ -255,3 +255,41 @@ remains server-only via existing `DOROB_API_URL`. Deadlines are five seconds, li
 responses cap at 2 MiB and detail responses at 8 MiB. No extra setup or migration is
 needed. A published group needs current judgments and every member ready; source or
 publication changes require explicit rejudging. Visits never run models or collection.
+
+
+## Shared group catalogue — October 20, 2026
+
+`/groups` shares the existing cycling cards with the homepage and renders real
+eligible judged groups on the server. Search submits explicitly against selected
+hero title/subtitle/description; category matches the group's single registry ID.
+The URL owns committed `q`, `category` and one-based `page`, with twelve items per
+page. Search, category changes and individual chip removal reset page one while
+preserving the other condition. Clear-all opens `/groups`. Refresh and Back/Forward
+restore the committed controls and results; unsent input is only a draft.
+Unsupported categories, duplicate recognized parameters, queries over 200 characters
+and invalid/unrepresentable page values show a safe recovery state. Unrelated page
+parameters are ignored. A positive page beyond the matching last page redirects to
+the last page (one for zero matches), preserving conditions; failures do not redirect.
+
+Category controls sit on the right on desktop and use a native modal with explicit
+Tab wrap, Escape dismissal and trigger-focus return on mobile. Active conditions
+are removable chips. Counts, pending, zero-match, empty-catalogue and retry states
+are Persian and distinct. The catalogue offers search/category only: no provider,
+price, level or sort controls. Search normalizes Persian/Arabic letters, NFKC,
+ZWNJ, whitespace and case without changing retained facts or searching member
+courses. Eligibility still uses the existing local-scale batch scan and current
+reads can shift between offset pages.
+
+The homepage requests/retries only the first three groups in stable slug/ID order,
+shows no group pager and exposes «مشاهده همه مجموعه‌ها» in every group-section
+state. Category cards are ordinary links to `/groups?category=<id>`. The homepage
+course search, free control, course pager/dialogs and hero remain independent.
+No new inference, editorial featuring, fixture fallback, publication or migration
+is involved. Existing comparison slugs and legacy redirects remain intact.
+
+
+Catalogue review refinements retain the full-width search field and the plain
+brand-blue «مشاهده همه مجموعه‌ها» link with an RTL arrow and visible focus.
+The proposed real-group hero shelf was reverted at the owner's request; the
+original saved hero samples/provider strip remain unchanged. The catalogue change
+was synced and archived on October 21, 2026 with all twenty tracked tasks complete.

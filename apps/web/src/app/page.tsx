@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <Homepage heroVariant="discovery" realGroups={createGroupClient().list({limit:12,offset:0})} realCourses={createCourseClient().list(parseCourseQuery(new URLSearchParams()))} />;
+  return <Homepage heroVariant="discovery" realGroups={createGroupClient().list({limit:3,offset:0})} realCourses={createCourseClient().list(parseCourseQuery(new URLSearchParams()))} />;
 }

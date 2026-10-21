@@ -1,11 +1,12 @@
 import type {SQL} from 'bun';
 import type {CategoryId,CourseReference,JudgmentGroupContext,JudgmentContentV1,Page,PublicJudgedGroup,PublicJudgedGroupDetail,GroupPageQuery,AssessedCourse} from '@dorob/core';
+import {matchesGroupSearch,type GroupListQuery} from '@dorob/core';
 import {CatalogError,transaction} from './catalog';
 import {inputManifest,judgeContext} from './group-judgment-source';
 import {snapshotProjection,snapshotJoins,snapshotRow,type SnapshotRow} from './ingestion';
 import {presentCourse} from './public-course-projection';
 import type {ThumbnailService} from './thumbnails';
-export interface PublicGroupJudgmentRepository {list(query:GroupPageQuery):Promise<Page<PublicJudgedGroup>>;detail(slug:string,query:GroupPageQuery):Promise<PublicJudgedGroupDetail>}
+export interface PublicGroupJudgmentRepository {list(query:GroupListQuery):Promise<Page<PublicJudgedGroup>>;detail(slug:string,query:GroupPageQuery):Promise<PublicJudgedGroupDetail>}
 type Member={groupId:string;course:CourseReference;snapshotId:string|null};
 type Selected={groupId:string;id:string;receivedAt:string|Date;content:JudgmentContentV1};
 export function createPublicGroupJudgmentRepository(sql:SQL,thumbnails:Pick<ThumbnailService,'inspectReadOnlyAvailability'>):PublicGroupJudgmentRepository {
@@ -41,7 +42,7 @@ export function createPublicGroupJudgmentRepository(sql:SQL,thumbnails:Pick<Thum
  }
  const safe=async<T>(work:()=>Promise<T>)=>{try{return await work();}catch(e){if(e instanceof CatalogError)throw e;throw new CatalogError(503);}};
  return {
-  list:q=>safe(async()=>{const all=await read();return {items:all.slice(q.offset,q.offset+q.limit).map(g=>g.summary),total:all.length,limit:q.limit,offset:q.offset};}),
+  list:q=>safe(async()=>{const all=(await read()).filter(g=>matchesGroupSearch(g.summary,q));return {items:all.slice(q.offset,q.offset+q.limit).map(g=>g.summary),total:all.length,limit:q.limit,offset:q.offset};}),
   detail:(slug,q)=>safe(async()=>{const [g]=await read(slug);if(!g)throw new CatalogError(q.judgmentId?409:404);if(q.judgmentId&&q.judgmentId!==g.summary.judgmentId)throw new CatalogError(409);
    const {covers,...summary}=g.summary;void covers;return {...summary,courses:{items:g.courses.slice(q.offset,q.offset+q.limit),total:g.courses.length,limit:q.limit,offset:q.offset}};
   }),

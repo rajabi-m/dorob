@@ -40,6 +40,20 @@ Current checks and build limitations are maintained in [validation](docs/validat
 
 Status: Phase 1 — Design system is complete and accepted by the owner. The approved direction is سنجش with the لاجورد palette, locally bundled Vazirmatn, and the supplied ring-and-cap logo. Phase 2 is complete for now by owner decision on October 4, 2026, covering the snapshot-backed homepage, group destinations, and selected Python topic prototype. Remaining frontend work is recorded as follow-up scope. Phase 3 has begun with the owner-selected local backend foundation; the homepage course section is connected to the local public catalog. Homepage group cards and group destinations now use retained current judgments and provider facts; other integrations remain deferred.
 
+October 20, 2026 — `add-course-group-catalog` adds `/groups` with server-rendered
+judged groups, normalized text search, a single category filter and twelve results
+per page. `q`, `category` and one-based `page` survive refresh and browser history;
+chips, clear-all, safe invalid-selection recovery and a mobile category modal use
+the shared design system. Homepage categories link to the filtered catalogue;
+the homepage group section requests only three groups and links to all groups.
+Homepage individual-course search/free controls remain separate. No provider,
+price, level or sort filters, migration, publication or new inference are added.
+Validation and production-build limitations are recorded in `docs/validation.md`.
+On October 21, 2026, all 20 tasks were verified complete, the four delta
+capabilities were synced to main specs, and the change was
+[archived](openspec/changes/archive/2026-10-21-add-course-group-catalog/).
+The hero retains its original saved samples by owner decision.
+
 ## Product vision
 
 October 12, 2026 — `migrate-remaining-providers-v3` implementation and acceptance are complete. TopLearn, Sabzlearn and Roocket collect native v3 observations through the controlled shared base and explicitly invoked ingestion CLI, with persisted feedback bounds and immutable recovery. Real paid/free ingestion, hosted WebP images, public identity, replay and desktop/mobile keyboard checks passed for each provider. The standalone dashboard and aggregation CLI are retired; the owner approved retaining the pure aggregation helper for the unchanged Maktabkhooneh test. Protected Maktabkhooneh files and existing local outputs remain unchanged. Frontend changes add authentic Sabzlearn/Roocket logos and the owner-requested nearest-whole-minute duration display in cards/details, preserving source precision. Source limitations and the existing Bun web build error remain recorded in [validation](docs/validation.md). Both behavior contracts are synced to main specs and strictly validated; the change is [archived](openspec/changes/archive/2026-10-12-migrate-remaining-providers-v3/). No scheduled collection is included.

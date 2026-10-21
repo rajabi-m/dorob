@@ -46,6 +46,20 @@ describe.skipIf(process.env.API_INTEGRATION!=='1')('public judged groups Postgre
    else {variant.pricing.data=variant.pricing.data!.filter(o=>o.id==='full');Object.assign(variant.pricing.data[0],{status,type:status==='subscription'?'subscription':'full',billingPeriod:status==='subscription'?'monthly':null});}
    const snapshot=(await i.ingest(variant)).snapshot;await t.process(snapshot.courseId,snapshot.id);await submit();const facts=(await p.detail('python',q)).courses.items.find(c=>c.course.id==='example:0')!.course;expect(facts.price.status).toBe(status);expect(facts.rating).toBeNull();expect(isPublicJudgedGroupDetail(await p.detail('python',q))).toBe(true);
   }
+  // More than a page of independent groups, reusing only this isolated schema's courses.
+  for(let n=0;n<14;n++){
+   const slug='catalog-'+String(n).padStart(2,'0');
+   const extra=await c.createGroup({slug,title:'گروه '+n,description:'شرح',categoryId:n%2?'design':'code',targetLevel:null,isPublished:true});
+   for(let k=0;k<3;k++)await c.membership(extra.id,'example:'+k,true);
+   await j.submit(extra.id,{systemId:'catalog-test',submissionId:crypto.randomUUID(),inputRevision:(await j.context(extra.id)).inputRevision,content:{...content,hero:{...content.hero,title:'کاتالوگ Python '+n,description:n===13?'جست‌وجوی ویژه':'شرح'}}});
+  }
+  const catalog=await p.list({...q,q:'کاتالوگ'});expect(catalog.total).toBe(14);expect(catalog.items).toHaveLength(12);
+  const tail=await p.list({...q,q:'کاتالوگ',offset:12});expect(tail.items.map(g=>g.slug)).toEqual(['catalog-12','catalog-13']);
+  expect((await p.list({...q,q:'جست وجوی ویژه',category:'design'})).items.map(g=>g.slug)).toEqual(['catalog-13']);
+  expect((await p.list({...q,q:'python',category:'design'})).total).toBe(7);
+  expect((await p.list({...q,q:'کاتالوگ',category:'code',limit:2,offset:2})).items.map(g=>g.slug)).toEqual(['catalog-04','catalog-06']);
+  expect((await p.list({...q,q:'کاتالوگ',category:'tools'})).total).toBe(0);
+  await c.updateGroup(g.id,{description:'stale search match'});expect((await p.list({...q,q:content.hero.title})).total).toBe(0);
   const attemptsBefore=JSON.stringify(await sql`SELECT * FROM thumbnail_attempts ORDER BY snapshot_id`);
   const asset=await i.asset((await i.current('example:1')).snapshot!.thumbnail.asset!.id);await rm(join(store.config.assetDirectory,asset.storageKey));expect((await p.list(q)).total).toBe(0);
   expect(JSON.stringify(await sql`SELECT * FROM thumbnail_attempts ORDER BY snapshot_id`)).toBe(attemptsBefore);

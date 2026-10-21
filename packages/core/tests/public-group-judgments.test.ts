@@ -1,5 +1,5 @@
 import {test,expect} from 'bun:test';
-import {parseGroupPageQuery,validGroupSlug,isPublicJudgedGroupDetail,isPublicJudgedGroupPage} from '../src';
+import {parseGroupPageQuery,parseGroupListQuery,matchesGroupSearch,validGroupSlug,isPublicJudgedGroupDetail,isPublicJudgedGroupPage} from '../src';
 import {example} from './fixtures';
 import {groupExample} from './public-group-fixture';
 const c=example();
@@ -16,4 +16,20 @@ test('public schemas accept facts and abstention, reject leakage and inconsisten
  const bad=structuredClone(g);bad.courses.items[1].course.rating={value:6,scale:5,count:null};expect(isPublicJudgedGroupDetail(bad)).toBe(false);
  const {courses,...summary}=g;const s={...summary,covers:courses.items.map(({course})=>({courseId:course.id,title:course.title,thumbnail:course.thumbnail}))};expect(isPublicJudgedGroupPage({items:[s],total:1,limit:12,offset:0})).toBe(true);
  expect(isPublicJudgedGroupPage({items:[s],total:2,limit:12,offset:0})).toBe(false);
+});
+
+
+test('list filters validate independently of detail pins',()=>{
+ expect(parseGroupListQuery(new URLSearchParams())).toEqual({limit:12,offset:0});
+ expect(parseGroupListQuery(new URLSearchParams('q=Python&category=code&limit=3'))).toEqual({q:'Python',category:'code',limit:3,offset:0});
+ for(const q of ['q=a&q=b','category=unknown','category=','q='+ 'a'.repeat(201),'provider=example','judgmentId='+c.snapshotId,'limit=0','offset=2147483648'])expect(()=>parseGroupListQuery(new URLSearchParams(q))).toThrow();
+ for(const q of ['q=Python','category=code'])expect(()=>parseGroupPageQuery(new URLSearchParams(q),true)).toThrow();
+});
+
+test('group matching uses selected hero fields, normalized literal text and category',()=>{
+ const g=groupExample();g.hero.title='آموزش كاربردي Python';g.hero.subtitle='پروژه‌محور';g.hero.description='Ｆｕｌｌ   Stack 100%_';
+ for(const q of ['کاربردی python','پروژه محور','full stack','100%_','  ','آموزش'])expect(matchesGroupSearch(g,{q})).toBe(true);
+ for(const q of ['100X','example','مقدماتی','محور full'])expect(matchesGroupSearch(g,{q})).toBe(false);
+ expect(matchesGroupSearch(g,{q:'python',category:'code'})).toBe(true);
+ expect(matchesGroupSearch(g,{q:'python',category:'design'})).toBe(false);
 });

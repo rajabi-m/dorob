@@ -4,6 +4,7 @@ import type { Page } from './index';
 import { conformsJudgmentSchema, judgmentContentSchema, type JudgmentContentV1, type JudgmentSchema } from './group-judgments';
 import { publicCourseDetailSchema, isPublicCourseDetail, uuidPattern, type PublicCourse, type PublicOffer } from './public-courses';
 export type GroupPageQuery = { limit:number; offset:number; judgmentId?:string };
+export type GroupListQuery = { limit:number; offset:number; q?:string; category?:CategoryId };
 export type AssessedCourse = { course:PublicCourse & {offers:PublicOffer[]|null;rating:{value:number;scale:number;count:number|null}|null}; assessment:Omit<JudgmentContentV1['courses'][number],'courseId'> };
 export interface PublicJudgedGroup {
  id:string;slug:string;categoryId:CategoryId;hero:JudgmentContentV1['hero'];courseCount:number;
@@ -18,6 +19,23 @@ export function parseGroupPageQuery(params:URLSearchParams,detail=false):GroupPa
  const integer=(k:string,d:number,max:number)=>{const s=params.get(k);if(s!==null&&!/^\d+$/.test(s))throw new Error('Invalid query');const n=s===null?d:Number(s);if(!Number.isSafeInteger(n)||n<(k==='limit'?1:0)||n>max)throw new Error('Invalid query');return n;};
  const judgmentId=params.get('judgmentId');if(judgmentId!==null&&!new RegExp(uuidPattern).test(judgmentId))throw new Error('Invalid pin');
  return {limit:integer('limit',detail?20:12,100),offset:integer('offset',0,2147483647),...(judgmentId?{judgmentId}:{})};
+}
+/** List filters are deliberately separate from detail judgment pins. */
+export function parseGroupListQuery(params:URLSearchParams):GroupListQuery {
+ const paging=new URLSearchParams();
+ for(const key of params.keys()) {
+  if(!['limit','offset','q','category'].includes(key)||params.getAll(key).length!==1)throw new Error('Invalid query');
+  if(key==='limit'||key==='offset')paging.set(key,params.get(key)!);
+ }
+ const result:GroupListQuery=parseGroupPageQuery(paging);
+ if(params.has('q')) {const q=params.get('q')!;if(q.length>200)throw new Error('Invalid search');result.q=q;}
+ if(params.has('category')) {const category=params.get('category');if(!categoryRegistry.some(c=>c.id===category))throw new Error('Invalid category');result.category=category as CategoryId;}
+ return result;
+}
+export const normalizeGroupSearch=(value:string)=>value.normalize('NFKC').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\u200c/g,' ').replace(/\s+/g,' ').trim().toLocaleLowerCase('fa-IR'); // rtl-ignore
+export function matchesGroupSearch(group:Pick<PublicJudgedGroup,'hero'|'categoryId'>,query:Pick<GroupListQuery,'q'|'category'>):boolean {
+ const search=normalizeGroupSearch(query.q??'');
+ return (!query.category||group.categoryId===query.category)&&(!search||[group.hero.title,group.hero.subtitle,group.hero.description].some(text=>normalizeGroupSearch(text).includes(search)));
 }
 const object=(properties:Record<string,JudgmentSchema>):JudgmentSchema=>({type:'object',properties,required:Object.keys(properties),additionalProperties:false});
 const str:JudgmentSchema={type:'string',minLength:1};const uuid={...str,pattern:uuidPattern};

@@ -673,3 +673,17 @@ Read-only asset checks never invalidate associations. Candidate eligibility scan
 use batched source reads and at most four concurrent asset checks, before pagination;
 this is designed for the local catalog rather than unbounded production scale.
 No migration, startup inference or working-catalog mutation is required.
+
+### Public judged-group catalogue filters
+
+`GET /api/v1/judged-groups?q=Python&category=code&limit=12&offset=0`
+combines optional search and one fixed category before totals and pagination.
+Search matches literal substrings in the selected judgment hero's title, subtitle
+or description, normalizing NFKC, Arabic/Persian letters, ZWNJ, whitespace and case.
+It does not search member courses or providers. Empty normalized search imposes no
+restriction. `q` accepts at most 200 characters; unsupported categories, duplicate
+or unknown parameters return safe 422 responses. List filters are not accepted by
+detail routes. Unfiltered defaults remain twelve items, offset zero, slug ascending
+with ID ties; existing strict eligibility and current-judgment rules still apply.
+Search does not execute models or update retained data. Eligibility still uses the
+local-scale batched scan; offset pages are current reads, not frozen snapshots.

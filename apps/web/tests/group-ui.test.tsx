@@ -17,14 +17,17 @@ test('all categories render actual hero/counts and exact assessments without fix
  const hostile=renderToStaticMarkup(<GroupAssessment assessment={{tags:[],strengths:['<script>bad</script>'],weaknesses:[]}} title="دوره"/>);expect(hostile).toContain('&lt;script&gt;');
  expect(renderToStaticMarkup(<PublicGroupCard group={card}/>)).toContain('/groups/python');
 });
-test('homepage group empty/error/recovery and newer requests win',async()=>{
- await mount(<GroupResults initial={groupFailure('unavailable')}/>);expect(document.body.textContent).toContain('تلاش دوباره');browserGroups.list=async()=>({ok:true,data:{items:[],total:0,limit:12,offset:0}});
- await act(async()=>{document.querySelector('button')!.click();});expect(document.body.textContent).toContain('هنوز مجموعه‌ای');
- await act(async()=>root!.render(<GroupResults key="pages" initial={{ok:true,data:{items:[card],total:13,limit:1,offset:0}}}/>));
- const requests:{resolve:(v:Awaited<ReturnType<typeof browserGroups.list>>)=>void}[]=[];
- browserGroups.list=()=>new Promise(resolve=>requests.push({resolve}));
- const buttons=()=>[...document.querySelectorAll('button')];await act(async()=>buttons().find(b=>b.textContent==='صفحهٔ بعدی')!.click());expect(document.body.textContent).toContain('در حال دریافت');await act(async()=>requests[0].resolve(groupFailure('unavailable')));expect(document.body.textContent).toContain('تلاش دوباره');
- browserGroups.list=async()=>({ok:true,data:{items:[card],total:13,limit:12,offset:12}});await act(async()=>document.querySelector('button')!.click());expect(document.body.textContent).toContain(g.hero.title);
+test('homepage showcase is bounded and retry always requests three groups',async()=>{
+ for(const count of [0,1,2,3,5]){
+  const items=Array.from({length:count},(_,n)=>({...card,id:card.id+'-'+n,slug:'group-'+n}));
+  const html=renderToStaticMarkup(<GroupResults initial={{ok:true,data:{items,total:count,limit:3,offset:0}}}/>);
+  expect((html.match(/href="\/groups\/group-/g)??[]).length).toBe(Math.min(count,3));
+  expect(html).toContain('مشاهده همه مجموعه‌ها');expect(html).not.toContain('صفحهٔ بعدی');
+ }
+ await mount(<GroupResults initial={groupFailure('unavailable')}/>);
+ expect(document.querySelector('a[href="/groups"]')).not.toBeNull();
+ let query:unknown;browserGroups.list=async q=>{query=q;return {ok:true,data:{items:[],total:0,limit:3,offset:0}};};
+ await act(async()=>document.querySelector('button')!.click());expect(query).toEqual({limit:3,offset:0});expect(document.body.textContent).toContain('هنوز مجموعه‌ای');
 });
 test('gallery keyboard, selection, reduced motion and honest image fallback',async()=>{
  await mount(<GroupGallery courses={g.courses.items.map(e=>e.course)}/>);const gallery=document.querySelector('[aria-roledescription="اسلایدشو"]')!;expect(gallery).not.toBeNull();
@@ -47,10 +50,10 @@ test('cycling cards pause on hover and focus with supported visibility/motion gu
  (w.HTMLElement.prototype as unknown as {animate:()=>unknown}).animate=()=>({pause(){paused++;},play(){played++;},cancel(){},onfinish:null});
  try{await mount(<PublicGroupCard group={card}/>);await act(async()=>intersect?.([{isIntersecting:true}]));expect(played).toBeGreaterThan(0);const initial=paused;await act(async()=>document.querySelector('a')!.focus());expect(paused).toBeGreaterThan(initial);expect(document.querySelector('a')!.getAttribute('href')).toBe('/groups/python');}finally{media.matches=true;}
 });
-test('superseded group responses cannot replace the latest request',async()=>{
- await mount(<GroupResults initial={{ok:true,data:{items:[card],total:13,limit:1,offset:0}}}/>);
- const pending:{resolve:(v:Awaited<ReturnType<typeof browserGroups.list>>)=>void}[]=[];browserGroups.list=()=>new Promise(resolve=>pending.push({resolve}));const next=[...document.querySelectorAll('button')].find(b=>b.textContent==='صفحهٔ بعدی')!;
- await act(async()=>{next.click();next.click();});expect(pending).toHaveLength(2);
- await act(async()=>pending[1].resolve({ok:true,data:{items:[card],total:13,limit:12,offset:12}}));expect(document.body.textContent).toContain(g.hero.title);
- await act(async()=>pending[0].resolve(groupFailure('unavailable')));expect(document.body.textContent).not.toContain('تلاش دوباره');expect(document.body.textContent).toContain(g.hero.title);
+test('superseded showcase retries cannot replace the latest response',async()=>{
+ await mount(<GroupResults initial={groupFailure('unavailable')}/>);
+ const pending:{resolve:(v:Awaited<ReturnType<typeof browserGroups.list>>)=>void}[]=[];browserGroups.list=()=>new Promise(resolve=>pending.push({resolve}));const retry=document.querySelector('button')!;
+ await act(async()=>{retry.click();retry.click();});expect(pending).toHaveLength(2);
+ await act(async()=>pending[1].resolve({ok:true,data:{items:[card],total:1,limit:3,offset:0}}));expect(document.body.textContent).toContain(g.hero.title);
+ await act(async()=>pending[0].resolve(groupFailure('unavailable')));expect(document.body.textContent).not.toContain('تلاش دوباره');
 });

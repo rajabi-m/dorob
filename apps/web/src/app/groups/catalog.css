@@ -1,0 +1,52 @@
+.group-catalog { display: flex; flex-direction: column; }
+.group-catalog .home-header-inner { justify-content: space-between; }
+.catalog-main { flex: 1; padding-block: 28px 64px; }
+.catalog-breadcrumb { display: flex; gap: 10px; color: var(--ds-muted); font-size: 12px; margin-block-end: 24px; }
+.catalog-breadcrumb a { color: var(--ds-primary); }
+.catalog-intro h1 { font-size: clamp(25px, 3.5vw, 36px); line-height: 1.5; font-weight: 800; overflow-wrap: anywhere; }
+.catalog-intro p { margin-block-start: 10px; color: var(--ds-muted); line-height: 1.9; }
+.catalog-search { margin-block: 28px 36px; inline-size: 100%; min-inline-size: 0; }
+.catalog-search input { min-inline-size: 0; inline-size: 100%; text-align: start; }
+.catalog-search input::placeholder { direction: rtl; }
+.catalog-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 36px; align-items: start; }
+.catalog-sidebar { border-inline-end: 1px solid var(--ds-border); padding-inline-end: 22px; }
+.catalog-sidebar h2 { font-size: 15px; margin-block-end: 12px; }
+.catalog-categories { display: grid; gap: 4px; }
+.catalog-categories a { display: block; padding: 11px 13px; border-radius: var(--ds-radius); line-height: 1.9; overflow-wrap: anywhere; color: var(--ds-muted); }
+.catalog-categories a:hover { color: var(--ds-primary); background: var(--ds-surface); }
+.catalog-categories a[aria-current="true"] { color: var(--ds-primary); background: var(--ds-soft); font-weight: 700; }
+.catalog-results { min-inline-size: 0; }
+.catalog-results-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.catalog-results-head h2 { font-size: 20px; line-height: 1.8; overflow-wrap: anywhere; }
+.catalog-count { color: var(--ds-muted); font-size: 12px; margin-block: 12px 20px; }
+.catalog-active { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.catalog-active:not(:empty) { margin-block-start: 16px; }
+.catalog-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; min-block-size: 40px; max-inline-size: 100%; background: var(--ds-soft); color: var(--ds-primary); border: 1px solid var(--ds-border); border-radius: var(--ds-radius); overflow-wrap: anywhere; }
+.catalog-chip bdi { min-inline-size: 0; overflow-wrap: anywhere; }
+.catalog-chip svg { flex-shrink: 0; }
+.catalog-clear { color: var(--ds-primary); padding: 8px; font-size: 12px; }
+.catalog-filter-trigger { display: none; }
+.catalog-paging { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-block-start: 28px; font-size: 12px; }
+.catalog-paging [aria-disabled="true"] { opacity: .5; }
+.catalog-filter-dialog { border: 1px solid var(--ds-border); border-radius: var(--ds-radius); padding: 24px; margin: auto; inline-size: min(400px, calc(100% - 32px)); max-block-size: calc(100dvh - 48px); overflow: auto; color: var(--ds-ink); background: var(--ds-surface); }
+.catalog-filter-dialog::backdrop { background: rgb(32 44 72 / .45); }
+.catalog-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-block-end: 16px; }
+.catalog-panel-heading h2 { font-size: 20px; }
+.group-catalog :is(a,button,input):focus-visible { outline: 3px solid var(--ds-primary); outline-offset: 3px; }
+@media (max-width: 760px) {
+ .catalog-layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
+ .catalog-sidebar { display: none; }
+ .catalog-filter-trigger { display: inline-flex; flex-shrink: 0; padding-inline: 12px; font-size: 12px; }
+ .catalog-results-head { align-items: start; }
+ .catalog-results-head h2 { font-size: 17px; }
+ .catalog-main { padding-block: 20px 40px; }
+ .catalog-search { margin-block: 24px; gap: 8px; padding-inline: 10px; }
+ .catalog-search input { font-size: 13px; }
+ .catalog-search .ds-button { padding-inline: 13px; }
+ .catalog-paging { justify-content: center; }
+ .catalog-paging .ds-button { font-size: 12px; padding-inline: 12px; }
+ .catalog-intro h1 { font-size: 25px; }
+ .catalog-breadcrumb { margin-block-end: 18px; }
+ .group-catalog .home-header-inner { flex-wrap: nowrap; min-block-size: 78px; }
+ .group-catalog .home-header nav { flex-wrap: wrap; gap: 12px; }
+}

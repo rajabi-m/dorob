@@ -14,3 +14,12 @@ test('public routes validate inputs, preserve documented conflicts and hide diag
 import {publicGroupDetailExample,publicGroupSummaryExample} from '../src/public-group-judgment-examples';
 import {isPublicJudgedGroupDetail,isPublicJudgedGroupPage} from '@dorob/core';
 test('OpenAPI synthetic public examples conform to strict runtime boundaries',()=>{expect(isPublicJudgedGroupDetail(publicGroupDetailExample)).toBe(true);expect(isPublicJudgedGroupPage({items:[publicGroupSummaryExample],total:1,limit:12,offset:0})).toBe(true);});
+
+test('group list filters reach the repository and invalid list/detail filters fail safely',async()=>{
+ let received:unknown;
+ const app=publicGroupJudgmentRoutes({list:async q=>{received=q;return {items:[],total:0,limit:q.limit,offset:q.offset};},detail:async()=>{throw new CatalogError(404);}});
+ const get=(query:string)=>app.handle(new Request('http://localhost/api/v1/judged-groups'+query));
+ expect((await get('?q='+encodeURIComponent('پایتون %_')+'&category=code')).status).toBe(200);
+ expect(received).toEqual({q:'پایتون %_',category:'code',limit:12,offset:0});
+ for(const q of ['?category=nope','?q=a&q=b','?q='+ 'a'.repeat(201),'?provider=example','/python?q=a','/python?category=code'])expect((await get(q)).status).toBe(422);
+});

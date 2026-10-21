@@ -32,7 +32,6 @@ export function Homepage({ groupId, heroVariant, realCourses, realGroups }: { gr
   const available: HomepageCourse[] = group ? groupCourses[group.id] : providerHomepageCourses;
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("");
   const [freeOnly, setFreeOnly] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [details, setDetails] = useState<HomepageCourse | null>(null);
@@ -42,8 +41,7 @@ export function Homepage({ groupId, heroVariant, realCourses, realGroups }: { gr
   const comparisonButton = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const selectedCourses = available.filter(course => selected.includes(course.id));
-  const visible = available.filter(course => (!category || course.category === category)
-    && (!freeOnly || course.price === 0)
+  const visible = available.filter(course => (!freeOnly || course.price === 0)
     && normalize(`${course.title} ${course.provider} ${course.instructors?.join(" ") ?? ""} ${course.description} ${categories.find(item => item.id === course.category)?.name} ${course.id === "python" ? "Python" : ""}`).includes(normalize(query)));
 
   useEffect(() => { if (details) dialog.current?.showModal(); }, [details]);
@@ -59,14 +57,14 @@ export function Homepage({ groupId, heroVariant, realCourses, realGroups }: { gr
     resultsHeading.current?.scrollIntoView({ block: "start" });
   }
   function search(value: string) {
-    setDraft(value); setQuery(value); setCategory(""); showResults();
+    setDraft(value); setQuery(value); showResults();
   }
   function toggle(id: string) {
     const next = selected.includes(id) ? selected.filter(item => item !== id) : [...selected, id];
     setSelected(next);
     if (next.length < 2) setCompareOpen(false);
   }
-  function reset() { setDraft(""); setQuery(""); setCategory(""); setFreeOnly(false); }
+  function reset() { setDraft(""); setQuery(""); setFreeOnly(false); }
 
   return <div className="home">
     <a className="home-skip" href="#main">رفتن به محتوای اصلی</a>
@@ -97,17 +95,17 @@ export function Homepage({ groupId, heroVariant, realCourses, realGroups }: { gr
       {!group && <>
       <section id="topics" className="home-section" aria-labelledby="topics-title">
         <div className="home-section-heading"><h2 id="topics-title">چه موضوعی را دنبال می‌کنی؟</h2></div>
-        <CategoryGrid categories={categories} selectedId={category} onSelect={id => { setCategory(id); setQuery(""); setDraft(""); setFreeOnly(false); showResults(); }} />
+        <CategoryGrid categories={categories} hrefFor={id => `/groups?category=${id}`} />
       </section>
       {realGroups && <Suspense fallback={<GroupSectionLoading />}><PublicGroupSection initial={realGroups}/></Suspense>}
       </>}
 
-      {realCourses && !group ? <Suspense fallback={<CourseSectionLoading />}><PublicCourseSection initial={realCourses} query={query} category={category} freeOnly={freeOnly} onFreeChange={setFreeOnly} onReset={() => { reset(); showResults(); }} headingRef={resultsHeading} /></Suspense> : <section id="courses" className="home-section" aria-labelledby="results-title">
+      {realCourses && !group ? <Suspense fallback={<CourseSectionLoading />}><PublicCourseSection initial={realCourses} query={query} category="" freeOnly={freeOnly} onFreeChange={setFreeOnly} onReset={() => { reset(); showResults(); }} headingRef={resultsHeading} /></Suspense> : <section id="courses" className="home-section" aria-labelledby="results-title">
         <div className="home-section-heading">
-          <div><h2 id="results-title" ref={resultsHeading} tabIndex={-1}>{query ? <>نتیجه‌ی جست‌وجو برای «<bdi>{query}</bdi>»</> : category ? `دوره‌های ${categories.find(item => item.id === category)?.name}` : group ? "دوره‌های این مجموعه" : "دوره‌های پرطرفدار این روزها"}</h2><p role="status">{number(visible.length)} دوره‌ی نمونه؛ ترتیب نمایش بر اساس داده‌ی زنده نیست</p></div>
+          <div><h2 id="results-title" ref={resultsHeading} tabIndex={-1}>{query ? <>نتیجه‌ی جست‌وجو برای «<bdi>{query}</bdi>»</> : group ? "دوره‌های این مجموعه" : "دوره‌های پرطرفدار این روزها"}</h2><p role="status">{number(visible.length)} دوره‌ی نمونه؛ ترتیب نمایش بر اساس داده‌ی زنده نیست</p></div>
           <label className="ds-checkbox home-free"><input type="checkbox" checked={freeOnly} onChange={event => setFreeOnly(event.target.checked)} /> فقط دوره‌های رایگان</label>
         </div>
-        {(query || category || freeOnly) && <div className="home-filter-summary"><span>نتایج بر اساس انتخاب تو</span><button onClick={() => { reset(); showResults(); }}>نمایش همه‌ی دوره‌ها <X size={15} aria-hidden="true" /></button></div>}
+        {(query || freeOnly) && <div className="home-filter-summary"><span>نتایج بر اساس انتخاب تو</span><button onClick={() => { reset(); showResults(); }}>نمایش همه‌ی دوره‌ها <X size={15} aria-hidden="true" /></button></div>}
         <div className="ds-course-grid home-course-grid">{visible.map(course => group
           ? <CompactCourseCard headingLevel={3} key={course.id} course={course} selected={selected.includes(course.id)} onCompare={() => toggle(course.id)} onDetails={() => setDetails(course)} />
           : <CourseCard key={course.id} course={course} onDetails={() => setDetails(course)} />)}</div>

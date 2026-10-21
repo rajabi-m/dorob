@@ -1108,3 +1108,124 @@ Plan and catalog documentation record the current selection and archive boundari
 The first sandboxed core/web run could not open its loopback deadline-test server;
 the local-network rerun passed. Existing happy-dom Next Image layout warnings remain.
 No working-catalog publication, inference, migrations or source changes were performed.
+
+## Shared course-group catalogue — October 20, 2026
+
+`add-course-group-catalog` implements `/groups`, search/category filtering before
+pagination, URL-backed browsing, homepage category links and a three-group
+showcase. No provider filter, migration, retained-catalogue mutation or model run
+is included.
+
+Checks:
+
+- `bun test packages/core/tests apps/web/tests`: 68 passed, zero failed, 710
+  assertions. The initial sandbox run could not bind the existing temporary HTTP
+  timeout-test listener; the socket-enabled rerun passed. After adding explicit
+  modal Tab wrap, the focused catalogue/category/group tests passed 12 tests,
+  119 assertions, including both focus-wrap directions.
+- `bun test apps/web/acceptance/group-catalog.test.tsx apps/web/acceptance/group-page.test.tsx`:
+  2 passed, zero failed, 23 assertions. Covers list-query forwarding, server page
+  state, invalid selections without upstream reads, out-of-range/zero-result page
+  recovery, retryable outage state and existing detail/legacy route behavior.
+- `bun run test:api`: 46 passed, 35 integration skips, zero failed, 681 assertions.
+- `API_INTEGRATION=1 bun run test:api`: 81 passed, zero failed, 1,200 assertions
+  using isolated PostgreSQL schemas. The extended repository test includes fourteen
+  added eligible groups, catalogue-wide filtering, stable traversal, category
+  combinations, ineligible matches, freshness and complete-membership regression.
+- `bun run lint`, `bun run typecheck`, `bun run build:api`: pass. Lint/type checks
+  were repeated after the final focus-handler change.
+- `bun run build`: compilation and TypeScript pass; page-data collection fails
+  with the previously documented Bun `Expected CommonJS module to have a function
+  wrapper` error, reported for `/api/admin/courses`. This remains an unresolved
+  environment/runtime production-build limitation; production startup is not verified.
+- Touched-file RTL detector: nine UI/query files checked, zero errors or warnings.
+- Strict OpenSpec validation and scoped whitespace/diff review: pass.
+
+Live browser acceptance used the ChatGPT in-app browser. Its initial connection
+failed; resetting the browser runtime restored it. The existing app on port 3000
+showed eight real groups, the homepage showed exactly three, all six homepage
+category links targeted `/groups?category=<id>`, and no homepage group pager
+remained. Programming category plus Persian search returned one group; removing
+category retained the search and returned two. Clear-all, reload, Back/Forward,
+category-specific heading, stored-slug comparison navigation and invalid-category
+recovery were verified. An out-of-range page retained conditions and resolved to
+page one. No provider filter appeared.
+
+To exercise real multi-page navigation without altering retained user data, a
+second API used a temporary PostgreSQL schema with fifteen synthetic judged
+groups and temporary assets. A temporary copy of the web source on port 3100
+pointed to this isolated API on 3101. Searching `Python` with category `code`
+returned fourteen groups: twelve on page one and two on page two, with the URL,
+matching total and result-heading focus preserved. Changing category to `design`
+from page two reset page one, retained search and showed one matching group.
+These fixtures are acceptance-only, not public provider claims. Temporary servers
+were stopped after review; their schema/assets were cleaned up.
+
+Responsive checks used 1280px desktop, 390px and 320px mobile widths, real and
+synthetic long Persian/Latin titles, and keyboard focus. Document client/scroll
+widths matched at both mobile sizes (375/375 and 305/305 CSS px after the visible
+scrollbar). Mobile categories opened as a native modal; Shift+Tab wrapped from
+close to the last category, Escape dismissed it and restored trigger focus.
+Existing cycling-card reduced-motion/hover/focus regression tests remain passing.
+Temporary viewport overrides were reset. The retained real catalogue remains open
+in the app browser.
+
+Review screenshots (local session artifacts, not repository output):
+
+- `/tmp/dorob-catalog-mobile.png` — 390px real programming/search result.
+- `/tmp/dorob-catalog-320.png` — 320px real programming/search result.
+- `/tmp/dorob-catalog-pagination.png` — isolated second page with both filters.
+- `/Users/mahdi/.codex/visualizations/2026/10/20/01a159a9-0a65-79a1-9d35-791075825e89/group-catalog.png`
+  — final real category catalogue at desktop width.
+
+Catalogue search-width correction — October 20, 2026: removed the 760px search
+width cap after owner review. The search now spans the full content container.
+In-app browser measurements matched search/main widths at desktop (1160/1160px)
+and mobile (343/343px), without desktop horizontal overflow. Web lint, typecheck
+and the touched CSS RTL audit pass. Production build still fails at page-data
+collection with the existing Bun CommonJS-wrapper runtime issue. The final desktop
+catalogue screenshot above was refreshed to show the correction.
+
+Homepage all-groups action refinement — October 20, 2026: owner-requested plain
+brand-blue text link with a direction-aware left arrow replaces the secondary
+button, including the loading state. The existing `/groups` destination and
+keyboard focus outline are retained. In-app browser review at the annotated
+753px width confirmed transparent background, zero border and the arrow icon.
+Touched-file RTL audit, web lint and typecheck pass. Web production build still
+fails during page-data collection with the documented Bun module-wrapper error.
+
+## Course-group catalogue archive and commit review — October 21, 2026
+
+Owner-authorized scope is only `add-course-group-catalog`, its implementation,
+review refinements, documentation, four synced main capabilities and archive.
+`improve-scraper-field-extraction` remains active and excluded from staging.
+The real-group hero experiment was reverted; no hero sample changes are included.
+
+Current verification:
+
+- `bun run lint` and `bun run typecheck`: pass.
+- `bun test packages/core/tests apps/web/tests`: 68 passed, zero failures,
+  712 assertions.
+- `bun test apps/web/acceptance/group-catalog.test.tsx apps/web/acceptance/group-page.test.tsx`:
+  2 passed, zero failures, 23 assertions. These route checks run separately from
+  the ordinary UI suite to isolate their existing `next/navigation` module mocks;
+  a combined invocation failed on conflicting mocked exports, then both documented
+  separate invocations passed.
+- `bun run test:api`: 46 passed, 35 integration skips, zero failures,
+  681 assertions.
+- `API_INTEGRATION=1 bun test apps/api/tests/public-group-judgments.integration.test.ts`:
+  1 passed, zero failures, 66 assertions, with temporary schema/storage cleanup.
+- `bun run build:api`: pass.
+- `bun run build`: compilation and TypeScript pass; page-data collection fails
+  for `/api/admin/courses` with the documented Bun CommonJS-wrapper error.
+  Production startup remains unverified.
+- All four delta capabilities were merged and compared against their main specs.
+  Existing titles, Purpose sections and unmentioned requirements/scenarios remain
+  intact. `openspec validate --specs` passes all 19 capabilities with one warning:
+  `homepage-course-catalog`'s preservation requirement is 506 characters, exceeding
+  the recommended 500. Strict main-spec validation consequently reports this one
+  warning as failure. The full modified requirement is retained as required by
+  the sync workflow; it was not shortened merely to meet the threshold.
+- The change passed strict validation before archiving. All eight archive files,
+  including `.openspec.yaml`, match their pre-move hashes. Archive location:
+  `openspec/changes/archive/2026-10-21-add-course-group-catalog/`.

@@ -10,3 +10,11 @@ test('public web group boundary uses fixed paths and bounded no-store requests',
  for(const status of [404,409,503]){const result=await groupDetailHandler(new Request('http://web.test/'),'python',createGroupClient({fetcher:async()=>new Response('secret',{status})}));expect(result.status).toBe(status);expect(await result.text()).not.toContain('secret');}
  const timeout=createGroupClient({deadlineMs:5,fetcher:async(_url,init)=>new Promise((_,reject)=>init?.signal?.addEventListener('abort',()=>reject(new Error('secret'))))});expect((await timeout.detail('python',{limit:20,offset:0})).ok).toBe(false);
 });
+
+test('list boundary forwards encoded search/category and rejects invalid selections',async()=>{
+ let seen='';const client=createGroupClient({origin:'http://api.test',fetcher:async url=>{seen=url;return Response.json({items:[],total:0,limit:12,offset:0});}});
+ expect((await groupListHandler(new Request('http://web.test/api/judged-groups?q='+encodeURIComponent('Python %_')+'&category=code'),client)).status).toBe(200);
+ const params=new URL(seen).searchParams;expect(params.get('q')).toBe('Python %_');expect(params.get('category')).toBe('code');
+ for(const q of ['category=bad','q=a&q=b','q='+ 'x'.repeat(201)])expect((await groupListHandler(new Request('http://web.test/?'+q),client)).status).toBe(422);
+ expect((await groupDetailHandler(new Request('http://web.test/?q=x'),'python',client)).status).toBe(422);
+});
