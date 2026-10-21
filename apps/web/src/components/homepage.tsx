@@ -11,7 +11,7 @@ import { categories, CoursePrice } from "./discovery-showcase";
 import { CompactCourseCard } from "./compact-course-card";
 import { CourseCard } from "./course-card";
 import { PublicGroupSection,GroupSectionLoading } from "./public-group-section";
-import type { PublicJudgedGroup } from "@dorob/core";
+import type { PublicJudgedGroup,PublicJudgedGroupDetail } from "@dorob/core";
 import type { GroupResult } from "@/lib/group-result";
 import { CourseGroupArtwork } from "./course-group-artwork";
 import { LearningPathsArtwork } from "./learning-paths-artwork";
@@ -27,7 +27,7 @@ const logoIndex = logoPrototypes.findIndex(logo => logo.id === "reference");
 const number = (value: number) => value.toLocaleString("fa-IR");
 const normalize = (value: string) => value.normalize("NFKC").replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/\u200c/g, " ").trim().toLocaleLowerCase("fa-IR"); // rtl-ignore
 
-export function Homepage({ groupId, heroVariant, realCourses, realGroups }: { groupId?: string; heroVariant?: HeroVariant; realGroups?:Promise<GroupResult<Page<PublicJudgedGroup>>>; realCourses?: Promise<CourseResult<Page<PublicCourse>>> }) {
+export function Homepage({ groupId, heroVariant, realCourses, realGroups,featuredGroup }: { groupId?: string; heroVariant?: HeroVariant; featuredGroup?:Promise<GroupResult<PublicJudgedGroupDetail>>; realGroups?:Promise<GroupResult<Page<PublicJudgedGroup>>>; realCourses?: Promise<CourseResult<Page<PublicCourse>>> }) {
   const group = homeGroups.find(item => item.id === groupId);
   const available: HomepageCourse[] = group ? groupCourses[group.id] : providerHomepageCourses;
   const [draft, setDraft] = useState("");
@@ -81,7 +81,7 @@ export function Homepage({ groupId, heroVariant, realCourses, realGroups }: { gr
       </div>
     </header>
     <main id="main" className="home-container">
-      {!group && heroVariant ? <HomeHeroVariant variant={heroVariant} onDetails={setDetails} /> : <section className="home-hero" aria-labelledby="home-title">
+      {!group && heroVariant ? <HomeHeroVariant variant={heroVariant} featuredGroup={featuredGroup} /> : <section className="home-hero" aria-labelledby="home-title">
         <div className="home-hero-copy">
           {group && <Link className="home-back" href="/">همه‌ی مجموعه‌ها</Link>}
           <h1 id="home-title" dir="auto">{group ? group.title : <>دوره‌ها را کشف کن.<br />با مقایسه انتخاب کن.</>}</h1>

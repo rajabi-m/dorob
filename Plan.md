@@ -52,7 +52,23 @@ Validation and production-build limitations are recorded in `docs/validation.md`
 On October 21, 2026, all 20 tasks were verified complete, the four delta
 capabilities were synced to main specs, and the change was
 [archived](openspec/changes/archive/2026-10-21-add-course-group-catalog/).
-The hero retains its original saved samples by owner decision.
+At archive time, the hero retained its original saved samples by owner decision.
+
+October 21, 2026 — The owner subsequently restored the real-group hero shelf.
+The homepage selects `python-starting-programming` from the read-only public
+judgment API, displays its first three courses in judgment order, and links each
+to its comparison row. Featured groups must contain at least three ready courses;
+missing/ineligible groups show an honest unavailable state, not saved samples.
+Prices, provider logos, durations and source dates use current retained facts.
+The five-provider desktop strip is preserved; mobile uses the provider wheel described below.
+
+October 21, 2026 — Frontend detail refinements add shared Persian breadcrumbs
+with catalogue/category parent links, five provider identities, and a mobile
+vertical logo/name wheel with reduced-motion handling. The hero action jumps to
+homepage `#groups` through a native anchor; provider animations have no pause
+button or hover pause. The restored real-group shelf described above supersedes the earlier static
+«پایتون مقدماتی» samples and is included in this checkpoint. `/design-system` remains the maintained component reference;
+frontend cleanup is under exploration and has not started.
 
 ## Product vision
 

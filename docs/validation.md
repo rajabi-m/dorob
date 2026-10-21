@@ -1229,3 +1229,46 @@ Current verification:
 - The change passed strict validation before archiving. All eight archive files,
   including `.openspec.yaml`, match their pre-move hashes. Archive location:
   `openspec/changes/archive/2026-10-21-add-course-group-catalog/`.
+
+### Real-group homepage hero restoration — October 21, 2026
+
+- Core and web suite: 70 passed, zero failures, 727 assertions. New shelf tests
+  cover three-course order, saved prices, comparison anchors, minimum size and
+  unavailable states without fixture substitution.
+- Web lint and type checking pass. RTL detector reports no errors or warnings
+  on the changed UI files; the final shelf component was checked again after
+  separating its routing wrapper for test isolation. `git diff --check` passes.
+- In-app browser confirms the selected Python group displays three real courses.
+  The Roocket link reaches its matching comparison card via the encoded anchor.
+  Keyboard navigation gives a visible 3px focus outline. At 390px and 320px,
+  document width matches viewport width; the existing compact hero hides the
+  shelf on mobile. The existing five-provider strip remains intact.
+- Production build still fails during page-data collection with the previously
+  documented Bun CommonJS-wrapper error, now reported for
+  `/api/admin/embeddings/discoveries/[id]/promote`. Production startup is unverified.
+
+
+### Frontend detail refinements — October 21, 2026
+
+Shared breadcrumbs, category parent links, the native hero `#groups` jump,
+five-provider strip and mobile logo/name wheel were reviewed in the in-app browser.
+The native anchor was verified by the visible scroll result, including a repeated
+`#groups` click. Wheel names appear to the visual left of their logos; its removed
+pause control and the strip's removed hover pause follow owner instructions.
+Lint, type checking and touched-file RTL/whitespace checks pass. Production
+compilation and types succeed, but page-data collection retains the documented
+Bun CommonJS-wrapper failure. Final pre-commit checks for the complete frontend checkpoint are recorded below.
+The owner explicitly included the real-group hero integration in this commit.
+
+
+Final pre-commit verification for the complete frontend checkpoint:
+
+- Root `bun run lint` and `bun run typecheck` pass.
+- Web/core test files run in isolated processes: 70 tests pass. The course API
+  deadline test initially could not bind its temporary loopback server in the
+  sandbox; its complete four-test file passes with local networking permitted.
+- RTL audit passes for every changed UI file; `git diff --check` passes.
+- `bun run build` compiles and checks types, then fails during page-data
+  collection for `/api/admin/courses` with the existing Bun CommonJS-wrapper
+  error. A successful production build/start remains unverified.
+- `/design-system` is retained; the proposed frontend cleanup has not begun.

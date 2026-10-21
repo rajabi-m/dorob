@@ -3,7 +3,6 @@
 .header { background: var(--ds-surface); border-block-end: 1px solid var(--ds-border); }
 .header > div { display: flex; align-items: center; gap: 48px; min-block-size: 86px; }
 .header nav { margin-inline-start: auto; display: flex; gap: 24px; font-size: 13px; }
-.breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; color: var(--ds-muted); font-size: 12px; padding-block: 25px; }
 .directional { transform: scaleX(-1); }
 .intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); gap: 54px; align-items: center; padding-block: 12px 32px; }
 .intro h1 { font-size: 38px; line-height: 1.4; font-weight: 800; }
@@ -59,7 +58,7 @@
 .amount > span { font-size: 11px; color: var(--ds-muted); }
 .sourceLink { display: flex; justify-content: center; align-items: center; gap: 8px; white-space: nowrap; min-block-size: 42px; padding: 8px 12px; border-radius: 6px; color: white; background: var(--ds-primary); font-size: 12px; font-weight: 650; cursor: pointer; list-style: none; }
 .footer { display: flex; justify-content: space-between; gap: 15px; padding-block: 24px; border-block-start: 1px solid var(--ds-border); color: var(--ds-muted); font-size: 11px; }
-.header a:hover, .footer a:hover, .breadcrumb a:hover { color: var(--ds-primary); }
+.header a:hover, .footer a:hover { color: var(--ds-primary); }
 @media (max-width: 1050px) {
   .intro { gap: 30px; }
   .course { grid-template-columns: 130px minmax(0, 1fr) 190px; gap: 16px; }

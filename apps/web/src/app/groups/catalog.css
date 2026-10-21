@@ -1,8 +1,6 @@
 .group-catalog { display: flex; flex-direction: column; }
 .group-catalog .home-header-inner { justify-content: space-between; }
-.catalog-main { flex: 1; padding-block: 28px 64px; }
-.catalog-breadcrumb { display: flex; gap: 10px; color: var(--ds-muted); font-size: 12px; margin-block-end: 24px; }
-.catalog-breadcrumb a { color: var(--ds-primary); }
+.catalog-main { flex: 1; padding-block: 0 64px; }
 .catalog-intro h1 { font-size: clamp(25px, 3.5vw, 36px); line-height: 1.5; font-weight: 800; overflow-wrap: anywhere; }
 .catalog-intro p { margin-block-start: 10px; color: var(--ds-muted); line-height: 1.9; }
 .catalog-search { margin-block: 28px 36px; inline-size: 100%; min-inline-size: 0; }
@@ -46,7 +44,6 @@
  .catalog-paging { justify-content: center; }
  .catalog-paging .ds-button { font-size: 12px; padding-inline: 12px; }
  .catalog-intro h1 { font-size: 25px; }
- .catalog-breadcrumb { margin-block-end: 18px; }
  .group-catalog .home-header-inner { flex-wrap: nowrap; min-block-size: 78px; }
  .group-catalog .home-header nav { flex-wrap: wrap; gap: 12px; }
 }

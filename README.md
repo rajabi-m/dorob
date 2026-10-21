@@ -2,7 +2,7 @@
 
 نام فارسی پروژه «دورُب» است؛ ترکیبی از نام‌های «دوره» و «ترب».
 
-A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 includes an independent local API/PostgreSQL foundation and manual curated catalog APIs. The homepage course grid reads the local public catalog; group cards and destinations use current retained judgments and provider facts. Hero samples and design-system fixtures remain separate. Production deployment remains pending.
+A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 includes an independent local API/PostgreSQL foundation and manual curated catalog APIs. The homepage course grid reads the local public catalog; group cards and destinations use current retained judgments and provider facts. The homepage hero shelf also uses a selected real group; design-system fixtures remain separate. Production deployment remains pending.
 
 Start with the [documentation hub](docs/index.md), [project plan](Plan.md), and [contributor instructions](AGENTS.md).
 
@@ -34,12 +34,18 @@ limitation remains documented in [validation](docs/validation.md).
 
 ## Current experience
 
-- `/`: public-catalog course grid with Persian search, free filtering, pagination and real-course details; up to three judged-group cards and an all-groups action. Category cards open the filtered group catalogue; the selected blue hero retains saved samples.
+- `/`: public-catalog course grid with Persian search, free filtering, pagination and real-course details; up to three judged-group cards and an all-groups action. Category cards open the filtered group catalogue; the selected blue hero displays three courses from the real Python starter group.
 - `/groups`: server-rendered group catalogue with search and one category filter, twelve groups per page, URL-backed `q`, `category` and `page`, active chips and a mobile category panel. Example: `/groups?q=Python&category=code&page=2`. No provider, price, level or sort filters.
 - `/design-system`: approved سنجش / لاجورد design, the supplied ring-and-cap logo, Vazirmatn, semantic tokens, interactive discovery examples, and component previews. Most examples are fictional; course-card snapshots are dated explicitly.
 - `/groups/[id]`: eligible stored-slug destinations reuse the selected Python layout with retained AI hero text, exact judgment order, tags and assessments alongside current provider facts. Galleries, pinned course pagination and retry states are supported. Legacy `/groups/python-beginner` and `/groups/n8n` redirect to their canonical real slugs; other fixture-only destinations return 404 unless an eligible real group has that slug.
 
-Hero cards retain dated provider samples independently of the real catalog. Homepage individual-course search/filter state resets on reload; group-catalogue conditions and page survive reload and Back/Forward in the URL. Course prices are retained observations, not current provider quotations. Individual course results use ingestion-time order; group comparisons preserve the selected judgment’s order. Visits do not run models, collect courses or refresh judgments. Scheduled refresh and production deployment remain deferred. See [frontend behavior and decisions](docs/frontend.md) and [snapshot provenance](docs/provider-snapshots.md).
+The hero shelf selects `python-starting-programming`, requires at least three eligible courses, and links its first three judged members to their comparison rows. Unavailable selections never fall back to dated samples. Homepage individual-course search/filter state resets on reload; group-catalogue conditions and page survive reload and Back/Forward in the URL. Course prices are retained observations, not current provider quotations. Individual course results use ingestion-time order; group comparisons preserve the selected judgment’s order. Visits do not run models, collect courses or refresh judgments. Scheduled refresh and production deployment remain deferred. See [frontend behavior and decisions](docs/frontend.md) and [snapshot provenance](docs/provider-snapshots.md).
+
+The hero action «دیدن مجموعه دوره‌ها» jumps to the homepage group section.
+Breadcrumbs share «صفحه‌ی نخست» and clickable catalogue/category ancestors.
+The provider strip includes all five bundled provider identities; at 700px and
+below, a vertical logo/name wheel replaces it. Provider animation continues on
+hover, has no pause button, and honors reduced-motion preferences.
 
 ## Local development
 

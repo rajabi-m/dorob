@@ -8,6 +8,7 @@ import {categoryRegistry,type Page,type PublicJudgedGroup} from '@dorob/core';
 import type {GroupResult} from '@/lib/group-result';
 import {catalogHref,lastCatalogPage,type CatalogState} from '@/lib/group-catalog';
 import {PublicGroupCard} from './public-group-section';
+import {Breadcrumb} from './breadcrumb';
 import {BrandWordmark} from './brand-wordmark';
 import {LogoPrototype,logoPrototypes} from './logo-prototypes';
 
@@ -32,7 +33,7 @@ export function GroupCatalog({state,result}:{state:CatalogState;result:GroupResu
  function navigate(url:string){dialog.current?.close();startTransition(()=>router.push(url,{scroll:false}));}
  function categories(){return <nav className="catalog-categories" aria-label="انتخاب دسته‌بندی"><Link href={catalogHref({...state,category:undefined,page:1})} aria-current={!category?'true':undefined} onNavigate={event=>{event.preventDefault();navigate(catalogHref({...state,category:undefined,page:1}));}}>همه دسته‌بندی‌ها</Link>{categoryRegistry.map(c=><Link key={c.id} href={catalogHref({...state,category:c.id,page:1})} aria-current={state.category===c.id?'true':undefined} onNavigate={event=>{event.preventDefault();navigate(catalogHref({...state,category:c.id,page:1}));}}>{c.label}</Link>)}</nav>;}
  return <CatalogShell>
-  <nav className="catalog-breadcrumb" aria-label="مسیر صفحه"><Link href="/">صفحه‌ی نخست</Link><span aria-hidden="true">/</span><span>مجموعه دوره‌ها</span></nav>
+  <Breadcrumb items={category?[{label:"مجموعه دوره‌ها",href:"/groups"},{label:category.label}]:[{label:"مجموعه دوره‌ها"}]} />
   <div className="catalog-intro"><h1>{category?`مجموعه دوره‌های ${category.label}`:'مجموعه دوره‌ها'}</h1><p>یک موضوع مشترک؛ چند دوره برای بررسی و مقایسه.</p></div>
   <form key={href} className="ds-search catalog-search" role="search" action="/groups" onSubmit={event=>{event.preventDefault();const data=new FormData(event.currentTarget);navigate(catalogHref({...state,q:String(data.get('q')??''),page:1}));}}>
    <Search size={22} aria-hidden="true"/><input name="q" type="search" dir="auto" maxLength={200} aria-label="جست‌وجو در مجموعه دوره‌ها" placeholder="کدام مهارت را دنبال می‌کنی؟" defaultValue={state.q??''}/>{state.category&&<input type="hidden" name="category" value={state.category}/>}<button className="ds-button" type="submit">جست‌وجو</button>

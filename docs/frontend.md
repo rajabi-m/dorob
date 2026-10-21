@@ -194,7 +194,7 @@ Firefox desktop review confirmed real covers, the selected layout, and gallery s
 
 Only `#courses` on `/` opts into the public catalog. Initial results come directly from a server-only module under a scoped Suspense boundary. Browser filtering/paging and details use fixed same-origin handlers; hosted UUID WebP images are proxied with bounded bytes, deadlines and conditional cache support. `DOROB_API_URL` remains server-only.
 
-Cards display actual retained title/provider, known level/duration, selected price and Persian Jalali source date. Missing values remain unknown; failed images show a neutral text/icon placeholder. Free, paid, subscription and unknown summaries are distinct. Real details fetch the latest eligible observation and show missing fields, offers/access terms, syllabus and outbound source links; newer observations are disclosed. Hero samples keep the original sample-detail dialog. Native modal dismissal restores trigger focus, including React development effect replay.
+Cards display actual retained title/provider, known level/duration, selected price and Persian Jalali source date. Missing values remain unknown; failed images show a neutral text/icon placeholder. Free, paid, subscription and unknown summaries are distinct. Real details fetch the latest eligible observation and show missing fields, offers/access terms, syllabus and outbound source links; newer observations are disclosed. Hero samples are a static showcase without a details action. Native modal dismissal restores trigger focus, including React development effect replay.
 
 Homepage search and free selection reset individual-course pagination; homepage categories now navigate to group discovery (see the October 20 update below). Abort signals and active-request guards prevent older responses from replacing a new query. Loading/status/error/retry and empty states affect only the course section. Published backend groups determine category membership; an empty category does not mean no unassigned courses exist. Stable offset paging can still shift if ingestion changes between requests. Reads never scrape or imply fresh provider pricing. The hero/provider strip, topics, group cards/routes, navigation/footer and design-system fixtures retain their prior presentation.
 
@@ -232,7 +232,7 @@ The homepage group section now server-renders `/api/v1/judged-groups` data,
 independently of the individual-course grid. Cards show generated hero copy,
 actual membership counts, distinct providers and up to three hosted covers in judge
 order. The October 20 update moves group pagination to `/groups`; homepage loading, empty and retry states never substitute fixture groups.
-The homepage hero sample interactions and design-system fixtures remain separate.
+The static homepage hero showcase and design-system fixtures remain separate.
 
 Every eligible `/groups/<stored-slug>` uses the generalized selected Python layout:
 all five hero fields, shared category labels, actual totals, source instructors,
@@ -293,3 +293,57 @@ brand-blue «مشاهده همه مجموعه‌ها» link with an RTL arrow an
 The proposed real-group hero shelf was reverted at the owner's request; the
 original saved hero samples/provider strip remain unchanged. The catalogue change
 was synced and archived on October 21, 2026 with all twenty tracked tasks complete.
+
+
+### Initial static homepage showcase — October 21, 2026 (superseded)
+
+Before the real-group restoration below, the saved hero course shelf was titled «پایتون مقدماتی». Its rows are static
+content, with no click action, keyboard stop, hover action or navigation arrow.
+The sample label is removed. Saved course facts remain independent of the live
+catalogue. The provider strip includes all five supported provider identities:
+Maktabkhooneh, Toplearn, Quera, Sabzlearn and Roocket, using bundled logos.
+Reduced-motion mode shows one wrapping set of all five providers. The existing
+mobile rule still hides the shelf and strip at 700px and below.
+
+
+## Restored real-group hero shelf — October 21, 2026
+
+The owner's latest decision supersedes the earlier hero rollback. `/` passes the
+read-only detail request for `python-starting-programming` (limit three, offset
+zero) into its own Suspense shelf. The first three members retain judgment order;
+heading links to the group and each course links to its encoded comparison-row
+fragment. Provider identity, content duration, current retained price semantics
+(including free/subscription/unknown), and Persian source dates reuse the existing
+public presentation helpers. No provider collection or model execution occurs.
+
+The selected group must have at least three members and return three ready courses.
+Missing/ineligible or too-small selections show a compact unavailable state with
+a catalogue action; upstream failures additionally offer a same-selection retry.
+No dated samples substitute for public data. Existing comparison/design-system
+fixtures remain available independently. The five-provider desktop marquee retains its reduced-motion treatment. At
+700px and below, the shelf and horizontal strip are hidden; the mobile provider
+wheel described below occupies the visual left of the compact hero.
+
+
+### Shared breadcrumbs — October 21, 2026
+
+Catalogue, public group details and the Python design fixture use the shared
+`Breadcrumb` component. Each trail starts with «صفحه‌ی نخست», uses the same
+RTL chevron separators, wrapping, link colors and keyboard focus style, and
+marks its final item as the current page. Category catalogue trails include
+the selected category; group trails link through the catalogue and category.
+
+The hero action «دیدن مجموعه دوره‌ها» uses a native `#groups` anchor so it
+scrolls to the homepage group section, including when the hash is already present.
+
+
+### Mobile provider wheel — October 21, 2026
+
+At 700px and below, the hero shows a vertical wheel of the five bundled provider
+logos and their names (to the visual left of each logo) in the visual left column. Logos enter from above, grow at the center and
+shrink toward the bottom over an 18-second cycle. The wheel has no visible motion control, at the owner’s request.
+Reduced-motion mode displays all five as a still column. Below 420px, description and action span the full width below
+the heading/wheel row. The desktop marquee and featured group shelf are preserved.
+
+The horizontal hero provider strip continues animating on hover, at the owner’s
+request. Reduced-motion preferences still show a static set.
