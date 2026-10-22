@@ -55,14 +55,24 @@ for (const kind of ['groups','courses'] as const) {
   const input=document.querySelector<HTMLInputElement>('input[name=q]')!;input.focus();
   await act(async()=>root.render(view(1,'Python تازه')));expect(scrolled).toHaveLength(3);expect(document.activeElement?.tagName).not.toBe('H2');
  });
- test(`${kind}: a pending transition keeps cards and announces status, then failure removes the numeric count`,async()=>{
+ test(`${kind}: filter transitions replace cards with skeletons while keeping controls, then settle to results or errors`,async()=>{
   await mount(view(1)); const cards=document.querySelectorAll('article').length;expect(cards).toBeGreaterThan(0);
   deferred=true;
-  await act(async()=>document.querySelector('form')!.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}) as unknown as Event));
+  const search=document.querySelector('form');const sidebar=document.querySelector('.catalog-sidebar');
+  await act(async()=>{
+   if(kind==='groups')document.querySelector<HTMLAnchorElement>('.catalog-sidebar a[href="/groups?category=code"]')!.click();
+   else document.querySelector<HTMLInputElement>('.catalog-sidebar input[value="roocket"]')!.click();
+  });
   expect(document.querySelector('.catalog-results')!.getAttribute('aria-busy')).toBe('true');
   expect(document.querySelector('.catalog-count')!.textContent).toContain('در حال دریافت');
-  expect(document.querySelectorAll('article').length).toBe(cards);
+  expect(document.querySelectorAll('article')).toHaveLength(0);
+  expect(document.querySelector('.catalog-results [role=status][aria-label]')).not.toBeNull();
+  expect(document.querySelector('.catalog-results [aria-hidden="true"]')).not.toBeNull();
+  expect(document.querySelector('form')).toBe(search);expect(document.querySelector('.catalog-sidebar')).toBe(sidebar);
+  expect(destinations.at(-1)).toBe(kind==='groups'?'/groups?category=code':'/courses?provider=roocket');
   await act(async()=>{finishNavigation!();});
+  expect(document.querySelectorAll('article')).toHaveLength(cards);
+  expect(document.querySelector('.catalog-results [role=status][aria-label]')).toBeNull();
   await act(async()=>root.render(view(1,undefined,true)));
   expect(document.querySelector('.catalog-count')!.textContent).toBe('');expect(document.querySelector('[role=alert]')).not.toBeNull();
  });

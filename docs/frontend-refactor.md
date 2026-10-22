@@ -160,8 +160,9 @@ pending, empty and failure status choices alongside the standalone modal example
 `card-skeleton.tsx` reuses the public course/group card layout modules and shared
 color tokens. Homepage Suspense boundaries, shelf retries, the featured hero shelf
 and initial catalogue results show non-interactive skeletons with one Persian status
-announcement per list. Catalogue transitions preserve committed results; retries
-from an error show skeletons. The soft pulse stops under reduced motion. The
+announcement per list. Catalogue filter, search and paging transitions replace
+results with skeletons while preserving controls; error retries also show
+skeletons. The soft pulse stops under reduced motion. The
 maintained design-system page includes both card skeleton variants.
 
 Catalogue loading renders the same search, breadcrumb, sidebar, filter chips and
