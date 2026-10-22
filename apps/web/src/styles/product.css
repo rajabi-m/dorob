@@ -1,5 +1,7 @@
 
 .ds-brand { display: flex; align-items: center; gap: 8px; font-size: 27px; font-weight: 850; color: var(--ds-primary); }
+.brand-wordmark { white-space: nowrap; }
+.brand-wordmark-accent { color: var(--ds-accent); }
 .ds-search { margin-block-start: 24px; background: white; border: 1px solid var(--ds-border); padding: 7px 12px 7px 7px; border-radius: var(--ds-radius); display: flex; align-items: center; gap: 12px; }
 .ds-search input { min-inline-size: 0; inline-size: 100%; border: 0; background: transparent; color: var(--ds-ink); padding-block: 8px; font-size: 13px; }
 .ds-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid var(--ds-primary); background: var(--ds-primary); color: white; padding: 9px 18px; border-radius: var(--ds-radius); min-block-size: 44px; white-space: nowrap; font-size: 12px!important; }

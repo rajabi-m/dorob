@@ -60,9 +60,6 @@
 .lab-logo-download { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ds-primary); border: 1px solid var(--ds-primary); border-radius: 8px; padding: 10px 16px; }
 @media(max-width:700px) { .lab-intro { flex-wrap: wrap; }.ds-hero { grid-template-columns: 1fr; padding: 30px 18px; gap: 28px; }.ds-hero h2 { font-size: 33px; }.ds-course-art { min-block-size: 100px; } }
 
-.brand-wordmark { white-space: nowrap; }
-.brand-wordmark-accent { color: var(--ds-accent); }
-
 .discovery-section { padding: 32px 36px; border-block-start: 1px solid var(--ds-border); scroll-margin-block-start: 24px; }
 .discovery-section-description { color: var(--ds-muted); font-size: 12px; margin-block-start: 6px; }
 .discovery-category-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
