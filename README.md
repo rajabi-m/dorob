@@ -75,7 +75,7 @@ for tests, responsive checks and the existing production-build limitation.
 
 ## Local development
 
-Use Bun 1.3.8 or a compatible release. From the repository root:
+Use Bun 1.3.8 for dependency installation and API/development commands, plus Node 26.12.1 for production web builds/startup (local Node 26.11.0 also builds successfully). From the repository root:
 
 ```sh
 bun install --frozen-lockfile
@@ -114,9 +114,24 @@ bun run build
 bun run start
 ```
 
-Run `build` successfully before `start`. Lint, type checking, and 134 utility tests pass. Production compilation/types pass, but page-data collection fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`. The experimental Turbopack worker-thread configuration resolves the earlier worker-port failure. The local Homebrew Node executable was previously unable to start because `libllhttp.9.3.dylib` was missing. See [current validation and limitations](docs/validation.md).
+Run `build` successfully before `start`. These scripts now run Next with Node; the local Node 26.11.0 production build succeeds with the catalogue API unavailable. Next standalone output traces the workspace and uses `apps/web/server.js` beneath the standalone directory. The Docker build copies public/static assets separately. Explicitly running Next with Bun 1.3.8 retains the previously observed `Expected CommonJS module to have a function wrapper` page-data failure. See [container implementation status](docs/container-deployment.md) and [validation](docs/validation.md).
 
 The homepage course shelf and `/courses` need the local API/database; frontend-only development shows a scoped course error with retry. `DOROB_API_URL` is optional when using the default API port. No API keys or remote fonts are required. Vazirmatn is bundled locally; its license is included in the installed font package.
+
+## Single-container deployment
+
+A local Linux AMD64 production image is available as `dorob:acceptance`.
+Build your local release tag with
+`docker build --platform linux/amd64 -t dorob:local .`.
+The separate `compose.single-container.yaml` runner uses one image, named disk
+and website port. Existing default Compose and `./run.sh` development remain.
+Read the [deployment, storage and verified transfer runbook](docs/container-deployment.md)
+before initialization or import. Runtime/lifecycle/restore checks pass; extended
+mobile/keyboard browser acceptance is still tracked separately. Hosting preflight,
+image publication and live cutover remain operator actions. The Dockerization
+change is [archived](openspec/changes/archive/2026-10-22-dockerize-single-container-app/)
+with owner acceptance of the remaining browser-check task; its two capabilities
+are synced to main specs (15 requirements).
 
 ## Backend development
 
@@ -634,8 +649,9 @@ token once at startup; enter it at `/admin/login`. API and web share private
 for trusted local development. Ingestion and embedding commands accept
 `DOROB_ADMIN_TOKEN` through the environment. Stop API and web before
 `bun run auth:rotate`; rotation invalidates previous tokens and browser sessions.
-See [admin access and session lifecycle](docs/admin-access.md). Docker packaging,
-data transfer and hosted deployment are still separate work.
+See [admin access and session lifecycle](docs/admin-access.md). Docker packaging and verified synthetic transfer are covered by the
+[container runbook](docs/container-deployment.md); hosted deployment requires its
+separate operator preflight.
 
 The admin-token change is [archived](openspec/changes/archive/2026-10-22-add-admin-token-auth/)
 with all artifacts and 20/20 tasks complete. Its three capabilities are synced to

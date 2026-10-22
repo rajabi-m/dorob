@@ -1779,3 +1779,77 @@ passes TypeScript, then fails during page-data collection with the existing
 `/api/admin/embeddings/configurations/[id]`. This remains a production-build
 limitation. No working credential rotation, migration, catalog write or deployment
 was performed by these checks.
+
+
+## Single-container packaging apply — October 22, 2026
+
+The Linux AMD64 production image builds successfully as `dorob:acceptance`, using
+Node 26.12.1, Bun 1.3.8 and PostgreSQL 17.11/pgvector 0.8.7. All runtimes are
+manifest-pinned. Frozen installation passes with 790 packages. The web explicitly
+declares Bun test types; Node production compilation/types/page generation pass
+with the catalogue unavailable. Admin pages render per request, avoiding a static
+build-time unauthenticated redirect. Bun-only historical build failures do not
+apply to this Node production path.
+
+Actual image checks pass for public pages, Persian/RTL markup, static assets,
+protected login/session/admin pages/handlers, bearer operations, migrations,
+Swagger assets and native Sharp/WebP processing. A desktop browser rendered the
+restored Persian comparison and hosted images. Additional mobile/keyboard browser
+acceptance was not completed; its task remains unchecked after the owner requested
+no more unnecessary testing. Presentation markup/styles/copy were not changed.
+
+Storage tests cover missing/unprepared mounts, permissions/symlinks, PostgreSQL and
+volume incompatibility, incomplete imports, retained standalone-host registrations
+and concurrent startup/initialization/all maintenance modes under a live lease.
+Lifecycle acceptance verifies exact retained synthetic records/assets/token across
+replacement and hard interruption, reused-PID/stale-lock recovery, every essential
+child failure, offline rotation, migration checksum failure and clean SIGTERM.
+A never-ready API hits the total startup deadline and shuts PostgreSQL down cleanly.
+The separate Compose runner uses one image/disk/public port; real API/database
+outages and unreadable storage produce bounded generic readiness failure while
+liveness remains available. Actual child UIDs and loopback-only private listeners
+were inspected. A confidentiality sentinel check passes for context/image layer/
+logs while retaining product login API source.
+
+The write-fenced synthetic export includes all 32 user tables, three courses,
+four observations, two judgments, four vector revisions, seven migration records,
+two permanent images and one staged upload. Fresh-target restore matches every
+table count/row fingerprint, catalog-definition schema identity, ledger, vector
+round-trip and asset hash. Both container and legacy Compose-style sources were
+exported. Initial dump-order-based schema comparison correctly refused completion;
+it was replaced by canonical catalog definitions and rehearsed on another fresh
+disk. Failed targets remained incomplete. Original synthetic archives were retained.
+Corrupt database/assets, traversal with updated outer checksums and incompatible
+extensions are rejected before destination writes. An interrupted actual import
+blocks normal startup and retry. Data-only import generates a fresh token;
+separate private credential recovery retains the saved token without stale service
+registrations. The private synthetic report is retained outside Git at
+`/private/tmp/dorob-transfer-acceptance-20261022-v2/verification.json`.
+
+Workspace lint/types and local Node production build pass. Offline API tests pass
+51 with 42 opt-in database cases skipped; actual image/database acceptance above
+provides the deployment checks. All seven host-auth tests and the bounded archive
+security test pass. Strict OpenSpec validation and whitespace/diff review pass.
+OpenSpec tracks 16/17 tasks complete; extended browser/mobile acceptance remains
+unchecked. No additional broad tests were started after the owner's
+request to stop unnecessary testing.
+
+Runbook and acceptance helper commands are in [container deployment](container-deployment.md).
+The working catalogue/credentials and existing development volumes were untouched.
+Synthetic acceptance containers/volumes are disposable and cleaned at handoff;
+private original archives/reports remain outside Git. Darkub account/filesystem,
+architecture, resources, single-replica/recreate behavior, probes, HTTPS origin and
+termination grace require operator preflight. No image publication, provisioning,
+live export/import/cutover, commit or push occurred.
+
+
+## Dockerization archive and commit review — October 22, 2026
+
+The owner approved syncing, archival with the one remaining browser-check task,
+and committing the Dockerization scope. Both new main specs preserve all 15
+added requirements and their authored purposes. Strict validation passes for
+all 24 main specs and the change before archival. The archive preserves the
+unchecked task; this does not claim completion of mobile/keyboard acceptance.
+Existing application/image/lifecycle/transfer results above were reused; no
+additional broad application tests or production image rebuild were run during
+archive/commit review. Hosting preflight and real-data transfer remain unperformed.

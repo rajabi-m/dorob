@@ -54,10 +54,10 @@ function publish(path:string,state:AuthState,replace:boolean) {
   } finally {try{unlinkSync(temporary);}catch{/* Already renamed. */}}
 }
 function alive(pid:number) {try {process.kill(pid,0);return true;}catch(e){return (e as NodeJS.ErrnoException).code!=='ESRCH';}}
-function mutex<T>(path:string,fn:()=>T):T {
+function mutex<T>(path:string,fn:()=>T,runtime?:string):T {
   const lock=join(path,'lifecycle.lock');
   // No automatic stale-lock deletion: a crash requires explicit operator inspection.
-  try {writeFileSync(lock,String(process.pid),{flag:'wx',mode:0o600});}catch{throw new Error('Auth lifecycle is busy; inspect lifecycle.lock before retrying.');}
+  try {writeFileSync(lock,runtime?JSON.stringify({pid:process.pid,runtime}):String(process.pid),{flag:'wx',mode:0o600});}catch{throw new Error('Auth lifecycle is busy; inspect lifecycle.lock before retrying.');}
   try{return fn();}finally{unlinkSync(lock);}
 }
 export function initializeAuth(env:Record<string,string|undefined>=process.env):AuthState {
@@ -76,7 +76,7 @@ export function registerService(env:Record<string,string|undefined>=process.env)
   if(state.dev)return {state,release:()=>{}};
   const path=authDirectory(env);
   const file=join(path,`service-${process.pid}-${randomBytes(8).toString('hex')}.json`);
-  mutex(path,()=>{state=readState(path);writeFileSync(file,JSON.stringify({pid:process.pid}),{flag:'wx',mode:0o600});});
+  mutex(path,()=>{state=readState(path);writeFileSync(file,JSON.stringify({pid:process.pid,...(env.DOROB_CONTAINER_RUNTIME?{runtime:env.DOROB_CONTAINER_RUNTIME}:{})}),{flag:'wx',mode:0o600});},env.DOROB_CONTAINER_RUNTIME);
   let released=false;
   const release=()=>{if(released)return;released=true;try{unlinkSync(file);}catch{/* Process exit cleanup. */}};
   process.once('exit',release);
@@ -93,7 +93,7 @@ export function rotateAuth(env:Record<string,string|undefined>=process.env) {
       unlinkSync(file);
     }
     const state=fresh();publish(path,state,true);return state;
-  });
+  },env.DOROB_CONTAINER_RUNTIME);
 }
 export function equalSecret(a:string,b:string) {
   const digest=(v:string)=>createHash('sha256').update(v).digest();

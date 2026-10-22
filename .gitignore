@@ -12,6 +12,8 @@ coverage/
 playwright-report/
 test-results/
 *.tsbuildinfo
+__pycache__/
+*.pyc
 next-env.d.ts
 apps/web/AGENTS.md
 apps/web/CLAUDE.md

@@ -2,6 +2,22 @@
 
 Created: September 30, 2026
 
+October 22, 2026 — `dockerize-single-container-app` provides a built local Linux
+AMD64 image (`dorob:acceptance`) with pinned Node 26.12.1/Bun/PostgreSQL-pgvector,
+standalone web packaging, protected runtime auth, exclusive persistent storage,
+ordered supervision, bounded probes/shutdown and verified logical transfer.
+Actual container/lifecycle and synthetic full-catalogue restore checks pass;
+16/17 tracked tasks are verified.
+The working catalogue is unchanged. Additional mobile/keyboard browser acceptance
+remains unchecked after the owner requested no further unnecessary testing;
+see [deployment and recovery](docs/container-deployment.md) and
+[verification](docs/validation.md#single-container-packaging-apply--october-22-2026).
+The owner approved archival with the remaining browser task unchecked. Both new
+capabilities (15 requirements) are synced to main specs; all 24 main specs pass
+strict validation. The change is [archived](openspec/changes/archive/2026-10-22-dockerize-single-container-app/).
+The owner-authorized commit includes Dockerization, synced specs and this archive.
+No publication, provisioning, live transfer or push is included.
+
 October 22, 2026 — `add-admin-token-auth` implements protected-by-default MVP
 administration with persistent 256-bit bearer credentials, explicit
 `DOROB_DEV_MODE=true` local bypass, offline rotation, eight-hour browser sessions

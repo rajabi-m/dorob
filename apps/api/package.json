@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "build": "bun build src/index.ts src/raster-worker.ts --target bun --external sharp --outdir dist",
+    "build": "bun build src/index.ts src/raster-worker.ts src/migrate.ts --target bun --external sharp --external swagger-ui-dist --outdir dist",
     "start": "bun dist/index.js",
     "lint": "bun --bun eslint .",
     "typecheck": "bun --bun tsc -p tsconfig.json",

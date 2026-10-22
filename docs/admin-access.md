@@ -16,7 +16,8 @@ The API generates a 256-bit token once and keeps private state at
 with an absolute directory shared by API and web. Start API before standalone web.
 The directory must be owned by the service user, mode 0700, without symlink
 ancestors; the credential file is mode 0600. Do not share or commit this state.
-A future container can mount `/data/auth`; Docker deployment is separate work.
+The single-container image uses `/data/auth` under its exclusive disk lease.
+See [container maintenance and separate auth recovery](container-deployment.md#authentication-maintenance).
 
 The active token prints once at each successful protected API startup. Anyone
 with access to these logs has admin access. Ordinary logs, OpenAPI, working notes,
@@ -60,3 +61,11 @@ registrations from stopped processes are removed during rotation.
 A crash during lifecycle operations can leave `lifecycle.lock`. Inspect its PID and
 confirm the owner has stopped before manually removing that one lock; do not delete
 credential state. Keep backups private. No rotation command runs automatically.
+
+
+Container registrations carry a runtime identity. The bootstrap reconciles only
+records matching its prior identity while holding the outer disk lease. Unknown
+standalone-host records are retained and block bootstrap for offline inspection;
+PID existence alone is never used across containers. Stop the whole container for
+`rotate-auth`. Portable catalogue exports omit credentials; explicit recovery
+copies only a separate private credential record before first normal boot.
