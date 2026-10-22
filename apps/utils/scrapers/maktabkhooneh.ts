@@ -113,7 +113,7 @@ export function parseSitemap(xml: string): { kind: "index" | "urls"; urls: strin
 export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new Date().toISOString(), optionalFailures?: Record<string, string>): ProviderCourse {
   const url = canonicalCourseUrl(sourceUrl);
   const payload = decodeNuxtPayload(html);
-  const pages = Object.entries(object(payload.data)).filter(([key]) => key.startsWith("course-page-"));
+  const pages = Object.entries(object(payload.data)).filter(([key]) => /^course-page[-:]/.test(key));
   const slugId = Number(url.match(/-mk(\d+)\/$/)![1]);
   const page = pages.map(([, value]) => object(value)).find(value => object(value.courseDetails).slug_id === slugId);
   if (!page) throw new Error("No matching course details in Nuxt payload");

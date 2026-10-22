@@ -2,6 +2,13 @@
 
 Created: September 30, 2026
 
+October 22, 2026 — Maktabkhooneh parsing accepts colon-delimited embedded page
+keys alongside the legacy hyphenated format. The course slug identity check is
+preserved; regression coverage verifies equivalent output and mismatched-ID
+rejection. This compatibility fix introduces no collection or catalog mutation.
+All 135 utility tests, utility lint/type checking and the API production build
+pass for this commit.
+
 October 22, 2026 — The standalone [AI group reviewer](docs/ai-group-reviewer.md)
 guide delegates review of the top n pending/current discovered collections in a
 selected saved run. It covers evidence-supported group definitions, outlier

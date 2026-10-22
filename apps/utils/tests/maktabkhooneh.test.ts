@@ -31,6 +31,13 @@ function transport(handler: (url: string) => Response): typeof fetch {
 }
 
 describe("Maktabkhooneh parsing", () => {
+  test("accepts current colon-delimited page keys while enforcing course identity", () => {
+    const current = fixture.replace(/course-page-/g, "course-page:");
+    const course = parseCoursePage(current, url, timestamp);
+    assert.equal(course.id, "maktabkhooneh:10465");
+    assert.deepEqual(course, parseCoursePage(fixture, url, timestamp));
+    assert.throws(() => parseCoursePage(current, url.replace("346", "347")), /No matching course details/);
+  });
   test("extracts retained public facts, separate offers and ordered syllabus", () => {
     const course = parseCoursePage(fixture, url, timestamp);
     assert.equal(course.title, "آموزش برنامه نویسی جامع پایتون");

@@ -272,6 +272,9 @@ Project-local frontend and RTL skills live in `.agents/skills/`. Preserve their 
 
 ## Explicit Maktabkhooneh ingestion
 
+The parser accepts both `course-page-…` and `course-page:…` embedded-data keys,
+while requiring the embedded course slug ID to match the requested URL.
+
 The server-only v3 scraper and resumable worker are available through utility
 entry points. TopLearn, Sabzlearn and Roocket now use native v3-only ingestion;
 `scrape:maktabkhooneh` remains the unchanged export-only v2 command. Start the local API/database and apply existing migrations, then explicitly run:
