@@ -1,0 +1,13 @@
+.admin-login { inline-size:min(100%, 480px); margin-inline:auto; margin-block:clamp(24px, 8vh, 80px); padding:clamp(20px, 4vw, 32px); background:var(--ds-surface); border-block-start:4px solid var(--ds-primary); border-radius:var(--ds-radius); line-height:1.9; }
+.admin-login > .ds-brand, .admin-login > svg { margin-block-end:24px; }
+.admin-login h1 { font-size:24px; line-height:1.4; margin-block-end:12px; }
+.admin-login > p, .admin-token-form > p { color:var(--ds-muted); }
+.admin-token-form { display:grid; gap:12px; margin-block-start:28px; }
+.admin-token-input { position:relative; }
+.admin-token-input input { flex:1; min-inline-size:0; inline-size:100%; min-block-size:48px; padding:12px; padding-inline-end:56px; border:1px solid var(--ds-border); border-radius:var(--ds-radius); font:inherit; unicode-bidi:isolate; }
+.admin-token-reveal { position:absolute; inset-inline-end:4px; inset-block-start:4px; inline-size:44px; block-size:44px; display:grid; place-items:center; border:0; border-radius:var(--ds-radius); background:transparent; color:var(--ds-ink); font-size:22px; line-height:1; }
+.admin-token-reveal:hover { background:var(--ds-soft); }
+.admin-token-form .admin-login-error { color:var(--ds-danger); }
+.admin-auth-overlay { position:fixed; inset:0; z-index:100; overflow-y:auto; padding:20px; background:var(--ds-bg); }
+.admin-auth-overlay .admin-login { margin-block:24px; }
+.admin-auth-overlay { inline-size:100%; max-inline-size:none; max-block-size:none; block-size:100%; border:0; margin:0; }

@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import {expect} from "bun:test";
 import assert from "node:assert/strict";
 import { HttpBackendClient, backendOrigin } from "../worker/backend-client";
 import { minimal } from "../../api/src/ingestion-examples";
@@ -65,4 +66,10 @@ test("backend retry diagnostics expose only safe reasons and preserve bounded at
     assert.equal(events[0].phase, "delivery");
     assert.doesNotMatch(JSON.stringify(events), /SECRET|html|user:pass|observer/);
   }
+});
+
+test('protected backend token is header-only and unauthorized delivery never retries',async()=>{
+ let calls=0;const token='a'.repeat(43);
+ const client=new HttpBackendClient('http://127.0.0.1:3001',{token,fetch:transport((_url,init)=>{calls++;expect(new Headers(init?.headers).get('authorization')).toBe('Bearer '+token);expect(String(init?.body)).not.toContain(token);return new Response(null,{status:401});})});
+ await expect(client.processThumbnail('provider:course',crypto.randomUUID())).rejects.toMatchObject({status:401,transient:false});expect(calls).toBe(1);
 });

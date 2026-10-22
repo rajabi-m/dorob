@@ -137,7 +137,7 @@ migrations and both app services, or use the commands above for API-only work.
 ```sh
 bun run lint:api
 bun run typecheck:api
-bun run test:api
+DOROB_DEV_MODE=true bun run test:api
 bun run build:api
 bun run start:api
 ```
@@ -175,10 +175,10 @@ Readiness runs `SELECT 1` for every request, with at most five pooled connection
 SIGINT/SIGTERM stop the listener and close the pool; cleanup waits up to five seconds for SQL and has a ten-second forced-exit bound. To run real database and process tests (PostgreSQL must be healthy):
 
 ```sh
-API_INTEGRATION=1 bun run test:api
+API_INTEGRATION=1 DOROB_DEV_MODE=true bun run test:api
 ```
 
-Default API tests run offline; database/signal tests are explicitly skipped unless enabled. To smoke-test recovery without restarting the API, run `bun run db:down`, confirm readiness 503 and greeting/liveness 200, then `bun run db:up` and confirm readiness 200. Repeat endpoint checks after `build:api` / `start:api`. Actual validation, temporary-record persistence results, and remaining limitations are in [validation](docs/validation.md).
+Default API tests run offline with the explicit test-only dev mode shown above; protected-mode tests inject their own credentials. Database/signal tests are explicitly skipped unless enabled. To smoke-test recovery without restarting the API, run `bun run db:down`, confirm readiness 503 and greeting/liveness 200, then `bun run db:up` and confirm readiness 200. Repeat endpoint checks after `build:api` / `start:api`. Actual validation, temporary-record persistence results, and remaining limitations are in [validation](docs/validation.md).
 
 The [archived `add-course-ingestion-history` change](openspec/changes/archive/2026-10-10-add-course-ingestion-history/)
 has all 22 tasks complete and both behavior contracts synced to strictly validated
@@ -207,7 +207,7 @@ bun run build:api
 bun apps/api/tests/built-ingestion-smoke.ts
 ```
 
-The local catalog adds explicit SQL migrations, minimal course references, editor-defined groups, and many-to-many assignments. See [catalog setup and workflow](docs/catalog.md). It has no ORM, AI jobs, authentication or cloud deployment. The homepage course section reads eligible current observations; group cards and destinations read retained comparison editions. The real-group hero and independent design-system fixtures remain separate.
+The local catalog adds explicit SQL migrations, minimal course references, editor-defined groups, and many-to-many assignments. See [catalog setup and workflow](docs/catalog.md). It has no ORM or cloud deployment; management now uses shared-token authentication. The homepage course section reads eligible current observations; group cards and destinations read retained comparison editions. The real-group hero and independent design-system fixtures remain separate.
 
 October 12 initial curation researched all 1,495 existing course references and
 created seven verified draft groups with 17 explicit memberships across all six
@@ -403,9 +403,10 @@ See [management API examples and review semantics](docs/catalog.md#local-group-s
 Browser requests use concrete `/api/admin/...` handlers. Server-only
 `DOROB_API_URL` selects the upstream; requests have five-second deadlines, bounded
 validated responses and no caching. Browser mutations require matching Origin.
-This is local development administration without authentication: use loopback
-listeners and a trusted machine. Authentication, shared-network use and deployment
-remain deferred. No migration publishes the seven existing drafts.
+Administration requires the persistent operator token by default. Explicit
+`DOROB_DEV_MODE=true` bypasses protection for trusted loopback development only.
+See [admin access](docs/admin-access.md) for login, client headers, private storage
+and rotation. Shared-network deployment remains separate work. No migration publishes the seven existing drafts.
 
 The completed `add-course-group-admin` change is [archived](openspec/changes/archive/2026-10-16-add-course-group-admin/)
 on October 16, 2026. All 27 tasks are complete, its three behavior contracts are
@@ -457,7 +458,7 @@ session. Delivery and retry are explicit actions with cumulative counts, then
 `/admin/groups/:id` handles membership approval and publication separately.
 Browser storage must be available for safe new promotion; backend recovery reads
 remain available if storage is unavailable. Administration remains trusted,
-loopback-only and unauthenticated.
+loopback-only, with management protected by the shared admin token unless explicit dev bypass is enabled.
 
 The course-focused desk includes retained thumbnails and compact summaries, with
 notes and detailed evidence behind disclosures. Full isolated browser-to-API
@@ -495,7 +496,7 @@ keeps its existing commands and evidence. Checks include `bun run lint`,
 `bun run typecheck`, `bun run test:embedding-engine`, `bun run test:embedding-worker`,
 `bun run lint:embedding-worker`, `bun run typecheck:embedding-worker`,
 `bun run build:api` and `bun run build:embedding-worker`; database acceptance uses
-`API_INTEGRATION=1 bun run test:api` with the documented local DATABASE_URL.
+`API_INTEGRATION=1 DOROB_DEV_MODE=true bun run test:api` with the documented local DATABASE_URL.
 
 October 17, 2026 — Both embedding changes are archived:
 [`add-local-embedding-suggestions`](openspec/changes/archive/2026-10-17-add-local-embedding-suggestions/)
@@ -558,8 +559,8 @@ See [traversal, bounds, recovery and rollback](docs/catalog.md#course-group-judg
 [shared contract](packages/core/src/group-judgments.ts),
 [synthetic request](packages/core/examples/group-judgment.json), and `/docs`.
 The older assessment draft's numeric ranking and extra tags are superseded by this
-standard. Offline checks are included in `bun run test:api`; isolated PostgreSQL
-acceptance uses `API_INTEGRATION=1 bun run test:api` as documented above.
+standard. Offline checks are included in `DOROB_DEV_MODE=true bun run test:api`; isolated PostgreSQL
+acceptance uses `API_INTEGRATION=1 DOROB_DEV_MODE=true bun run test:api` as documented above.
 
 The spec-driven judgment change is [archived](openspec/changes/archive/2026-10-19-add-course-group-judgments/)
 with all 20 tasks complete. Its 14 requirements are synced to the
@@ -624,3 +625,19 @@ three existing main specs, and all 21 main specs pass strict validation. The
 known Bun production page-data limitation remains. See
 [validation](docs/validation.md#public-frontend-polish--october-22-2026) for
 browser coverage and checks.
+
+### MVP admin authentication
+
+Normal `./run.sh` enables token protection. The API prints its persistent admin
+token once at startup; enter it at `/admin/login`. API and web share private
+`DOROB_AUTH_DIR` state. `DOROB_DEV_MODE=true ./run.sh` explicitly bypasses protection
+for trusted local development. Ingestion and embedding commands accept
+`DOROB_ADMIN_TOKEN` through the environment. Stop API and web before
+`bun run auth:rotate`; rotation invalidates previous tokens and browser sessions.
+See [admin access and session lifecycle](docs/admin-access.md). Docker packaging,
+data transfer and hosted deployment are still separate work.
+
+The admin-token change is [archived](openspec/changes/archive/2026-10-22-add-admin-token-auth/)
+with all artifacts and 20/20 tasks complete. Its three capabilities are synced to
+main specs; all 22 main specs pass strict validation. See the
+[pre-commit checks](docs/validation.md#admin-token-pre-commit-verification--october-22-2026).

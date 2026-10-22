@@ -1,3 +1,5 @@
+import {authorizeAdmin, AuthorizationError, sameOrigin} from './admin-auth';
+import type {AuthState} from '../../../../packages/admin-auth/src/index';
 import 'server-only';
 import {discoveryTransport,type DiscoveryOperation} from './discovery-transport';
 import {apiOrigin} from './api-origin';
@@ -7,7 +9,7 @@ export type AdminOperation=DiscoveryOperation|'groups'|'group'|'courses'|'course
 type Guard=(v:unknown)=>boolean;
 const record=(v:unknown):v is Record<string,unknown>=>typeof v==='object'&&v!==null&&!Array.isArray(v);
 export class AdminFailure extends Error {constructor(public status:number){super('درخواست انجام نشد.');}}
-const safe=(status:number)=>new AdminFailure([404,409,422].includes(status)?status:503);
+const safe=(status:number)=>new AdminFailure([401,404,409,422].includes(status)?status:503);
 export function summarizeCourse(value:unknown):AdminCourseSummary {
  if(!record(value)||!isCourseReference(value.reference)||typeof value.presentationReady!=='boolean')throw safe(503);
  const summary:AdminCourseSummary={reference:value.reference,presentationReady:value.presentationReady,checkedAt:null,thumbnailStatus:null,description:null,contentMinutes:null,instructors:[],syllabus:[],prices:[]};
@@ -36,8 +38,9 @@ function validateGroup(body:unknown,patch:boolean) {
  if(!patch&&!['title','slug','description','categoryId'].every(k=>k in body))throw safe(422);
  return body;
 }
-export function createAdminClient(options:{origin?:string;fetcher?:(url:string,init?:RequestInit)=>Promise<Response>;deadlineMs?:number}={}) {
+export function createAdminClient(options:{origin?:string;fetcher?:(url:string,init?:RequestInit)=>Promise<Response>;deadlineMs?:number;authorization?:()=>Promise<AuthState>}={}) {
  return {async request(operation:AdminOperation,method:string,params:{id?:string;courseId?:string}={},query=new URLSearchParams(),body?:unknown):Promise<{status:number;data:unknown}> {
+  let auth:AuthState;try{auth=await (options.authorization??authorizeAdmin)();}catch{throw safe(401);}
   let path='',guard:Guard=()=>false;
   const group=()=>{if(!isUuid(params.id))throw safe(422);return '/api/v1/manage/groups/'+params.id;};
   const suggestion=()=>{if(!isUuid(params.id))throw safe(422);return '/api/v1/manage/suggestions/'+params.id;};
@@ -57,7 +60,7 @@ export function createAdminClient(options:{origin?:string;fetcher?:(url:string,i
   else throw safe(422);
   if(method!=='GET'&&query.size)throw safe(422);
   try {
-   const response=await (options.fetcher??fetch)(apiOrigin(options.origin)+path,{method,cache:'no-store',redirect:'error',signal:AbortSignal.timeout(options.deadlineMs??5000),headers:{accept:'application/json',...(body===undefined?{}:{'content-type':'application/json'})},...(body===undefined?{}:{body:JSON.stringify(body)})});
+   const response=await (options.fetcher??fetch)(apiOrigin(options.origin)+path,{method,cache:'no-store',redirect:'error',signal:AbortSignal.timeout(options.deadlineMs??5000),headers:{accept:'application/json',...(!auth.dev?{authorization:'Bearer '+auth.token}:{}),...(body===undefined?{}:{'content-type':'application/json'})},...(body===undefined?{}:{body:JSON.stringify(body)})});
    if(!response.ok){await response.body?.cancel();throw safe(response.status);}
    if(response.status===204&&operation==='membership')return {status:204,data:null};
    if(!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')??''))throw safe(503);
@@ -68,13 +71,13 @@ export function createAdminClient(options:{origin?:string;fetcher?:(url:string,i
   }catch(e){throw e instanceof AdminFailure?e:safe(503);}
  }};
 }
-export async function adminHandler(request:Request,operation:AdminOperation,params:{id?:string;courseId?:string}={},client=createAdminClient()) {
+export async function adminHandler(request:Request,operation:AdminOperation,params:{id?:string;courseId?:string}={},client?:ReturnType<typeof createAdminClient>,authorize=authorizeAdmin) {
  try{
+  const auth=await authorize(request);
+  client??=createAdminClient({authorization:async()=>auth});
   let body:unknown;
   if(request.method!=='GET'){
-   const url=new URL(request.url), authority=request.headers.get('host')??url.host;
-   let expectedOrigin:string;try{const expected=new URL(url.protocol+'//'+authority);if(expected.host!==authority||expected.username||expected.password||expected.pathname!=='/'||expected.search||expected.hash)return adminError(403);expectedOrigin=expected.origin;}catch{return adminError(403);}
-   if(request.headers.get('origin')!==expectedOrigin)return adminError(403);
+   if(!sameOrigin(request))return adminError(403);
    if(!['PUT','DELETE'].includes(request.method)){
     if(!/^application\/json(?:;|$)/i.test(request.headers.get('content-type')??''))return adminError(422);
     try{body=JSON.parse(new TextDecoder().decode(await boundedBody(new Response(request.body),16384)));}catch{return adminError(422);}
@@ -82,6 +85,6 @@ export async function adminHandler(request:Request,operation:AdminOperation,para
   }
   const result=await client.request(operation,request.method,params,new URL(request.url).searchParams,body);
   return result.status===204?new Response(null,{status:204,headers:{'cache-control':'no-store'}}):Response.json(result.data,{status:result.status,headers:{'cache-control':'no-store'}});
- }catch(e){return adminError(e instanceof AdminFailure?e.status:422);}
+ }catch(e){return adminError(e instanceof AuthorizationError?401:e instanceof AdminFailure?e.status:422);}
 }
-function adminError(status:number){return Response.json({error:{code:String(status),message:status===409?'اطلاعات تغییر کرده یا شناسه تکراری است؛ وضعیت را تازه کنید.':status===404?'مورد پیدا نشد.':status===422?'ورودی درخواست معتبر نیست.':status===403?'مبدأ درخواست معتبر نیست.':'ارتباط با سرویس برقرار نشد؛ دوباره تلاش کنید.'}},{status,headers:{'cache-control':'no-store'}});}
+function adminError(status:number){return Response.json({error:{code:String(status),message:status===401?'برای ادامه، دوباره وارد مدیریت شوید.':status===409?'اطلاعات تغییر کرده یا شناسه تکراری است؛ وضعیت را تازه کنید.':status===404?'مورد پیدا نشد.':status===422?'ورودی درخواست معتبر نیست.':status===403?'مبدأ درخواست معتبر نیست.':'ارتباط با سرویس برقرار نشد؛ دوباره تلاش کنید.'}},{status,headers:{'cache-control':'no-store'}});}

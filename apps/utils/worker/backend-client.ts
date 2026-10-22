@@ -37,13 +37,13 @@ export interface BackendClient {
   processThumbnail(courseId: string, snapshotId: string): Promise<CourseSnapshot>;
 }
 export type BackendRetryEvent = { phase: "delivery" | "image"; attempt: number; waitMs: number; code: DiagnosticCode };
-export type BackendClientOptions = { fetch?: typeof fetch; timeoutMs?: number; retries?: number; sleep?: (ms: number) => Promise<void>; signal?: AbortSignal; onRetry?: (event: BackendRetryEvent) => void };
+export type BackendClientOptions = { token?: string; fetch?: typeof fetch; timeoutMs?: number; retries?: number; sleep?: (ms: number) => Promise<void>; signal?: AbortSignal; onRetry?: (event: BackendRetryEvent) => void };
 export class HttpBackendClient implements BackendClient {
   readonly origin: string;
   private readonly options: Required<Omit<BackendClientOptions, "signal" | "onRetry">> & Pick<BackendClientOptions, "signal" | "onRetry">;
   constructor(origin: string, options: BackendClientOptions = {}) {
     this.origin = backendOrigin(origin);
-    this.options = { fetch: globalThis.fetch, timeoutMs: 30000, retries: 3, sleep: ms => sleep(ms, undefined, { signal: options.signal }), onRetry: undefined, ...options };
+    this.options = { token: process.env.DOROB_ADMIN_TOKEN ?? "", fetch: globalThis.fetch, timeoutMs: 30000, retries: 3, sleep: ms => sleep(ms, undefined, { signal: options.signal }), onRetry: undefined, ...options };
     if (!Number.isSafeInteger(this.options.timeoutMs) || this.options.timeoutMs < 1 || !Number.isSafeInteger(this.options.retries) || this.options.retries < 0 || this.options.retries > 3) throw new BackendError("invalid_options");
   }
   private async request(path: string, payload?: CourseIngestion, busy = false) {
@@ -59,7 +59,7 @@ export class HttpBackendClient implements BackendClient {
       });
       try {
         const operation = async () => {
-          response = await this.options.fetch(this.origin + path, { method: "POST", redirect: "manual", signal, headers: { "content-type": "application/json" }, body: payload ? JSON.stringify(payload) : undefined });
+          response = await this.options.fetch(this.origin + path, { method: "POST", redirect: "manual", signal, headers: { "content-type": "application/json", ...(this.options.token ? { authorization: "Bearer " + this.options.token } : {}) }, body: payload ? JSON.stringify(payload) : undefined });
           if (![200, 201].includes(response.status)) {
             await response.body?.cancel();
             throw new BackendError(`http_${response.status}`, response.status === 429 || response.status >= 500 || busy && response.status === 409, response.status);

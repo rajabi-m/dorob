@@ -21,3 +21,13 @@ No command/help prints usage and exits without network calls or catalog writes.
 Explicit commands do selected work and exit. Defaults select all eligible courses
 and nonprotected group definitions; selected IDs and generation entity scope
 narrow that scope. All inference uses the verified installed BGE-M3 artifact.
+
+## Protected management access
+
+Set `DOROB_ADMIN_TOKEN` privately in the process environment for a protected
+backend. The client sends it as `Authorization: Bearer <token>` only to backend
+management requests, never provider or Ollama requests. A 401 stops automatic
+retries; correct the token and resume the existing checkpoint/operation without
+changing its replay identity. Explicit `DOROB_DEV_MODE=true` on the application
+is the only credential-free mode. See [admin access](../../docs/admin-access.md)
+for private state, browser sessions and rotation.

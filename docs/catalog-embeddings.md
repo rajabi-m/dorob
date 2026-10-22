@@ -217,7 +217,7 @@ delivery. Delivery failure does not erase draft success. Explicit delivery/retry
 refreshes cumulative counts and links to `/admin/groups/:id`; member approval and
 publication remain separate. No real editorial data is required to install the
 page. It needs available browser session storage for safe new promotion and the
-same trusted loopback setup as existing admin pages; no authentication is added.
+same trusted loopback setup as existing admin pages, with the shared admin token unless explicit dev bypass is enabled; see [admin access](admin-access.md).
 
 Recovery clients may read `GET /api/v1/manage/embeddings/discoveries/:id/promotion`.
 A known unpromoted candidate returns `{ "promotion": null }`; an unknown UUID
@@ -284,8 +284,7 @@ GET pages use bounded `limit`/`offset`; discovery listing accepts `suppressed=tr
 Overlap links are independently paginated; the candidate carries `overlapCount`.
 No API field selects arbitrary SQL, commands, filesystem paths or inference origins.
 Worker routes reject non-loopback hosts and foreign browser Origins when present.
-This remains trusted local development without authentication or verified caller
-identity; do not expose it on shared networks. Deployment/authentication are deferred.
+Management uses the shared admin token unless explicit local dev bypass is enabled. Caller identity remains unverified; the token does not verify `systemId`. Deployment remains deferred. See [admin access](admin-access.md).
 
 
 ## Verified acceptance

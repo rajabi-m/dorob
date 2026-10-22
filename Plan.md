@@ -2,6 +2,16 @@
 
 Created: September 30, 2026
 
+October 22, 2026 — `add-admin-token-auth` implements protected-by-default MVP
+administration with persistent 256-bit bearer credentials, explicit
+`DOROB_DEV_MODE=true` local bypass, offline rotation, eight-hour browser sessions
+and Persian token entry. The web layer authorizes callers before privileged
+forwarding; CLI transports and both AI operator guides use the token without
+changing editorial authority. Tokens live outside Git, and startup log access
+grants admin access. Docker packaging and database transfer remain separate work;
+the existing Bun frontend production-build blocker remains. See
+[admin access](docs/admin-access.md) and [validation](docs/validation.md).
+
 October 22, 2026 — `polish-public-frontend` is
 [archived](openspec/changes/archive/2026-10-22-polish-public-frontend/) with all
 four artifacts and 12 tasks complete. The compact hero extends through 520px;
@@ -706,3 +716,19 @@ October 22, 2026 — `retain-published-group-comparisons` is archived with all
 behavior and known Bun production-build limitation are recorded in
 `docs/validation.md`. This checkpoint includes only retained comparison scope;
 earlier scraper changes and other active proposals remain separate.
+
+
+## Admin token authentication archive — October 22, 2026
+
+`add-admin-token-auth` is [archived](openspec/changes/archive/2026-10-22-add-admin-token-auth/)
+with all planning artifacts and 20/20 tracked tasks complete. Its nine new
+`admin-access` requirements and three modified administration/curation requirements
+are synced to main specs. All 22 main specs and the completed change pass strict
+OpenSpec validation. Archival does not rotate credentials or modify the working
+catalog; deployment readiness remains a separate assessment.
+
+October 22, 2026 — The owner authorized committing completed work while excluding
+the unstarted `dockerize-single-container-app` proposal. README setup/status and
+the affected guides were reviewed; offline API test commands now show their
+explicit test-only dev mode. Current checks and the unchanged Bun web-build
+limitation are recorded in [validation](docs/validation.md#admin-token-pre-commit-verification--october-22-2026).

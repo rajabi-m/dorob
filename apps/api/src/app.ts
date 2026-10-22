@@ -1,3 +1,4 @@
+import {bearerAuthorized, managementPath, devMode, type AuthState} from "../../../packages/admin-auth/src/index";
 import {addPublicGroupExamples} from './public-group-judgment-examples';
 import {createPublicGroupJudgmentRepository} from './public-group-judgments';
 import {publicGroupJudgmentRoutes} from './public-group-judgment-routes';
@@ -21,18 +22,38 @@ import {createSuggestionRepository, type SuggestionRepository} from "./group-sug
 import {groupSuggestionRoutes} from "./group-suggestion-routes";
 import type { Database } from "./database";
 
-export function createApp(database: Database, catalog?: CatalogRepository, dependencies: { judgments?: JudgmentRepository; suggestions?: SuggestionRepository; ingestion?: IngestionRepository; thumbnails?: ThumbnailService; publicCourses?: PublicCourseRepository } = {}) {
+export function createApp(database: Database, catalog?: CatalogRepository, dependencies: { judgments?: JudgmentRepository; suggestions?: SuggestionRepository; ingestion?: IngestionRepository; thumbnails?: ThumbnailService; publicCourses?: PublicCourseRepository; auth?: AuthState } = {}) {
+  const auth = dependencies.auth ?? {dev:devMode(),token:"",generation:"uninitialized"};
   const ingestion = dependencies.ingestion ?? (database.sql ? createIngestionRepository(database.sql) : undefined);
   const thumbnails = dependencies.thumbnails ?? (database.sql && ingestion ? createThumbnailService(ingestion, createAssetStore(loadStorageConfig(process.env)), createRasterProcessor(), createImageDownloader()) : undefined);
   const swaggerPath = import.meta.resolve("swagger-ui-dist/package.json");
   const assetDirectory = new URL(".", swaggerPath);
   return new Elysia({ normalize: false })
+    .onRequest(({request}) => {
+      const path=new URL(request.url).pathname;
+      if(managementPath(path) && (!auth.dev && !auth.token || !bearerAuthorized(request.headers.get('authorization'),auth))) {
+        return Response.json({error:{code:'unauthorized',message:'Admin authorization required.'}},{status:401,headers:{'www-authenticate':'Bearer','cache-control':'no-store'}});
+      }
+    })
+    .get('/internal/admin-auth', ({request}) => {
+      const host=new URL(request.url).hostname;
+      if(!['127.0.0.1','localhost','[::1]'].includes(host))return new Response(null,{status:404});
+      return Response.json({dev:auth.dev,generation:auth.generation},{headers:{'cache-control':'no-store'}});
+    },{detail:{hide:true}})
     .onAfterHandle(({ path, response }) => {
       if (path !== "/docs/json" || typeof response !== "object" || response === null) return;
       addJudgmentOpenapiExamples(response);
       addPublicGroupExamples(response);
       // @elysia/openapi 1.4.16 emits invalid content: { type: "void" } for 204.
       // HTTP 204 has no body, so remove content while retaining the description.
+      const document=response as {components?:Record<string,unknown>;paths?:Record<string,Record<string,Record<string,unknown>>>};
+      document.components={...document.components,securitySchemes:{adminToken:{type:'http',scheme:'bearer'}}};
+      for(const [route,methods] of Object.entries(document.paths??{})) {
+        if(managementPath(route)) for(const operation of Object.values(methods)) {
+          operation.security=[{adminToken:[]}];
+          operation.responses={...(operation.responses as object??{}),'401':{description:'Admin bearer token required'}};
+        }
+      }
       const spec = response as { paths?: Record<string, Record<string, { responses?: Record<string, { content?: unknown }> }>> };
       for (const item of Object.values(spec.paths ?? {})) {
         for (const operation of Object.values(item)) {

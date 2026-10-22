@@ -41,6 +41,7 @@
     "test:embedding-worker": "bun run --cwd apps/embedding-worker test",
     "typecheck:embedding-worker": "bun run --cwd apps/embedding-worker typecheck",
     "lint:embedding-worker": "bun run --cwd apps/embedding-worker lint",
-    "test:embedding-engine": "bun run --cwd packages/embedding-engine test"
+    "test:embedding-engine": "bun run --cwd packages/embedding-engine test",
+    "auth:rotate": "bun packages/admin-auth/src/rotate.ts"
   }
 }

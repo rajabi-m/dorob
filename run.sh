@@ -74,6 +74,11 @@ if (( 10#$WEB_PORT == 10#$API_PORT || 10#$WEB_PORT == 10#$DB_PORT || 10#$API_POR
   exit 1
 fi
 
+# One security configuration for both services, independent of framework dev mode.
+export DOROB_DEV_MODE="${DOROB_DEV_MODE-false}"
+DOROB_AUTH_DIR="$(bun -e 'import {authDirectory,devMode} from "./packages/admin-auth/src/index";devMode();console.log(authDirectory());')"
+export DOROB_AUTH_DIR
+export DOROB_WEB_ORIGIN="${DOROB_WEB_ORIGIN:-http://127.0.0.1:$WEB_PORT}"
 API_PID=""
 WEB_PID=""
 STOP_DATABASE=0
@@ -115,6 +120,12 @@ bun run db:migrate
 set -m
 bun run --cwd apps/api dev &
 API_PID=$!
+# API publishes credential state before the web startup hook reads it.
+for attempt in {1..100}; do
+  if bun -e 'import {loadAuth} from "./packages/admin-auth/src/index";try{loadAuth();}catch{process.exit(1)}' 2>/dev/null; then break; fi
+  if ! kill -0 "$API_PID" 2>/dev/null; then exit 1; fi
+  sleep 0.1
+done
 DOROB_API_URL="${SWAGGER_URL%/docs}" bun run dev --hostname 127.0.0.1 --port "$WEB_PORT" &
 WEB_PID=$!
 

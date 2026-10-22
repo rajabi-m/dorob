@@ -361,3 +361,13 @@ and `waitMs`. They are optional and silent when omitted. Import
 `@dorob/utils/worker`. Historical `transport` journal codes cannot recover the
 discarded underlying cause; diagnostics report an unknown transport failure
 rather than claiming a verified outage or connection cause.
+
+## Protected management access
+
+Set `DOROB_ADMIN_TOKEN` privately in the process environment for a protected
+backend. The client sends it as `Authorization: Bearer <token>` only to backend
+management requests, never provider or Ollama requests. A 401 stops automatic
+retries; correct the token and resume the existing checkpoint/operation without
+changing its replay identity. Explicit `DOROB_DEV_MODE=true` on the application
+is the only credential-free mode. See [admin access](../../docs/admin-access.md)
+for private state, browser sessions and rotation.

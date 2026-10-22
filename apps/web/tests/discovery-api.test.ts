@@ -1,6 +1,10 @@
 import {test,expect,mock} from 'bun:test';
 mock.module('server-only',()=>({}));
-const {createAdminClient,adminHandler}=await import('../src/lib/admin-api');
+const {createAdminClient:realClient,adminHandler:realHandler}=await import('../src/lib/admin-api');
+const testAuth=async()=>({dev:true,token:'',generation:'dev'});
+const createAdminClient=(options:Parameters<typeof realClient>[0]={})=>realClient({...options,authorization:testAuth});
+const adminHandler=(...args:Parameters<typeof realHandler>)=>realHandler(args[0],args[1],args[2],args[3],testAuth);
+
 const {discoveryTransport}=await import('../src/lib/discovery-transport');
 const id='11111111-1111-4111-8111-111111111111';
 test('candidate sorting is forwarded with validated paging and invalid sorts never fetch',async()=>{
@@ -25,10 +29,10 @@ test('concrete discovery routes validate paths, query/body and response envelope
 });
 test('discovery handlers retain same-origin, no-store, bounded and safe failure boundaries',async()=>{
  let calls=0;const client=createAdminClient({fetcher:async()=>{calls++;return Response.json({promotion:null});}});
- const url='http://web.test/api/admin/embeddings/discoveries/'+id+'/review';
+ const url='http://localhost/api/admin/embeddings/discoveries/'+id+'/review';
  const make=(origin:string,body='{}')=>new Request(url,{method:'POST',headers:{origin,'content-type':'application/json'},body});
  expect((await adminHandler(make('http://foreign.test'),'discovery-review',{id},client)).status).toBe(403);expect(calls).toBe(0);
- expect((await adminHandler(make('http://web.test',' '.repeat(16385)),'discovery-review',{id},client)).status).toBe(422);expect(calls).toBe(0);
+ expect((await adminHandler(make('http://localhost',' '.repeat(16385)),'discovery-review',{id},client)).status).toBe(422);expect(calls).toBe(0);
  for(const status of [404,409,422,503]){const bad=createAdminClient({fetcher:async()=>new Response('private SQL',{status})});const r=await adminHandler(new Request(url),'discovery-promotion',{id},bad);expect(r.status).toBe(status);expect(r.headers.get('cache-control')).toBe('no-store');expect(await r.text()).not.toContain('private');}
  for(const response of [Response.json({promotion:{id}}),Response.json({promotion:null,secret:'x'}),new Response('broken',{headers:{'content-type':'application/json'}}),new Response('{}',{headers:{'content-type':'text/html'}}),new Response('{}',{headers:{'content-type':'application/json','content-length':'2097153'}})]){const bad=createAdminClient({fetcher:async()=>response});await expect(bad.request('discovery-promotion','GET',{id})).rejects.toMatchObject({status:503});}
  const badPage=createAdminClient({fetcher:async()=>Response.json({items:[],total:0,limit:10,offset:0})});await expect(badPage.request('discovery-runs','GET')).rejects.toMatchObject({status:503});

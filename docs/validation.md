@@ -1687,3 +1687,95 @@ all three merged main specs before the change was moved to
 purposes and requirement content are preserved; no delta operation headers remain
 in main specs. All 21 main specs pass strict validation. All four artifacts and
 12 tracked tasks were complete, and `.openspec.yaml` was preserved in the archive.
+
+## MVP admin token access — October 22, 2026
+
+`add-admin-token-auth` protects every backend management route before dispatch or
+body parsing and authorizes browser pages/handlers before privileged forwarding.
+Shared operator identity does not verify caller-supplied system attribution.
+Explicit dev bypass is independent of framework development mode. The UI uses an
+in-field Eye/EyeOff icon, Persian copy, masked LTR token entry and existing tokens.
+
+Verification:
+
+- Workspace lint and type checking pass; embedding-worker lint/types pass. The
+  server-only helper is included through API/web TypeScript imports.
+- Auth-state/API guard suites: **12 passed, 174 assertions**. Coverage includes
+  concurrent process initialization, retained restart state, malformed/unsafe and
+  symlink state rejection, live-service rotation refusal, failed rotation keeping
+  prior credentials, cookie expiry/tampering and every documented management method.
+- Web auth transport/session suite: **3 passed**; login/logout cookie flags,
+  foreign-origin refusal, direct handler authorization, mismatch and rotation.
+  Login UI suite: **2 passed**; exact LTR input/reveal behavior and 401 recovery
+  retaining unsaved edits without automatic mutation replay.
+- All **22 web test files** pass when run in isolated processes. The first pass
+  encountered the known sandbox socket restriction in `course-api.test.ts`; its
+  local-socket rerun passed all five tests. Transport tests explicitly inject test
+  auth rather than depending on a production bypass.
+- Default API suite with explicit test-only dev mode: **51 passed, 42 opt-in
+  skips, zero failures**. The protected real PostgreSQL curation test separately
+  passed against a temporary schema which was removed afterward; unauthorized
+  writes, persisted authorized records, restart reads and duplicate conflicts pass.
+- Utility suite: **136 passed**. Embedding-worker suite: **8 passed**. Tests cover
+  header-only backend credentials, non-transient 401 and no model-header leakage;
+  existing scraper extraction/worker recovery checks remain intact.
+- Actual HTTP acceptance used a copied frontend on loopback :3027, a database-free
+  API fixture on :3031 and private disposable auth state. Protected deep-link
+  redirect, direct handler 401, valid token login, authenticated page reload,
+  expired-session rejection, logout and both CLI 401 paths pass. The API printed
+  its token exactly once at successful startup; test output did not echo it.
+- Offline lifecycle acceptance stopped both fixtures, confirmed retained-token
+  restart and rotation refusal with a live service, rotated only disposable state,
+  restarted and verified old token/session rejection, new-token acceptance and
+  explicit dev-bypass startup notice. Working credentials were not rotated.
+- Browser review at desktop and **390 x 844** confirms visible keyboard focus,
+  in-field icon reveal/conceal, `lang=fa`, RTL layout, Persian errors and no horizontal
+  overflow. All four new UI files pass the RTL detector with zero findings. The
+  isolated copy used webpack because Turbopack refuses dependency symlinks outside
+  that temporary project; the maintained app's production build still uses its
+  existing configuration.
+- Non-mutating guide walkthrough: each AI role asks the operator for absent
+  protected-mode credentials before its first GET, attaches bearer headers to
+  every management read/write, pauses on 401, and preserves saved body/revision/
+  replay identity with credentials excluded. Existing loopback destination,
+  publication and editorial boundaries remain unchanged.
+- API production bundle builds. Frontend production compilation and TypeScript
+  checking pass, then page-data collection retains the known Bun 1.3.8
+  `Expected CommonJS module to have a function wrapper` failure (final run reported
+  `/api/admin/embeddings/configurations/[id]`). Dynamic auth-filesystem calls are excluded from tracing;
+  the final run added no tracing warnings. Production startup remains unverified.
+- Launcher syntax, strict change validation and whitespace checks pass. No working-database schema
+  migration, working-catalogue write, token rotation, Docker deployment, commit or
+  push was performed during acceptance.
+
+Operational limitations: startup-log readers can recover the operator token by
+owner request. Browser logout clears that browser's cookie; a copied cookie lasts
+until its eight-hour expiry or global token rotation. Lifecycle locks left by a
+crash require operator inspection before removal. See [admin access](admin-access.md)
+for setup, private storage, trusted origin, rotation and rollback precautions.
+
+
+## Admin-token pre-commit verification — October 22, 2026
+
+The owner authorized committing completed work while excluding the unstarted
+`dockerize-single-container-app` proposal. Admin authentication is archived with
+20/20 tasks; all three capability deltas were compared against main specs.
+All 22 main specs pass strict validation.
+
+Fresh pre-commit checks: workspace and embedding-worker lint/types pass; default
+API tests pass with explicit test-only `DOROB_DEV_MODE=true` (opt-in database/process
+tests remain skipped). All 136 utility tests, eight embedding-worker tests and
+seven shared auth tests pass. All 22 web test files pass in isolated processes;
+the socket-dependent course API test passed outside the sandbox after its initial
+sandbox bind failure. The four new auth UI files pass the RTL detector with zero
+findings, and launcher syntax passes. Existing desktop/mobile browser acceptance
+is recorded above; this commit check did not repeat browser or live PostgreSQL
+acceptance. README now shows test-only dev mode for API test commands, and the
+catalog guide clarifies authentication for management examples.
+
+The API production bundle builds. The documented Bun frontend build compiles and
+passes TypeScript, then fails during page-data collection with the existing
+`Expected CommonJS module to have a function wrapper` error for
+`/api/admin/embeddings/configurations/[id]`. This remains a production-build
+limitation. No working credential rotation, migration, catalog write or deployment
+was performed by these checks.

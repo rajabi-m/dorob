@@ -36,7 +36,7 @@ export function safeCode(input: string, fallback: DiagnosticCode = "unknown_fail
   return Object.hasOwn(messages, input) || /^http_[1-5]\d\d$/.test(input) ? input as DiagnosticCode : fallback;
 }
 export function diagnosticMessage(code: DiagnosticCode): string {
-  return /^http_[1-5]\d\d$/.test(code) ? `Request returned HTTP ${code.slice(5)}.` : messages[code as keyof typeof messages];
+  return code === "http_401" ? "Admin token rejected; set DOROB_ADMIN_TOKEN and resume the saved checkpoint." : /^http_[1-5]\d\d$/.test(code) ? `Request returned HTTP ${code.slice(5)}.` : messages[code as keyof typeof messages];
 }
 export class DiagnosticError extends Error {
   constructor(readonly code: DiagnosticCode, readonly saved = false, readonly stage: "invocation" | "checkpoint" | "discovery" = "invocation") { super(diagnosticMessage(code)); }

@@ -20,7 +20,7 @@ An editor defines scope and an optional target level (`beginner`, `intermediate`
 
 Groups start as drafts (`isPublished: false`). Public lists/details show only published groups with at least two distinct members. Removing the second member hides a published group without changing its flag; restoring a second member makes it visible again. Management reads include drafts and smaller groups. Counts, eligibility, and paginated members use the same repeatable-read snapshot. Group order is slug/ID; member/course order is canonical ID, not popularity. Lists return `{ items, total, limit, offset }`, with default limit 20, maximum 100, and default offset 0. Renaming a slug changes public lookup; redirect history is deferred.
 
-Management is unauthenticated and intended only for the loopback local development service. Do not expose it on an untrusted network. Authentication and production deployment require separate work.
+Management requires the shared operator token by default; explicit dev bypass is for trusted loopback development only. See [admin access](admin-access.md). The credential-free management examples below assume explicit dev bypass; in protected mode, authenticate every management request with an `Authorization: Bearer <token>` header, including GET reads, or enter the token in Swagger authorization. Production deployment remains separate work.
 
 ## One-time agent-assisted editorial curation
 
@@ -415,7 +415,7 @@ stored outcome only while no subsequent transition exists. Rejection persists ac
 new submissions until explicitly reopened. Manual add approves with manual provenance;
 removal rejects. Repeated existing assignments preserve prior provenance/history.
 Scores are caller-reported values, not calibrated probabilities or quality ratings.
-System identities are attribution supplied by callers, without authentication.
+System identities remain caller-supplied attribution even after shared-token authentication; they are not verified per-system identities.
 
 Rollback retains the additive tables and history; there is no destructive down
 migration. An older application cannot maintain this ledger. If older binaries write
@@ -521,7 +521,7 @@ curl -i -X PUT "http://127.0.0.1:3001/api/v1/manage/groups/$GROUP_ID/courses/$EN
 Invalid input is 422, missing parents/records 404, conflicts 409 and database
 unavailability 503. The API does not expose SQL or credentials. Direct local
 API/Swagger calls are unchanged by browser Origin checks. These endpoints remain
-unauthenticated local development tools; do not expose them to an untrusted network.
+token-protected management tools; explicit unauthenticated dev bypass must stay on trusted loopback.
 
 Admin state presentation uses the shared Dorob palette: gold for draft/pending,
 blue for published, green for approved/public eligibility, and slate for rejected.
@@ -647,7 +647,7 @@ are documented at `/docs` and `/docs/json`; group discovery remains the existing
 Migration 007 is additive and has no seeds. Rollback disables route wiring while
 retaining the immutable ledger; do not drop records/tables or reset the database.
 Judgments never change source observations, membership, suggestions, group fields,
-publication or existing public catalog responses. Keep the unauthenticated service
+publication or existing public catalog responses. Keep any explicit dev-bypass service
 on trusted loopback. Automated model execution and a separate judgment approval workflow remain follow-ups; the public integration below selects complete retained editions automatically for eligible published groups.
 
 
