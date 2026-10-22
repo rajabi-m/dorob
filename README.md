@@ -478,6 +478,13 @@ through 37 documented endpoint paths under `/api/v1/manage/embeddings` in `/docs
 The percentage displayed by the existing inbox is a compatibility score, not a
 calibrated probability.
 
+For delegated editorial review, give an agent the standalone
+[AI group reviewer guide](docs/ai-group-reviewer.md). It reviews the top n eligible
+collections in a saved run, chooses group definitions, excludes outliers and
+approves retained courses into unpublished drafts through the existing APIs.
+The guide includes exact requests, version checks and recovery; it installs no
+worker and performs no catalog mutation by itself.
+
 See [commands, evidence, cancellation and recovery](docs/catalog-embeddings.md),
 [verified results and capacity](docs/embedding-results.md), and
 [database migration/backup recovery](docs/pgvector-migration.md). The independent lab

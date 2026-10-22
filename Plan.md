@@ -2,6 +2,19 @@
 
 Created: September 30, 2026
 
+October 22, 2026 — The standalone [AI group reviewer](docs/ai-group-reviewer.md)
+guide delegates review of the top n pending/current discovered collections in a
+selected saved run. It covers evidence-supported group definitions, outlier
+rejection/removal, explicit draft promotion/delivery and retained-member approval,
+with version checks, recovery and readback. New groups remain unpublished;
+original discovered membership and scores stay frozen. This documentation adds
+no executable agent, API, inference, collection or working-catalog mutation.
+Contract review and non-mutating walkthroughs are recorded in the change's
+implementation notes; no live editorial quality acceptance is claimed.
+All 11 tasks are complete and strict validation passed. The documentation-only
+change was [archived](openspec/changes/archive/2026-10-22-add-ai-group-reviewer-guide/)
+on October 22, 2026; no delta specs required syncing.
+
 October 18, 2026 — The Python group mock now demonstrates a fixed four-tag
 registry: project-based, practice-based, popular and expensive. Popular uses a rose
 heart; expensive uses an amber wallet. Assignments are presentation fixtures,

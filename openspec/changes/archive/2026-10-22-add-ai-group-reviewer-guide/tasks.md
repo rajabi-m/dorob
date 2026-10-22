@@ -1,0 +1,21 @@
+# Tasks
+
+## 1. Standalone reviewer role and evidence review
+
+- [x] 1.1 Create `docs/ai-group-reviewer.md` with guide version, role, invocation example, required loopback origin/run/n/recovery storage, default review-and-curate mode and optional review-only mode; verify the guide is usable without reading repository source and explicitly delegates editorial definitions and member decisions without repeated permission requests.
+- [x] 1.2 Document paginated `sort=similarity&suppressed=false` discovery reads, local pending/current filtering, stable mean/ID ordering, frozen shortlist, n-as-review-budget and queue exhaustion; verify with a written non-mutating walkthrough spanning more than 100 candidates, tied scores, previously reviewed/stale candidates and fewer than n eligible results.
+- [x] 1.3 Document full per-course retained evidence inspection, frozen/current evidence distinctions, educational fit criteria, overlap/reconciliation inspection, uncertainty and dismissal rules, and untrusted source-text handling; verify a high-score mismatch, a clearly redundant collection, an uncertain course and a coherent subset of at least two receive distinct evidence-supported outcomes without invented facts.
+- [x] 1.4 Document reviewer-selected Persian title/description, Latin slug, category and nullable target level with field limits and duplicate/slug checks; verify all fields against current promotion contracts and that definitions describe the retained subset without placeholder copy or implied course-quality judgments.
+
+## 2. API curation and recovery instructions
+
+- [x] 2.1 Add exact method/path/body examples for versioned candidate approval/dismissal, draft promotion, promotion lookup and bounded all-member delivery; verify JSON properties, response identities and versions against `embedding-routes.ts`, `embedding-results.ts`, core contracts and existing embedding integration tests, without calling mutating APIs.
+- [x] 2.2 Add complete suggestion pagination/provenance inspection, pair deduplication and retained approval/outlier rejection examples using observed `expectedReviewVersion`; verify a three-course candidate can yield a two-member unpublished draft, and explain why list IDs must be collected before mutating the pending filter and why original similarity scores remain unchanged.
+- [x] 2.3 Explain already-approved outlier removal with whole-ID URL encoding and the DELETE/204 contract, bounded to this invocation's draft/recovery scope; verify against `catalog-routes.ts` and `group-suggestions.ts` that removal rejects the pair, pre-existing rejection is preserved and manual PUT/reopen is not an automatic recovery shortcut.
+- [x] 2.4 Add durable exact-request preservation, review/promotion replay, existing-promotion recovery, pair-transition retries, stale/concurrent conflicts, partial-evidence gating and 404/409/422/503 handling; verify non-mutating walkthroughs for lost promotion response, incomplete delivery, stale approval, intervening pair decision and unaccepted partial evidence preserve identity and avoid bypassing guards.
+- [x] 2.5 Add final readback and completion report instructions separating requested/selected/reviewed counts, candidate approval, draft creation, delivery, exact retained/excluded membership, unpublished status and unresolved actions; verify all-match, subset, dismissal, insufficient evidence, review-only and interrupted-batch walkthroughs report only observed outcomes.
+
+## 3. Documentation integration and final review
+
+- [x] 3.1 Link the completed guide from `docs/index.md`, `docs/catalog-embeddings.md` and `docs/ai-judge.md`, and add a focused documentation checkpoint to `Plan.md`; verify relative links and that existing judge/publication responsibilities remain accurate while preserving unrelated in-progress edits.
+- [x] 3.2 Review the complete documentation diff against current routes/contracts and existing discovery/suggestion specs, run `openspec validate add-ai-group-reviewer-guide --strict` and whitespace/link checks, and record validation results in the change's implementation notes; verify no runtime files, lockfile, main specs or working catalog were changed and no application checks are claimed when only documentation was reviewed.

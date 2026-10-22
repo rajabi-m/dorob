@@ -165,6 +165,13 @@ approval replays retain their recorded result. No existing membership is retract
 
 ## Discovery review and promotion
 
+For delegated editorial review, give an agent the standalone [AI group reviewer
+guide](ai-group-reviewer.md). It reviews the top n pending/current retained
+collections in a selected run, chooses group definitions, rejects outliers and
+approves retained courses through the existing APIs. Candidate membership and
+scores remain frozen; curated subsets become unpublished drafts. The guide
+installs no worker and performs no catalog mutation by itself.
+
 Candidate listing accepts `sort=id|similarity|course-count`, for example
 `GET /api/v1/manage/embeddings/runs/:id/discoveries?sort=similarity&limit=20&offset=0`.
 Omitting sort preserves candidate ID ascending. `similarity` orders frozen numeric
