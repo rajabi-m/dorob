@@ -1,0 +1,4 @@
+.catalog-categories { display: grid; gap: 4px; }
+.catalog-categories a { display: block; padding: 11px 13px; border-radius: var(--ds-radius); line-height: 1.9; overflow-wrap: anywhere; color: var(--ds-muted); }
+.catalog-categories a:hover { color: var(--ds-primary); background: var(--ds-surface); }
+.catalog-categories a[aria-current="true"] { color: var(--ds-primary); background: var(--ds-soft); font-weight: 700; }

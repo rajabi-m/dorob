@@ -16,7 +16,9 @@
 - Build a polished, accessible, responsive interface with shared semantic design tokens and reusable components.
 - Phase 1 establishes the design system. Phase 2 uses mock data. Live scraping, AI integration, and backend work belong to phase 3.
 - Keep the frontend and eventual JavaScript/TypeScript backend in one workspace. Share browser-safe contracts without leaking server code or secrets.
-- Identify sample data and AI-derived text clearly. Do not fabricate provider facts or imply live integrations exist.
+- Make every product UI design look and read like the final product, including when it uses mock data. Never add placeholder or design-process labels such as «برای مثال», «نمونه», or «پیش‌نمایش طراحی» to product screens. Keep mock-data provenance and integration limitations in developer documentation; do not fabricate provider facts.
+- Keep shared course cards focused on comparable information. Do not show lesson counts, provider-specific completion deadlines, or study-effort estimates in the card metadata; show content duration only.
+- Course strengths and weaknesses must describe the course itself, using supported facts and clearly reasoned tradeoffs. Never fill weakness bullets with missing-data, scraping, or implementation limitations; never invent negative reviews or absent topics. Keep technical limitations in developer documentation.
 - Keep changes focused and document consequential decisions and known limitations as work proceeds.
 
 ## Validation

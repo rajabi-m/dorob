@@ -1,7 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { parseArgs } from "node:util";
+import { readFile } from "node:fs/promises";
 import { finalizeCourse, type ProviderCourse } from "./scrapers/course.ts";
 
 export type CourseSnapshot = {
@@ -10,7 +7,8 @@ export type CourseSnapshot = {
   runs: { providerId: string; status: string; updatedAt: string; selectedCount: number; courseCount: number; errorCount: number; fullCatalog: boolean }[];
 };
 
-/** Aggregate completed or partial exports without concealing failed course selections. */
+/** Retained only for the protected Maktabkhooneh test; no executable CLI.
+ * Aggregate completed or partial exports without concealing failed course selections. */
 export async function aggregateCourses(inputs: string[]): Promise<CourseSnapshot> {
   const snapshot: CourseSnapshot = { schemaVersion: 2, collectedAt: new Date().toISOString(), courses: [], errors: [], runs: [] };
   const courses = new Map<string, ProviderCourse>();
@@ -29,16 +27,4 @@ export async function aggregateCourses(inputs: string[]): Promise<CourseSnapshot
   }
   snapshot.courses = [...courses.values()];
   return snapshot;
-}
-
-if (resolve(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
-  const { values } = parseArgs({ options: { input: { type: "string", multiple: true }, output: { type: "string", default: "apps/utils/output/course-dashboard.json" } } });
-  const inputs = values.input ?? ["maktabkhooneh", "toplearn", "sabzlearn", "roocket"].map(provider => `apps/utils/output/dashboard-${provider}.json`);
-  const data = await aggregateCourses(inputs);
-  const output = resolve(values.output!);
-  await mkdir(dirname(output), { recursive: true });
-  const temporary = `${output}.${process.pid}.tmp`;
-  await writeFile(temporary, JSON.stringify(data, null, 2) + "\n", { mode: 0o600 });
-  await rename(temporary, output);
-  console.log(`${data.courses.length} courses, ${data.errors.length} errors → ${output}`);
 }

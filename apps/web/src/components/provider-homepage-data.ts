@@ -1,3 +1,5 @@
+import {persianNumber as number,sourceDate} from "@/lib/persian-format";
+import {providerLogo} from "@/lib/provider-presentation";
 import snapshot from "@/data/provider-courses.json";
 import type { Course } from "./discovery-showcase";
 
@@ -21,7 +23,6 @@ const categoryOverrides: Record<string, string> = {
   "quera-23458": "tools",
   "quera-28515": "data",
 };
-const number = (value: number) => value.toLocaleString("fa-IR");
 // Preserve Latin identifiers such as n8n while localizing standalone numbers.
 const displayText = (value: string) => value.replace(/[0-9]+/g, (digits, offset: number) => {
   if (/[A-Za-z]/.test(value[offset - 1] ?? "") || /[A-Za-z]/.test(value[offset + digits.length] ?? "")) return digits;
@@ -30,9 +31,7 @@ const displayText = (value: string) => value.replace(/[0-9]+/g, (digits, offset:
 
 export const providerSnapshotLabel = snapshot.label;
 export const providerSnapshotDate = snapshot.collectedAt;
-export const providerSnapshotDisplayDate = new Intl.DateTimeFormat("fa-IR", {
-  calendar: "persian", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Tehran",
-}).format(new Date(snapshot.collectedAt));
+export const providerSnapshotDisplayDate = sourceDate(snapshot.collectedAt);
 
 export const providerHomepageCourses: HomepageCourse[] = snapshot.courses.map(course => {
   const minutes = course.duration.contentMinutes;
@@ -50,7 +49,7 @@ export const providerHomepageCourses: HomepageCourse[] = snapshot.courses.map(co
     hours: minutes === null ? null : minutes / 60,
     durationLabel,
     provider: snapshot.providers.find(provider => provider.id === course.providerId)?.name ?? "ارائه‌دهنده ثبت نشده",
-    providerLogo: { src: `/providers/${course.providerId}.svg`, alt: snapshot.providers.find(provider => provider.id === course.providerId)?.name ?? "ارائه‌دهنده" },
+    providerLogo: providerLogo(course.providerId),
     price: course.price.amount,
     before: course.price.originalAmount ?? undefined,
     description: displayText(course.summary.text),

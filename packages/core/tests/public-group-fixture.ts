@@ -1,0 +1,3 @@
+import {example} from './fixtures';
+const c=example();const {description,syllabus,...facts}=c;void description;void syllabus;
+export const groupExample=()=>({id:c.snapshotId,slug:'python',categoryId:'code' as const,hero:{title:'پایتون',subtitle:'شروع',description:'مسیر یادگیری',topicLabel:'پایتون',levelSummary:'مقدماتی'},courseCount:2,providers:[c.provider],judgmentId:c.snapshotId,judgedAt:c.checkedAt,courses:{items:[{course:{...facts,rating:null},assessment:{tags:['expensive' as const],strengths:['تمرین'],weaknesses:[]}},{course:{...facts,id:'example:second',rating:{value:4,scale:5,count:null}},assessment:{tags:[],strengths:[],weaknesses:[]}}],total:2,limit:20,offset:0}});

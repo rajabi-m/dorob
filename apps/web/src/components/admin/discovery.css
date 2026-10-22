@@ -1,0 +1,105 @@
+.discovery-workspace { display:grid; gap:24px; min-inline-size:0; }
+.discovery-workspace h1 { font-size:28px; line-height:1.4; }
+.discovery-workspace h2 { font-size:20px; line-height:1.4; }
+.discovery-workspace h3 { font-size:16px; line-height:1.6; }
+.discovery-workspace p { line-height:1.9; }
+.discovery-toolbar { display:flex; flex-wrap:wrap; gap:18px; align-items:end; }
+.discovery-toolbar label { flex:1; min-inline-size:180px; }
+.discovery-desk { display:grid; grid-template-columns:minmax(240px,1fr) minmax(0,2fr); gap:24px; align-items:start; }
+.discovery-queue { display:grid; gap:12px; min-inline-size:0; }
+.discovery-queue-link { display:block; color:inherit; text-decoration:none; border:1px solid var(--ds-border); border-radius:8px; background:var(--ds-surface); }
+.discovery-queue-link[aria-current="true"] { outline:2px solid var(--ds-primary); outline-offset:2px; }
+.discovery-preview { display:flex; align-items:start; gap:18px; padding:18px; overflow-wrap:anywhere; }
+.discovery-selected { background:var(--ds-soft); border-radius:8px; }
+.discovery-stack { flex:0 0 44px; display:grid; justify-items:center; gap:4px; color:var(--ds-primary); border-block-end:4px double var(--ds-primary); padding-block:10px; }
+.discovery-preview-copy { min-inline-size:0; flex:1; }
+.discovery-preview h3 { margin-block:8px; }
+.discovery-preview ul { padding-inline-start:18px; margin-block:8px; font-size:14px; line-height:1.9; }
+.discovery-preview small { color:var(--ds-muted); font-size:12px; }
+.discovery-badge { display:inline-flex; align-items:center; gap:6px; font-size:12px; }
+.discovery-pending { color:var(--ds-ink); background:var(--ds-accent); }
+.discovery-approved { color:var(--ds-success); background:var(--ds-success-soft); }
+.discovery-dismissed { color:var(--ds-danger); background:var(--ds-danger-soft); }
+.discovery-detail { min-inline-size:0; background:var(--ds-surface); border:1px solid var(--ds-border); border-radius:8px; padding:24px; overflow-wrap:anywhere; }
+.discovery-detail > section,.discovery-detail > details { border-block-start:1px solid var(--ds-border); margin-block-start:24px; padding-block-start:24px; }
+.discovery-evidence { display:flex; flex-wrap:wrap; gap:18px; }
+.discovery-evidence > div { display:grid; gap:4px; flex:1; }
+.discovery-evidence strong { color:var(--ds-primary); font-size:28px; line-height:1.4; }
+.discovery-evidence span { font-size:12px; }
+.discovery-evidence p { flex-basis:100%; margin:0; }
+.discovery-warning { background:var(--ds-warning-soft); color:var(--ds-ink); padding:12px; border-inline-start:3px solid var(--ds-accent); }
+.discovery-decisions { display:grid; gap:12px; }
+.discovery-members { display:grid; gap:18px; }
+.discovery-member { padding-block:18px; border-block-start:1px solid var(--ds-border); min-inline-size:0; }
+.discovery-member summary,.discovery-detail summary { cursor:pointer; line-height:1.9; }
+.discovery-provenance { display:grid; gap:12px; font-size:14px; }
+.discovery-provenance pre { direction:ltr; unicode-bidi:isolate; text-align:start; white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; max-block-size:400px; overflow:auto; }
+.discovery-history { padding-inline-start:20px; line-height:1.9; }
+.discovery-mobile-back { display:none; }
+.discovery-workspace :focus-visible,.discovery-specimens :focus-visible { outline:3px solid var(--ds-primary); outline-offset:4px; }
+.discovery-specimens { display:grid; gap:24px; }
+.discovery-specimens h2 { font-size:20px; line-height:1.4; }
+.discovery-specimens h3 { font-size:16px; line-height:1.6; }
+.discovery-specimens p { line-height:1.9; }
+.discovery-specimens .discovery-pending { color:var(--ds-ink); background:var(--ds-accent); }
+.discovery-specimens .discovery-approved { color:var(--ds-success); background:var(--ds-success-soft); }
+.discovery-specimens .discovery-dismissed { color:var(--ds-danger); background:var(--ds-danger-soft); }
+.discovery-specimen-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:18px; }
+@media(max-width:700px) {
+ .discovery-desk { grid-template-columns:minmax(0,1fr); }
+ .discovery-desk[data-selected="true"] > .discovery-queue { display:none; }
+ .discovery-desk[data-selected="false"] > .discovery-detail { display:none; }
+ .discovery-mobile-back { display:inline-flex; }
+ .discovery-detail { padding:18px; }
+ .discovery-toolbar { display:grid; }
+}
+@media(prefers-reduced-motion:reduce) { .discovery-workspace *,.discovery-specimens * { scroll-behavior:auto; transition:none; animation:none; } }
+.discovery-thumbnail { display:inline-grid; place-items:center; inline-size:112px; block-size:72px; overflow:hidden; border-radius:8px; background:var(--ds-bg); color:var(--ds-muted); flex-shrink:0; }
+.discovery-thumbnail img { inline-size:100%; block-size:100%; object-fit:cover; }
+.discovery-cover-stack { position:relative; flex:0 0 80px; block-size:68px; margin-block-start:4px; }
+.discovery-cover-stack .discovery-thumbnail { position:absolute; inline-size:72px; block-size:48px; border:2px solid var(--ds-surface); inset-block-start:0; inset-inline-start:0; z-index:3; }
+.discovery-cover-stack .discovery-thumbnail:nth-child(2) { inset-block-start:7px; inset-inline-start:4px; z-index:2; }
+.discovery-cover-stack .discovery-thumbnail:nth-child(3) { inset-block-start:14px; inset-inline-start:8px; z-index:1; }
+.discovery-preview-label { display:block; margin-block-start:8px; }
+.discovery-compact .discovery-preview-copy h3 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:14px; line-height:1.8; }
+.discovery-compact { padding:14px; gap:12px; }
+.discovery-collection-meta,.discovery-course-meta { display:flex; flex-wrap:wrap; gap:6px 12px; color:var(--ds-muted); font-size:12px; line-height:1.9; }
+.discovery-collection-meta span { color:var(--ds-primary); font-weight:700; }
+.discovery-detail-heading { display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center; }
+.discovery-detail-heading h2 { margin-block:6px; }
+.discovery-eyebrow,.discovery-muted { color:var(--ds-muted); font-size:12px; line-height:1.9; }
+.discovery-detail > .discovery-muted { margin-block-end:18px; }
+.discovery-score-row { display:flex; gap:24px; padding-block:18px; }
+.discovery-score-row > div { display:grid; flex:1; gap:8px; }
+.discovery-evidence details { inline-size:100%; font-size:14px; }
+.discovery-evidence summary { color:var(--ds-primary); }
+.discovery-course-summary { display:flex; gap:18px; align-items:start; }
+.discovery-course-summary > div { min-inline-size:0; }
+.discovery-course-summary h3 { margin-block:0 8px; }
+.discovery-course-more { font-size:12px; color:var(--ds-primary); margin-block-start:12px; }
+.discovery-course-more .admin-inspection { color:var(--ds-ink); }
+.discovery-section-title { display:flex; align-items:center; flex-wrap:wrap; gap:12px; justify-content:space-between; }
+.discovery-section-title small { color:var(--ds-muted); }
+.discovery-decision-panel { background:var(--ds-soft); margin-inline:-24px; padding:24px; }
+.discovery-notes { margin-block-end:18px; }
+.discovery-notes summary { color:var(--ds-primary); font-size:14px; }
+.discovery-notes .admin-form { margin-block-start:18px; }
+.discovery-decisions small { color:var(--ds-muted); line-height:1.9; }
+.discovery-support > summary { font-weight:700; display:flex; justify-content:space-between; gap:12px; }
+.discovery-support > summary::after { content:'+'; color:var(--ds-primary); }
+.discovery-support[open] > summary::after { content:'−'; }
+.discovery-group-fields { border:0; padding:0; min-inline-size:0; margin-block-start:18px; }
+.discovery-draft-form .discovery-group-fields legend { display:none; }
+.discovery-draft-form summary { color:var(--ds-primary); }
+@media(min-width:701px) { .discovery-queue { position:sticky; inset-block-start:18px; max-block-size:calc(100dvh - 36px); overflow:auto; padding:4px; scrollbar-gutter:stable; } }
+@media(max-width:700px) {
+ .discovery-decision-panel { margin-inline:-18px; padding:18px; }
+ .discovery-course-summary { gap:12px; }
+ .discovery-course-summary .discovery-thumbnail { inline-size:88px; block-size:60px; }
+ .discovery-course-summary h3 { font-size:14px; }
+}
+@media(max-width:700px) {
+ .discovery-workspace:has(.discovery-desk[data-selected="true"]) > div:first-child,
+ .discovery-workspace:has(.discovery-desk[data-selected="true"]) > .discovery-toolbar,
+ .discovery-workspace:has(.discovery-desk[data-selected="true"]) > .discovery-run-note { display:none; }
+}

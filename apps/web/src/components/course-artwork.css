@@ -1,0 +1,6 @@
+.discovery-artwork { --art-surface: #eaf0ff; --art-wash: #dbe4fc; --art-line: #b4c3e5; --art-secondary: #638baa; display: block; inline-size: 100%; block-size: auto; aspect-ratio: 16 / 10; }
+.discovery-artwork-design { --art-surface: #f4ece9; --art-wash: #eadad4; --art-line: #c9b4ad; --art-secondary: #c98976; }
+.discovery-artwork-data { --art-surface: #e8f2ef; --art-wash: #d5e8e1; --art-line: #abc9bf; --art-secondary: #639b8b; }
+.discovery-artwork-workflow { --art-surface: #edf0f8; --art-wash: #dee4f2; --art-line: #b2bfd9; --art-secondary: #8190be; }
+.discovery-artwork-business { --art-surface: #f6f0e6; --art-wash: #ece0c9; --art-line: #d3c29e; --art-secondary: #a79564; }
+.discovery-artwork-language { --art-surface: #efecf6; --art-wash: #e0d9ef; --art-line: #c2b4d7; --art-secondary: #9b83b5; }

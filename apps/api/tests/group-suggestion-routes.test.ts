@@ -1,0 +1,32 @@
+import {test,expect} from 'bun:test';
+import {Elysia} from 'elysia';
+import {groupSuggestionRoutes} from '../src/group-suggestion-routes';
+import {CatalogError} from '../src/catalog';
+import type {SuggestionRepository} from '../src/group-suggestions';
+const g=crypto.randomUUID(),id=crypto.randomUUID();
+const input={courseId:'test:one / دو',systemId:'one',systemName:'نمونه',submissionId:'first',confidencePercent:88};
+const review={groupId:g,courseId:input.courseId,status:'pending' as const,version:0,selectedSuggestionId:null,origin:null,decidedAt:null};
+const item={...input,id,groupId:g,receivedAt:new Date().toISOString(),course:{id:input.courseId,providerId:'test',providerCourseId:'one / دو',title:'نمونه',sourceUrl:'https://example.com'},review};
+test('injected suggestion routes validate input and preserve success/replay/error codes',async()=>{
+ let replay=false,fail=0;
+ const repository:SuggestionRepository={submit:async()=>{if(fail)throw new CatalogError(fail as 404|409|503);return {suggestion:item,created:!replay};},list:async()=>({items:[item],total:1,limit:20,offset:0}),review:async()=>({review:{...review,status:'approved',version:1,selectedSuggestionId:id,origin:'suggestion',decidedAt:new Date().toISOString()},membership:true}),history:async()=>({items:[],total:0,limit:20,offset:0}),members:async()=>({items:[],total:0,limit:20,offset:0})};
+ const app=new Elysia().use(groupSuggestionRoutes(repository));
+ const post=(path:string,body:unknown)=>app.handle(new Request('http://localhost'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}));
+ const path=`/api/v1/manage/groups/${g}/suggestions`;
+ expect((await post(path,input)).status).toBe(201);replay=true;expect((await post(path,input)).status).toBe(200);
+ for(const confidencePercent of [-1,101])expect((await post(path,{...input,confidencePercent})).status).toBe(422);
+ for(const n of [404,409,503]){fail=n;expect((await post(path,input)).status).toBe(n);}fail=0;
+ expect((await app.handle(new Request('http://localhost'+path+'?status=unknown'))).status).toBe(422);
+ expect((await app.handle(new Request('http://localhost'+path))).status).toBe(200);
+ expect((await post(`/api/v1/manage/suggestions/${id}/approve`,{expectedReviewVersion:0})).status).toBe(200);
+ expect((await post(`/api/v1/manage/suggestions/${id}/reject`,{expectedReviewVersion:-1})).status).toBe(422);
+ expect((await post(`/api/v1/manage/suggestions/${id}/reopen`,{})).status).toBe(422);
+});
+test('generated Swagger publishes review and provenance contracts alongside the separate judgment contract',async()=>{
+ const {createApp}=await import('../src/app');const app=createApp({ready:async()=>false,close:async()=>{}});
+ const response=await app.handle(new Request('http://localhost/docs/json'));expect(response.status).toBe(200);
+ const spec=await response.json();expect(spec.paths['/api/v1/manage/groups/{id}/suggestions'].post.requestBody).toBeDefined();
+ expect(spec.paths['/api/v1/manage/suggestions/{id}/approve'].post.responses['409']).toBeDefined();
+ expect(spec.paths['/api/v1/manage/groups/{id}/judgments'].post).toBeDefined();
+ expect(Object.keys(spec.paths).some(x=>x.includes('suggestions')&&x.includes('judge'))).toBe(false);
+});

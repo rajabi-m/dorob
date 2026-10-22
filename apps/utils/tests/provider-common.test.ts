@@ -213,6 +213,35 @@ test("shared transport enforces response limits and cancellation", async () => {
   await assert.rejects(canceled.initialize(), /abort/i);
 });
 
+test("shared policy uses agent specificity, equal-length allow, crawl spacing and finite retries", async () => {
+  const robots = parseRobots("User-agent: *\nDisallow: /\nUser-agent: Dorob\nDisallow: /course\nUser-agent: DorobBot\nDisallow: /course*\nAllow: /course$\nCrawl-delay: 2");
+  assert.equal(robots.allows(origin + "/course"), true);
+  assert.equal(robots.allows(origin + "/course/1"), false);
+  assert.equal(robots.allows(origin + "/other"), true);
+  let clock = 0, calls = 0;
+  const times: number[] = [];
+  const client = new PublicProviderClient(origin, { delayMs: 1500, clock: () => clock, sleep: async ms => { clock += ms; }, fetch: transport(input => {
+    times.push(clock);
+    if (input.endsWith("robots.txt")) return new Response("User-agent: *\nCrawl-delay: 2");
+    calls++; return new Response("outage", { status: 503, headers: { "Retry-After": "3" } });
+  }) });
+  await assert.rejects(client.request(url), /503/);
+  assert.equal(calls, 4);
+  assert.deepEqual(times, [0, 2000, 5000, 8000, 12000]);
+});
+
+test("shared transport bounds redirects and stalled response reads", async () => {
+  let calls = 0;
+  const loop = new PublicProviderClient(origin, { delayMs: 0, fetch: transport(input => {
+    if (input.endsWith("robots.txt")) return new Response("");
+    calls++; return new Response(null, { status: 302, headers: { location: "/loop" } });
+  }) });
+  await assert.rejects(loop.request(url), /excessive/);
+  assert.equal(calls, 6);
+  const stalled = new PublicProviderClient(origin, { delayMs: 0, timeoutMs: 20, retries: 0, fetch: transport(() => new Response(new ReadableStream({ start() {} }))) });
+  await assert.rejects(stalled.initialize(), /timeout/i);
+});
+
 test("shared export checkpoints partial runs, retries failed URLs and preserves checkpoint on invalid resume", async () => {
   const directory = await mkdtemp(join(tmpdir(), "dorob-provider-test-"));
   const output = join(directory, "courses.json");

@@ -12,6 +12,8 @@ coverage/
 playwright-report/
 test-results/
 *.tsbuildinfo
+__pycache__/
+*.pyc
 next-env.d.ts
 apps/web/AGENTS.md
 apps/web/CLAUDE.md
@@ -41,3 +43,5 @@ Thumbs.db
 tmp/
 temp/
 apps/utils/output/
+apps/api/storage/
+apps/embedding-lab/output/

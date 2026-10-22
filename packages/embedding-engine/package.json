@@ -1,0 +1,16 @@
+{
+  "name": "@dorob/embedding-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "test": "bun test tests",
+    "typecheck": "bun --bun tsc -p tsconfig.json",
+    "lint": "bun --bun eslint .",
+    "build": "bun build src/index.ts --target bun --outdir dist"
+  },
+  "dependencies": {
+    "@dorob/core": "workspace:*"
+  }
+}

@@ -1,0 +1,14 @@
+'use client';
+import Link from 'next/link';
+import {useState} from 'react';
+import {categoryRegistry,isAdminPage,isCourseGroup,type CourseGroup,type Page} from '@dorob/core';
+import {useAdminRead} from './admin-data';
+import {AdminFeedback,AdminPagination,GroupEligibility} from './admin-components';
+const guard=(v:unknown):v is Page<CourseGroup>=>isAdminPage(v,isCourseGroup);
+export function GroupList({initialQuery=""}:{initialQuery?:string}){
+ const [query,setQuery]=useState(initialQuery);const [revision,setRevision]=useState(0);
+ const params=new URLSearchParams(query);params.set('limit','20');const offset=Number(params.get('offset')??0);
+ const result=useAdminRead('groups?'+params,guard,revision);
+ function navigate(next:URLSearchParams){setQuery(next.toString());window.history.replaceState(null,'','?'+next);}
+ return <><div className="admin-heading"><h1>گروه‌های دوره</h1><Link className="ds-button" href="/admin/groups/new">ساخت گروه</Link></div><p className="admin-muted">پیش‌نویس‌ها، اعضا و پیشنهادهای دوره را بررسی و ویرایش کنید.</p><form className="admin-filters" onSubmit={e=>{e.preventDefault();const data=new FormData(e.currentTarget),next=new URLSearchParams();for(const key of ['q','category','isPublished'])if(data.get(key))next.set(key,String(data.get(key)));navigate(next);}}><label className="admin-field">جست‌وجوی گروه<input name="q" defaultValue={params.get('q')??''} placeholder="عنوان یا موضوع گروه"/></label><label className="admin-field">دسته<select name="category" defaultValue={params.get('category')??''}><option value="">همهٔ دسته‌ها</option>{categoryRegistry.map(c=><option value={c.id} key={c.id}>{c.label}</option>)}</select></label><label className="admin-field">انتشار<select name="isPublished" defaultValue={params.get('isPublished')??''}><option value="">همهٔ وضعیت‌ها</option><option value="false">پیش‌نویس</option><option value="true">منتشرشده</option></select></label><button className="ds-button">جست‌وجو</button></form><div className="admin-panel">{!result?<AdminFeedback>در حال دریافت گروه‌ها…</AdminFeedback>:result.error?<AdminFeedback error retry={()=>setRevision(n=>n+1)}>{result.error}</AdminFeedback>:result.data&&<>{result.data.items.length===0?<AdminFeedback>گروهی با این فیلترها پیدا نشد.</AdminFeedback>:result.data.items.map(g=><article className="admin-row admin-group-row" data-publication={g.isPublished?'published':'draft'} data-eligible={g.isPublished&&g.courseCount>=2} key={g.id}><div className="admin-row-main"><Link href={'/admin/groups/'+g.id}><h2 dir="auto">{g.title}</h2></Link><p className="admin-group-category">{categoryRegistry.find(c=>c.id===g.categoryId)?.label}</p><GroupEligibility group={g}/></div><Link className="ds-button ds-secondary" href={'/admin/groups/'+g.id}>مدیریت گروه</Link></article>)}<AdminPagination total={result.data.total} offset={offset} onChange={n=>{const next=new URLSearchParams(params);next.set('offset',String(n));navigate(next);}}/></>}</div></>;
+}

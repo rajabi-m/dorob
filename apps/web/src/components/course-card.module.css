@@ -12,7 +12,8 @@
 .thumbnail > div, .thumbnail svg { inline-size: 100%; block-size: 100%; }
 .body { display: flex; flex: 1; flex-direction: column; padding: 12px 14px; }
 .card .level { position: absolute; inset-block-end: 8px; inset-inline-start: 8px; background: var(--ds-surface); }
-.heading { margin-block: 0 8px; }
+/* Reserve two title lines so provider rows align across neighboring cards. */
+.heading { min-block-size: 54px; margin-block: 0 8px; }
 .card .title { padding: 0; border: 0; background: none; color: var(--ds-ink); text-align: start; font-size: 15px; font-weight: 750; line-height: 1.8; overflow-wrap: anywhere; }
 .card .title:hover { color: var(--ds-primary); }
 .info { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; margin-block-end: 10px; }
@@ -27,4 +28,27 @@
 .footer :global(.discovery-price) small { font-size: 9px; }
 .footer :global(.discovery-price) :global(.ds-badge) { font-size: 8px; padding: 1px 4px; }
 .card .action { min-block-size: 40px; padding: 7px 10px; white-space: normal; }
-.card button:focus-visible { outline: 3px solid var(--ds-primary); outline-offset: 3px; }
+.card :is(button, a):focus-visible { outline: 3px solid var(--ds-primary); outline-offset: 3px; }
+
+/* Public catalog overrides: sample cards and global buttons retain their defaults. */
+.realCard { overflow: visible; }
+.realCard .thumbnail { border-start-start-radius: calc(var(--ds-radius) - 1px); border-start-end-radius: calc(var(--ds-radius) - 1px); }
+.realCard .textGroup { min-block-size: 110px; margin-block-end: 10px; }
+.realCard .heading { min-block-size: 0; margin-block: 0 4px; }
+.realCard .title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; max-block-size: 54px; inline-size: 100%; }
+.instructors { margin: 0; color: var(--ds-muted); font-size: 12px; line-height: 1.9; }
+.instructorNames { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.moreInstructors { display: block; color: var(--ds-primary); font-size: 11px; }
+.realCard .info { margin-block-start: auto; }
+.realCard .provider, .realCard .metadata { font-size: 12px; }
+.realCard .footer :global(.catalog-price) :is(del, small) { font-size: 12px; }
+.realCard .footer { flex-shrink: 0; min-block-size: 72px; margin-block-start: 0; }
+.realCard .realAction { min-block-size: 44px; border: 1px solid var(--ds-border); background: var(--ds-soft); color: var(--ds-primary); }
+.realCard .realAction:hover { background: color-mix(in srgb, var(--ds-soft), var(--ds-primary) 8%); transform: none; }
+.provenance { position: relative; min-inline-size: 0; }
+.provenance:has(.priceTooltip:not([hidden])) { z-index: 2; }
+.priceTrigger { display: block; max-inline-size: 100%; padding: 0; border: 0; border-block-end: 1px dotted var(--ds-muted); background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.priceTrigger :global(.catalog-price) { display: grid; }
+.footer :global(.catalog-price) > span { margin-block-end: 2px; }
+.priceTooltip { position: absolute; inset-block-end: 100%; inset-inline-start: 0; inline-size: max-content; max-inline-size: min(240px, calc(100vw - 64px)); padding: 8px 10px; border: 1px solid var(--ds-border); border-radius: 8px; background: var(--ds-surface); color: var(--ds-ink); box-shadow: 0 6px 18px color-mix(in srgb, var(--ds-ink) 12%, transparent); font-size: 11px; line-height: 1.9; overflow-wrap: anywhere; }
+.priceTooltip[hidden] { display: none; }

@@ -2,7 +2,7 @@
 
 Dorob needs a background service that collects public course information, saves it, and keeps it reasonably up to date. The website reads the saved data rather than scraping providers while a visitor waits.
 
-This is an operational proposal for phase 3. Start with Maktabkhooneh, then add a second provider before launch. Standalone groundwork now covers Maktabkhooneh, TopLearn, Sabzlearn, and Roocket; Quera is excluded from new adapters at the owner’s request. See [provider mappings](provider-adapters.md). PostgreSQL/Drizzle and a Bun pg-boss worker are selected in the [backend handoff](backend.md); start locally with manual bounded jobs and schedules disabled. Refresh/removal policies below remain proposals, and later hosting remains open.
+This is a proposal for phase 3. Start with Maktabkhooneh, then add a second provider before launch. Standalone groundwork now covers Maktabkhooneh, TopLearn, Sabzlearn, and Roocket; Quera is excluded from new adapters at the owner’s request. See [provider mappings](provider-adapters.md). The database and hosting will be chosen during implementation.
 
 ## How we find and read courses
 

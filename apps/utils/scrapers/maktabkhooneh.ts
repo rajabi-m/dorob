@@ -1,9 +1,11 @@
 import { anonymizeReviewText, createCourse, finalizeCourse, reviewContentId, type ProviderCourse } from "./course.ts";
-import { setTimeout as sleep } from "node:timers/promises";
+import { BaseScraper, type BaseScraperOptions } from "./base";
+import { assembleCourseV3 } from "../convert-course-v3";
+import type { CourseIngestion } from "../../../packages/core/src/ingestion";
 import { AccessDeniedError } from "./public-provider.ts";
 
 export const PROVIDER_URL = "https://maktabkhooneh.org";
-export const ADAPTER_VERSION = "3.1.0";
+export const ADAPTER_VERSION = "3.1.1";
 type Obj = Record<string, unknown>;
 const object = (value: unknown): Obj => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Obj : {};
 const text = (value: unknown): string | null => typeof value === "string" && value.trim() ? value.trim() : null;
@@ -108,10 +110,10 @@ export function parseSitemap(xml: string): { kind: "index" | "urls"; urls: strin
   return { kind, urls: [...new Set(urls)] };
 }
 
-export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new Date().toISOString()): ProviderCourse {
+export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new Date().toISOString(), optionalFailures?: Record<string, string>): ProviderCourse {
   const url = canonicalCourseUrl(sourceUrl);
   const payload = decodeNuxtPayload(html);
-  const pages = Object.entries(object(payload.data)).filter(([key]) => key.startsWith("course-page-"));
+  const pages = Object.entries(object(payload.data)).filter(([key]) => /^course-page[-:]/.test(key));
   const slugId = Number(url.match(/-mk(\d+)\/$/)![1]);
   const page = pages.map(([, value]) => object(value)).find(value => object(value.courseDetails).slug_id === slugId);
   if (!page) throw new Error("No matching course details in Nuxt payload");
@@ -123,6 +125,9 @@ export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new
   const warnings = course.source.warnings, fields = course.source.fieldSources;
   fields.title = "courseDetails.title"; fields.providerCourseId = "courseDetails.id";
   const original = object(details.price), discounted = object(details.discounted_price);
+  // The current public course template uses MAKTAB for free enrollment;
+  // FREE remains supported for older source payloads. Zero alone is not evidence.
+  const freeType = details.type === "FREE" || details.type === "MAKTAB";
   const offers: NonNullable<ProviderCourse["offers"]> = [];
   for (const [type, enabled] of [["FULL", details.full_course_sale], ["CONTENT", details.course_content_sale]] as const) {
     if (enabled !== true) continue;
@@ -130,25 +135,26 @@ export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new
     const current = Object.hasOwn(discounted, type) ? number(discounted[type]) : originalAmount;
     if (current !== null && originalAmount !== null && current > originalAmount) throw new Error(`Invalid ${type} discount`);
     if ((original[type] != null && originalAmount === null) || (discounted[type] != null && current === null)) throw new Error(`Invalid ${type} price`);
-    if (details.type === "FREE" && current !== null && current > 0) throw new Error("Conflicting free and paid course facts");
-    const free = details.type === "FREE" && current === 0;
+    if (freeType && current !== null && current > 0) throw new Error("Conflicting free and paid course facts");
+    const free = freeType && current === 0;
     const amount = current === 0 && !free ? null : current;
-    if (current === 0 && !free) warnings.push(`${type} zero amount has no explicit FREE evidence; normalized price is unknown.`);
+    if (current === 0 && !free) warnings.push(`${type} zero amount has no explicit free-course type evidence; normalized price is unknown.`);
     const id = type.toLowerCase() as "full" | "content";
     offers.push({ id, type: id, label: type, amount, originalAmount: amount !== null && originalAmount !== null && originalAmount > amount ? originalAmount : null,
       unit: "toman", status: free ? "free" : amount === null ? "unknown" : "paid", billingPeriod: null, certificateIncluded: null, accessDescription: null, supportDescription: null,
       sourcePrice: { amount: current, originalAmount: current !== null && originalAmount !== null && originalAmount > current ? originalAmount : null,
         unit: current !== null || originalAmount !== null ? "toman" : "unknown", label: null } });
-    fields[`offers.${id}`] = `courseDetails.price.${type} / discounted_price.${type} / sale flags; toman verified against public display during adapter development`;
+    fields[`offers.${id}`] = `courseDetails.price.${type} / discounted_price.${type} / sale flags / courseDetails.type=${details.type}; toman verified against public display during adapter development`;
   }
-  if (!offers.length && details.type === "FREE") {
-    offers.push({ id: "free", type: "free", label: "FREE", amount: 0, originalAmount: null, unit: "toman", status: "free", billingPeriod: null, certificateIncluded: null, accessDescription: null, supportDescription: null,
-      sourcePrice: { amount: null, originalAmount: null, unit: "unknown", label: "courseDetails.type=FREE" } });
-    fields["offers.free"] = "courseDetails.type=FREE";
+  if (!offers.length && freeType) {
+    offers.push({ id: "free", type: "free", label: String(details.type), amount: 0, originalAmount: null, unit: "toman", status: "free", billingPeriod: null, certificateIncluded: null, accessDescription: null, supportDescription: null,
+      sourcePrice: { amount: null, originalAmount: null, unit: "unknown", label: `courseDetails.type=${details.type}` } });
+    fields["offers.free"] = `courseDetails.type=${details.type}`;
   }
   course.offers = offers.length ? offers : null;
   if (!offers.length) warnings.push("No confirmed purchase offer; price is unknown. Disabled zero slots and upgrade offers are excluded.");
   const chapters = object(page.chapterData).chapters;
+  try {
   if (Array.isArray(chapters)) {
     course.syllabus = chapters.map((chapter, i) => {
       const c = object(chapter), title = plainText(c.title);
@@ -167,6 +173,12 @@ export function parseCoursePage(html: string, sourceUrl: string, checkedAt = new
     });
     fields.syllabus = "chapterData.chapters[].units; source order retained; effort time is not video duration";
   } else warnings.push("Syllabus unavailable in embedded page data.");
+  } catch (error) {
+    if (!optionalFailures) throw error;
+    optionalFailures.curriculum = "Embedded curriculum extraction failed: invalid chapter or lesson representation.";
+    course.syllabus = null;
+    warnings.push(optionalFailures.curriculum);
+  }
   course.image = safeImageUrl(details.image_thumbnail_url ?? details.image) ? { url: safeImageUrl(details.image_thumbnail_url ?? details.image)!, alt: course.title } : null;
   if (course.image) fields.image = "courseDetails.image_thumbnail_url / image";
   course.description = plainText(details.description); if (course.description) fields.description = "courseDetails.description";
@@ -336,207 +348,70 @@ function safeImageUrl(value: unknown): string | null {
   if (!text(value)) return null;
   try { const url = new URL(value as string, PROVIDER_URL); return url.protocol === "https:" && !url.username && !url.password ? url.href : null; } catch { return null; }
 }
-export type MaktabkhoonehCourse = ProviderCourse;
+export type MaktabkhoonehCourse = CourseIngestion;
+export type ScraperOptions = BaseScraperOptions;
+export { AccessDeniedError, parseRobots } from "./public-provider";
 
-type Rule = { allow: boolean; pattern: string };
-/** Robots groups use the most specific matching user-agent and longest path rule. */
-export function parseRobots(source: string, agent = "DorobBot") {
-  const groups: { agents: string[]; rules: Rule[]; delay: number | null }[] = [];
-  const sitemaps: string[] = [];
-  let group: typeof groups[number] | undefined, hasDirectives = false;
-  for (const line of source.split(/\r?\n/)) {
-    const match = line.replace(/#.*/, "").match(/^\s*([\w-]+)\s*:\s*(.*?)\s*$/);
-    if (!match) continue;
-    const key = match[1].toLowerCase(), value = match[2];
-    if (key === "sitemap") { sitemaps.push(value); continue; }
-    if (key === "user-agent") {
-      if (!group || hasDirectives) { group = { agents: [], rules: [], delay: null }; groups.push(group); hasDirectives = false; }
-      group.agents.push(value.toLowerCase());
-    } else if (group) {
-      hasDirectives = true;
-      if ((key === "allow" || key === "disallow") && value) group.rules.push({ allow: key === "allow", pattern: value });
-      if (key === "crawl-delay" && Number.isFinite(Number(value)) && Number(value) >= 0) group.delay = Number(value) * 1000;
-    }
-  }
-  const scores = groups.map(g => Math.max(-1, ...g.agents.map(a => a === "*" ? 0 : agent.toLowerCase().includes(a) ? a.length : -1)));
-  const best = Math.max(-1, ...scores);
-  const selected = groups.filter((_, i) => scores[i] === best && best >= 0);
-  return {
-    sitemaps,
-    delayMs: Math.max(0, ...selected.map(g => g.delay ?? 0)),
-    allows(input: string) {
-      const url = providerUrl(input), path = decodeURI(url.pathname + url.search);
-      const matches = selected.flatMap(g => g.rules).filter(rule => {
-        const expression = rule.pattern.split("*").map(part => part.replace(/[.+?^{}()|[\]\\]/g, "\\$&")).join(".*");
-        return new RegExp(`^${expression}`).test(path);
-      }).sort((a, b) => b.pattern.replace(/[*$]/g, "").length - a.pattern.replace(/[*$]/g, "").length || Number(b.allow) - Number(a.allow));
-      return matches[0]?.allow ?? true;
-    },
-  };
+export class MaktabkhoonehScraper extends BaseScraper {
+  readonly providerId = "maktabkhooneh";
+  readonly extractorVersion = ADAPTER_VERSION;
+  constructor(options: ScraperOptions = {}) { super(PROVIDER_URL, options); }
+  canonicalCourseUrl(input: string) { return canonicalCourseUrl(input); }
+  courseKey(url: string) { return url.match(/-mk\d+\/$/)![0]; }
+  protected relevantSitemap(url: string) { return /course|sitemap(?:[_-]?index)?\.xml/i.test(new URL(url).pathname); }
+  protected extract(body: string, url: string, checkedAt: string, id: string) { return parseObservation(body, url, checkedAt, id); }
 }
 
-export { AccessDeniedError };
-class HttpError extends Error {
-  constructor(public status: number, public retryAfter: string | null) { super(`HTTP ${status}`); }
-}
-
-export type ScraperOptions = {
-  delayMs?: number; timeoutMs?: number; retries?: number; maxResponseBytes?: number;
-  fetch?: typeof fetch; sleep?: (ms: number) => Promise<void>; signal?: AbortSignal;
-};
-
-export class MaktabkhoonehScraper {
-  discoveryIsComplete = false;
-  private robots: ReturnType<typeof parseRobots> | undefined;
-  private initialization: Promise<void> | undefined;
-  private nextRequestAt = 0;
-  private queue: Promise<unknown> = Promise.resolve();
-  private denied = false;
-  private options: Required<Omit<ScraperOptions, "signal">> & Pick<ScraperOptions, "signal">;
-  constructor(options: ScraperOptions = {}) {
-    this.options = { delayMs: 1500, timeoutMs: 30000, retries: 3, maxResponseBytes: 20 * 1024 * 1024, fetch: globalThis.fetch, sleep: ms => sleep(ms, undefined, { signal: options.signal }), ...options };
-    for (const key of ["delayMs", "timeoutMs", "maxResponseBytes", "retries"] as const) {
-      const value = this.options[key];
-      if (!Number.isSafeInteger(value) || value < (key === "retries" || key === "delayMs" ? 0 : 1)) throw new Error(`Invalid ${key}`);
-    }
-    if (this.options.retries > 3) throw new Error("Maximum three retries");
+/** Explicit export-only compatibility boundary; shares source extraction and transport. */
+export class LegacyMaktabkhoonehScraper {
+  private readonly scraper: MaktabkhoonehScraper;
+  constructor(private readonly options: ScraperOptions = {}) { this.scraper = new MaktabkhoonehScraper(options); }
+  get discoveryIsComplete() { return this.scraper.discoveryIsComplete; }
+  initialize() { return this.scraper.initialize(); }
+  discoverCourses() { return this.scraper.discoverCourses(Infinity); }
+  async scrapeCourse(url: string) {
+    const page = await this.scraper.fetchCoursePage(url);
+    return parseCoursePage(page.html, page.sourceUrl, (this.options.now?.() ?? new Date()).toISOString());
   }
-
-  async initialize(): Promise<void> {
-    this.initialization ??= (async () => {
-      const result = await this.request(`${PROVIDER_URL}/robots.txt`, true);
-      this.robots = parseRobots(result.body);
-      this.options.delayMs = Math.max(this.options.delayMs, this.robots.delayMs);
-    })();
-    return this.initialization;
-  }
-
-  private request(input: string, robotsRequest = false): Promise<{ body: string; url: string }> {
-    const task = this.queue.then(() => this.performRequest(input, robotsRequest));
-    this.queue = task.catch(() => undefined);
-    return task;
-  }
-
-  private async wait(ms: number): Promise<void> {
-    const signal = this.options.signal;
-    if (!signal) return this.options.sleep(ms);
-    signal.throwIfAborted();
-    let onAbort: () => void = () => undefined;
-    const aborted = new Promise<never>((_, reject) => {
-      onAbort = () => reject(signal.reason);
-      signal.addEventListener("abort", onAbort, { once: true });
-    });
-    try { await Promise.race([this.options.sleep(ms), aborted]); }
-    finally { signal.removeEventListener("abort", onAbort); }
-  }
-
-  private async performRequest(input: string, robotsRequest: boolean): Promise<{ body: string; url: string }> {
-    if (this.denied) throw new AccessDeniedError("Provider paused after access denial");
-    const initialUrl = providerUrl(input).href;
-    for (let attempt = 0; attempt <= this.options.retries; attempt++) {
-      this.options.signal?.throwIfAborted();
-      try {
-        let url = initialUrl;
-        for (let redirects = 0; redirects <= 5; redirects++) {
-          if (!robotsRequest && !this.robots?.allows(url)) throw new AccessDeniedError(`Robots disallows ${url}`);
-          const wait = this.nextRequestAt - Date.now();
-          if (wait > 0) await this.wait(wait);
-          this.options.signal?.throwIfAborted();
-          this.nextRequestAt = Date.now() + this.options.delayMs;
-          const timeout = AbortSignal.timeout(this.options.timeoutMs);
-          const signal = this.options.signal ? AbortSignal.any([timeout, this.options.signal]) : timeout;
-          const response = await this.options.fetch(url, { redirect: "manual", signal, headers: { "User-Agent": "DorobBot/1.0 (public course catalog)", Accept: robotsRequest ? "text/plain" : "text/html,application/xml,text/xml" } });
-          if ([301, 302, 303, 307, 308].includes(response.status)) {
-            await response.body?.cancel();
-            const location = response.headers.get("location");
-            if (!location || redirects === 5) throw new Error("Invalid or excessive redirects");
-            url = providerUrl(new URL(location, url).href).href;
-            if (robotsRequest && new URL(url).pathname !== "/robots.txt") throw new Error("Unexpected robots redirect");
-            continue;
-          }
-          if (response.status === 401 || response.status === 403) { this.denied = true; await response.body?.cancel(); throw new AccessDeniedError(`Provider denied access: HTTP ${response.status}`); }
-          if (!response.ok) { await response.body?.cancel(); throw new HttpError(response.status, response.headers.get("retry-after")); }
-          const reader = response.body?.getReader();
-          if (!reader) throw new Error("Empty response body");
-          let bytes = 0, body = "";
-          const decoder = new TextDecoder();
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              bytes += value.byteLength;
-              if (bytes > this.options.maxResponseBytes) { await reader.cancel(); throw new Error("Response exceeds size limit"); }
-              body += decoder.decode(value, { stream: true });
-            }
-          } finally { reader.releaseLock(); }
-          return { body: body + decoder.decode(), url };
-        }
-        throw new Error("Redirect limit exceeded");
-      } catch (error) {
-        this.options.signal?.throwIfAborted();
-        const transient = error instanceof HttpError ? error.status === 429 || error.status >= 500 : error instanceof TypeError || (error instanceof Error && ["TimeoutError", "AbortError"].includes(error.name));
-        if (!transient) throw error;
-        const retry = error instanceof HttpError ? error.retryAfter : null;
-        const retryMs = retry ? /^\d+$/.test(retry) ? Number(retry) * 1000 : Math.max(0, Date.parse(retry) - Date.now()) : 0;
-        // Persist the wait so future requests respect Retry-After too.
-        this.nextRequestAt = Math.max(this.nextRequestAt, Date.now() + Math.max(1000 * 2 ** attempt + Math.random() * 250, Number.isFinite(retryMs) ? retryMs : 0));
-        if (attempt === this.options.retries) throw error;
-      }
-    }
-    throw new Error("Request retries exhausted");
-  }
-
-  async fetchCoursePage(url: string): Promise<{ html: string; sourceUrl: string }> {
-    await this.initialize();
-    const result = await this.request(canonicalCourseUrl(url));
-    return { html: result.body, sourceUrl: canonicalCourseUrl(result.url) };
-  }
-
-  async scrapeCourse(url: string): Promise<MaktabkhoonehCourse> {
-    const page = await this.fetchCoursePage(url);
-    return parseCoursePage(page.html, page.sourceUrl);
-  }
-
-  /** Course-only sitemap traversal; skips teacher/organization/editorial maps. */
-  async discoverCourses(): Promise<string[]> {
-    this.discoveryIsComplete = false;
-    await this.initialize();
-    const pending = this.robots!.sitemaps.length ? [...this.robots!.sitemaps] : [`${PROVIDER_URL}/sitemap.xml`];
-    const visited = new Set<string>(), courses = new Map<string, string>();
-    while (pending.length) {
-      const url = providerUrl(pending.shift()!).href;
-      if (visited.has(url)) continue;
-      if (visited.size >= 100) throw new Error("Sitemap traversal limit exceeded; discovery incomplete");
-      visited.add(url);
-      const page = parseSitemap((await this.request(url)).body);
-      if (page.kind === "index") {
-        pending.push(...page.urls.filter(link => /course|sitemap(?:[_-]?index)?\.xml/i.test(new URL(link).pathname)));
-      } else {
-        for (const link of page.urls) {
-          if (!new URL(link).pathname.startsWith("/course/")) continue;
-          const canonical = canonicalCourseUrl(link);
-          if (this.robots!.allows(canonical)) courses.set(canonical.match(/-mk\d+\/$/)![0], canonical);
-        }
-      }
-    }
-    if (!courses.size) throw new Error("No courses discovered; sitemap format may have changed");
-    this.discoveryIsComplete = true;
-    return [...courses.values()];
-  }
-
-  /** Backend can persist each result immediately without holding the whole catalog. */
-  async *scrapeCourses(urls: Iterable<string>): AsyncGenerator<{ sourceUrl: string; course: MaktabkhoonehCourse | null; error: string | null }> {
+  async *scrapeCourses(urls: Iterable<string>) {
     const seen = new Set<string>();
     for (const input of urls) {
       this.options.signal?.throwIfAborted();
-      const sourceUrl = canonicalCourseUrl(input), id = sourceUrl.match(/-mk\d+\/$/)![0];
-      if (seen.has(id)) continue;
-      seen.add(id);
+      const sourceUrl = canonicalCourseUrl(input), key = this.scraper.courseKey(sourceUrl);
+      if (seen.has(key)) continue;
+      seen.add(key);
       try { yield { sourceUrl, course: await this.scrapeCourse(sourceUrl), error: null }; }
       catch (error) {
         if (error instanceof AccessDeniedError || this.options.signal?.aborted) throw error;
-        yield { sourceUrl, course: null, error: error instanceof Error ? error.message : String(error) };
+        yield { sourceUrl, course: null, error: error instanceof Error && /^HTTP \d{3}$/.test(error.message) ? error.message : "Course extraction or request failed" };
       }
     }
   }
+}
+
+export function parseObservation(html: string, sourceUrl: string, checkedAt: string, submissionId: string): CourseIngestion {
+  const failures: Record<string, string> = {};
+  const facts = parseCoursePage(html, sourceUrl, checkedAt, failures);
+  const observation = assembleCourseV3(facts, submissionId, "Native embedded source inspection");
+  observation.source.fieldSources["raw.data"] = "Selected courseDetails / chapterData source fields";
+  if (Array.isArray(facts.raw.syllabusEffort) && facts.raw.syllabusEffort.length === 0) observation.source.fieldSources["raw.data.syllabusEffort"] = "chapterData.chapters explicitly empty";
+  observation.source.fieldSources.providerId = "Maktabkhooneh collector identity";
+  observation.source.fieldSources.sourceUrl = "Canonical provider request/response URL";
+  const set = (name: keyof CourseIngestion, status: "complete" | "partial" | "unknown" | "failed", reason: string | null) => {
+    const section = observation[name] as { data: unknown; coverage: { status: string; reason: string | null } } | undefined;
+    if (section) { section.coverage = { status, reason }; if (status === "failed") section.data = null; }
+  };
+  set("pricing", facts.offers?.every(offer => offer.status !== "unknown") ? "complete" : "unknown", facts.offers?.every(offer => offer.status !== "unknown") ? null : "Enabled purchase options inspected; no unambiguous normalized price.");
+  set("thumbnail", facts.image ? "complete" : "unknown", facts.image ? null : "Embedded cover fields inspected; no usable HTTPS image.");
+  set("description", facts.description ? "complete" : "unknown", facts.description ? null : "Embedded description field unavailable.");
+  set("education", "partial", "Embedded educational fields inspected; unsupported audience, technologies and completion window remain unknown.");
+  set("classification", "partial", "Embedded level/category/language claims only; format is not inferred.");
+  set("instructors", facts.instructors ? "partial" : "unknown", "Published teacher entries inspected; full-list completeness not established.");
+  set("curriculum", facts.syllabus ? "partial" : "unknown", facts.syllabusCoverage.reasons.join("; "));
+  set("feedback", facts.reviews.items ? "partial" : "unknown", facts.reviews.collection.stopReason ?? "Published feedback sample and counts inspected; section completeness not established.");
+  set("providerState", "partial", "Published state fields inspected; enrollment availability is not inferred.");
+  set("features", facts.features ? "partial" : "unknown", "Embedded feature list inspected; completeness unverified.");
+  set("raw", "partial", "Selected anonymous source evidence only.");
+  for (const [section, reason] of Object.entries(failures)) set(section as keyof CourseIngestion, "failed", reason);
+  return observation;
 }

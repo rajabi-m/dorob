@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CategoryGrid } from "./category-card";
-import { categories } from "./discovery-showcase";
+import {categories} from "@/lib/category-presentation";
 
 export function CategoryShowcase() {
   const [selected, setSelected] = useState("");

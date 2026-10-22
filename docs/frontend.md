@@ -1,12 +1,29 @@
 # Frontend: homepage and course groups
 
-Phase 2 is complete for now by owner decision on October 4, 2026. Milestone 5 now connects public published groups to Next through explicit server-only backend/fixture modes, with URL search/filter state, reviewed comparisons, source/unknown/stale/partial/unavailable states and consistent three-member offline Python membership. The eight-offering prototype is retained but no longer routed as approved membership. See [current integration contracts and refresh](frontend-integration.md). Automated offline acceptance and desktop/320px keyboard browser review pass; the production Bun build blocker persists. The history below records superseded layouts/routes and is not the current data contract.
+Phase 2 was closed by the owner on October 4, 2026. The six-course horizontally scrollable homepage shelf and dedicated `/courses` catalogue use the public course API; group cards and group destinations now use real published groups with retained judgments and exact presentation-ready evaluated snapshots. The selected Python layout is shared across categories, with source facts separate from generated content. The homepage hero uses a selected real group; design-system fixtures remain isolated. The dated design history below includes superseded fixture behavior and layouts; [validation](validation.md) records current checks.
+
+## Maintained frontend ownership — October 21, 2026
+
+The frontend refactor extracts shared brand, provider/category presentation,
+Persian formatting, public price rendering, catalogue shell/controls/modal and
+bounded response mechanics. Product routes import `styles/product.css`; only the
+reference imports its lab layout. Real comparisons use `group-detail.module.css`.
+The [protected baseline and removal inventory](frontend-refactor.md) records exact
+owners, retained fixture adapters, deleted branches/assets and validation limits.
+The homepage retains its six-course horizontal shelf and real hero, without local
+fixture comparisons, filters, dialogs or a saved-course hero fallback. Public
+course detail APIs remain available. `/design-system` retains independent dated
+cards and interactive admin/discovery specimens, plus shared breadcrumb/provider/
+filter-panel examples. Backend contracts and persisted replay are unchanged.
 
 ## Homepage design and implementation history
 
 The homepage should put visitors straight into discovering and comparing courses. Keep the explanation short, show what Dorob does, and quickly give people useful things to browse. Avoid a long marketing introduction or sections that add scroll without helping users choose a course.
 
 The entire page is Persian and RTL, using the confirmed design system: سنجش, the لاجورد palette, Vazirmatn, the approved logo, and shared responsive components.
+
+The app favicon (`apps/web/src/app/icon.svg`) matches the approved ring-and-cap
+logo with the current لاجورد palette. Next.js supplies its icon metadata link.
 
 ### Header
 
@@ -40,6 +57,11 @@ The six existing categories are:
 - ابزار و بهره‌وری
 
 Reuse the shared `CategoryCard` and `CategoryGrid` components showcased at `/design-system#compact-categories`.
+
+At 700px and below, categories use two rows in one horizontally scrollable RTL
+grid with proximity scroll snapping. Compact 184px horizontal cards place 48px
+artwork beside the category title and a directional arrow. Descriptions are hidden on mobile.
+Desktop and tablet layouts stay unchanged.
 
 #### 4. Popular course groups — مجموعه دوره‌ها
 
@@ -135,21 +157,27 @@ Removed the course-shelf footnote «گزینه‌ها را بررسی کن؛ د�
 
 ## Python course group prototype
 
-Updated October 3, 2026 after the owner selected the second card design.
+Updated October 18, 2026 after owner-directed refinements to the selected card design.
 
-Historical route: `/groups/python-beginner` (superseded by milestone 5 public integration). This retained prototype showed all eight Python offerings found in the saved datasets, with their individual levels and purposes. It is a broad Python topic preview, not a claim that advanced design-pattern and data-science courses are equivalent to introductory Python. The homepage's existing three-course beginner group membership remains unchanged; reconciling topic/level navigation is deferred until the prototype scope is finalized.
+Route: `/groups/python-beginner`. The URL is retained, but this prototype now shows all eight Python offerings found in the saved datasets, with their individual levels and purposes. It is a broad Python topic preview, not a claim that advanced design-pattern and data-science courses are equivalent to introductory Python. The homepage's existing three-course beginner group membership remains unchanged; reconciling topic/level navigation is deferred until the prototype scope is finalized.
 
 ### Selected layout
 
-Only the second design remains: cover and course information alongside a separate price/action column, with strengths and considerations beneath. The design switcher and unused layouts/styles are removed. New components remain local to `apps/web/src/app/groups/[id]/python-group-preview.tsx` as requested.
+The selected layout places the cover, course details and compact price/action area
+in the top row, with full-width strengths and weaknesses beneath. Green and red
+panels use equal tint/border intensity and identical heading weight. Mobile places
+the offer below the analysis. Cards show title, instructors, provider ratings,
+level and content duration; lesson counts, study effort, completion deadlines and
+expandable summary/syllabus are omitted. Missing duration/rating labels remain.
 
-The hero side card is replaced by a gallery with one selected cover, its course title, a position/count indicator, and eight thumbnail buttons. Selection is manual with native buttons and pressed-state semantics; covers do not rotate automatically. Images preserve their proportions. Failed images fall back to the course title and an icon. The layout adapts to mobile.
-
-Cards show original course covers, titles, instructor/team names and source roles, provider logos, provider ratings when collected, levels, durations, available lesson counts, dated offers, and outbound provider links. Unknown fields stay visibly unknown. Content time, estimated study effort, and completion windows remain separate. Summary/syllabus details can be expanded; only the two legacy export records have a saved syllabus in this fixture.
+The gallery is an automatic slideshow with overlaid dots and hover/focus arrows;
+its behavior is detailed below. The intro action, caption, sample/design labels,
+collection notice and repeated price label are removed. The list is titled
+«لیست دوره‌ها» with owner-selected AI/value-for-price copy.
 
 ### Saved course facts
 
-`apps/web/src/data/python-course-snapshot.json` is a curated browser-safe fixture; it is not a new scraper schema or live service. It contains all records with Python in their title from these existing sources:
+Historical note: the orphan Python preview and `python-course-snapshot.json` were removed in the October 21 frontend refactor. The following describes the retired prototype, preserved in Git history. It was a curated browser-safe fixture; it is not a new scraper schema or live service. It contains all records with Python in their title from these existing sources:
 
 | Source | Python records |
 | --- | --- |
@@ -164,7 +192,13 @@ Remote image URLs are retained and rendered unoptimized, consistent with the exi
 
 ### Prototype assessment boundaries
 
-Numbered positions follow a fixed editorial order, not a quality ranking. The page explicitly labels this. The analysis panels are hand-authored preview text grounded in saved fields, not results of a live analyzer. They distinguish educational tradeoffs from missing data in a combined considerations panel. Analytical project/practice tags carry a sample label; free access follows saved offer status. Satisfaction/economic badges and “start from zero” are not assigned without sufficient evidence.
+Numbered positions still follow a fixed editorial order. The AI review heading and
+value-for-price subtitle are presentation copy for this mock, not computed ranking
+or live analyzer results. Assessments are hand-authored from saved facts and
+course-scope tradeoffs; weaknesses no longer describe missing dataset fields.
+Negative reviews and unsupported missing-topic claims are not invented. Mock
+provenance remains in documentation, following the owner's final-product UI rule.
+Project/practice tags are editorial; free access follows saved offer status.
 
 Production assessment, evidence-backed badge validation, comparative ranking, and freshness handling remain governed by the proposed [analyzer specification](course-group-ai-assessment.md).
 
@@ -173,3 +207,287 @@ Production assessment, evidence-backed badge validation, comparative ranking, an
 Frontend lint/type checking and the route RTL detector pass. Workspace lint passes; workspace type checking encounters separate in-progress utility schema/adapter mismatches in Roocket and Sabzlearn, outside this page change. Production compilation and the build TypeScript step pass; page-data collection still fails with the documented Bun CommonJS function-wrapper error.
 
 Firefox desktop review confirmed real covers, the selected layout, and gallery selection; 320px hero/gallery layout was inspected. Further mobile card/focus inspection was interrupted when the browser window became unavailable. Native gallery button semantics and global focus styling are present, but full keyboard and screen-reader review remain pending. No commit was requested at that historical checkpoint.
+
+## Fixed category ownership
+
+`packages/core/src/categories.ts`, re-exported by `index.ts`, owns the ordered category IDs and Persian labels. Changing categories requires a code change; the API does not provide category administration. `discovery-showcase.tsx` retains a `Record<CategoryId, CategoryPresentation>` for icons, descriptions, and SVG artwork. Artwork lookup uses IDs, never translated labels (`tools` retains the `workflow` artwork). The frontend consumes the category registry locally. Homepage category cards link to `/groups?category=<id>`; design-system category examples retain isolated selection callbacks. Individual-course API category support remains available independently.
+
+## Homepage public course integration — October 11, 2026
+
+Only `#courses` on `/` opts into the public catalog. Initial results come directly from a server-only module under a scoped Suspense boundary. Browser filtering/paging and details use fixed same-origin handlers; hosted UUID WebP images are proxied with bounded bytes, deadlines and conditional cache support. `DOROB_API_URL` remains server-only.
+
+Cards display actual retained title/provider, known level/duration, selected price and Persian Jalali source date. Missing values remain unknown; failed images show a neutral text/icon placeholder. Free, paid, subscription and unknown summaries are distinct. Real details fetch the latest eligible observation and show missing fields, offers/access terms, syllabus and outbound source links; newer observations are disclosed. Hero samples are a static showcase without a details action. Native modal dismissal restores trigger focus, including React development effect replay.
+
+Homepage search and free selection reset individual-course pagination; homepage categories now navigate to group discovery (see the October 20 update below). Abort signals and active-request guards prevent older responses from replacing a new query. Loading/status/error/retry and empty states affect only the course section. Published backend groups determine category membership; an empty category does not mean no unassigned courses exist. Stable offset paging can still shift if ingestion changes between requests. Reads never scrape or imply fresh provider pricing. The hero/provider strip, topics, group cards/routes, navigation/footer and design-system fixtures retain their prior presentation.
+
+See [validation](validation.md) for measured browser coverage and outstanding checks.
+
+## Homepage card refinement — October 11, 2026
+
+Real catalog cards group natural-height, two-line-clamped titles with instructor summaries immediately below them. The first two source-ordered names are direction-isolated; additional names are counted with Persian digits. Null and empty lists have separate missing-data labels. Flexible space follows this text group, with bottom-aligned provider rows and consistent footers. The pale-blue «مشاهده دوره» button and the title open the existing details dialog; closing returns focus to the activating button. Full titles and instructor lists remain available there. Sample cards and global secondary buttons retain their existing presentation.
+
+The separate card collection-date row is replaced by a dotted-underlined price button. Its uniquely described tooltip exposes the course's own Tehran/Jalali `checkedAt` date through hover, focus or tap, stays open during pointer transfer, and closes on second activation, outside interaction, blur or Escape. Escape retains focus and a new interaction can reopen it. Unknown prices use «اطلاعات گردآوری‌شده در»; known prices use «قیمت ثبت‌شده در». These are retained observations, not current provider quotations. Details keep the visible collection date, noninteractive prices and source caveat. Real cards allow tooltip overflow while thumbnail corners remain clipped. See [validation](validation.md) for actual checks and browser coverage.
+
+### Python group gallery — October 18, 2026
+
+The Python group uses a looping slideshow instead of a thumbnail grid. It advances
+at five-second intervals, pauses on hover or keyboard focus, and includes explicit
+previous/next arrows, overlaid clickable dots and RTL arrow-key navigation.
+There is no caption below the image or playback button. Pagination
+shows at most seven dots around the current image, with the counter retaining the
+absolute position. Navigation arrows appear on hover/focus and remain visible on
+touch devices. Reduced-motion preferences and hidden tabs suspend automatic changes.
+Course order and assessments remain page-local fixtures, without runtime AI ranking.
+
+### Course assessment badges — October 18, 2026
+
+The Python mock maps fixed `project_based`, `practice_based`, `popular` and
+`expensive` values to Persian labels. `popular` uses a filled rose heart and pale
+rose background; `expensive` uses a wallet and amber styling. The comprehensive
+Maktabkhooneh Python course demonstrates popularity, while introductory Quera
+shows the expensive badge beside its practice badge. These assignments demonstrate
+presentation only; no popularity threshold or comparative price rule is implemented.
+
+## Public judged-group frontend — October 19, 2026
+
+The homepage group section now server-renders `/api/v1/judged-groups` data,
+independently of the individual-course grid. Cards show generated hero copy,
+assessed edition counts, distinct providers and up to three hosted covers in judge
+order. The October 20 update moves group pagination to `/groups`; homepage loading, empty and retry states never substitute fixture groups.
+The static homepage hero showcase and design-system fixtures remain separate.
+
+Every eligible `/groups/<stored-slug>` uses the generalized selected Python layout:
+all five hero fields, shared category labels, actual totals, source instructors,
+rating scale/count, duration, retained prices/offers/terms and Jalali fact dates.
+Course rows follow exact judge order. Empty assessment columns are omitted; no
+missing-data complaint or invented weakness is inserted. AI assessment attribution
+and judgment date remain separate from provider facts. Source links open safely.
+
+Course pages default to 20 rows (maximum 100). URL paging carries the selected
+judgmentId; conflicting selection offers restart. Metadata and page share request-local
+loading without cross-request caching. The gallery uses the current course page's
+images and local image counter. It retains the five-second slideshow, controls,
+keyboard navigation, reduced-motion handling and hover/focus/hidden-tab pauses.
+`python-beginner` and `n8n` redirect to their real counterparts; other fixture-only
+slugs return 404 unless a matching real group exists. Upstream outages show retry
+instead of false 404s. Already rendered data stays visible until navigation/refresh.
+
+Data retry/paging and images use concrete same-origin web handlers; the API origin
+remains server-only via existing `DOROB_API_URL`. Deadlines are five seconds, list
+responses cap at 2 MiB and detail responses at 8 MiB. No extra setup or migration is
+needed. A published group uses its newest complete ready published-context edition, with
+exact retained source snapshots and assets for every assessed member. Working
+additions and source/definition edits leave it visible; new courses wait. Prices,
+ratings, names, category, covers, counts, order and source/judgment dates stay frozen
+until replacement. Individual-course results can show newer facts. Unpublishing or
+removing an assessed member hides the whole edition; removing a waiting course does
+not. Pins survive working changes and conflict on replacement/withdrawal. No public
+updating notice is added. Management freshness and strict new-submission checks remain. Visits never run models or collection.
+
+
+## Shared group catalogue — October 20, 2026
+
+The results heading is visually hidden after owner review; the compact count stays
+visible. Its semantic label and focus target remain for accessible paging.
+
+Shared group cards choose their layout from the card's available inline width
+using container queries. Narrow results beside the catalogue sidebar use the
+compact layout, preventing fixed image/action columns from squeezing Persian
+titles into a vertical strip at tablet widths.
+
+`/groups` shares the existing cycling cards with the homepage and renders real
+eligible judged groups on the server. Search submits explicitly against selected
+hero title/subtitle/description; category matches the group's single registry ID.
+The URL owns committed `q`, `category` and one-based `page`, with twelve items per
+page. Search, category changes and individual chip removal reset page one while
+preserving the other condition. Clear-all opens `/groups`. Refresh and Back/Forward
+restore the committed controls and results; unsent input is only a draft.
+Unsupported categories, duplicate recognized parameters, queries over 200 characters
+and invalid/unrepresentable page values show a safe recovery state. Unrelated page
+parameters are ignored. A positive page beyond the matching last page redirects to
+the last page (one for zero matches), preserving conditions; failures do not redirect.
+
+Category controls sit on the right on desktop and use a native modal with explicit
+Tab wrap, Escape dismissal and trigger-focus return on mobile. Active conditions
+are removable chips. Counts, pending, zero-match, empty-catalogue and retry states
+are Persian and distinct. The catalogue offers search/category only: no provider,
+price, level or sort controls. Search normalizes Persian/Arabic letters, NFKC,
+ZWNJ, whitespace and case without changing retained facts or searching member
+courses. Eligibility still uses the existing local-scale batch scan and current
+reads can shift between offset pages.
+
+The homepage requests/retries only the first three groups in stable slug/ID order,
+shows no group pager and exposes «مشاهده همه مجموعه‌ها» in every group-section
+state. Category cards are ordinary links to `/groups?category=<id>`. The homepage
+course search, free control, course pager/dialogs and hero remain independent.
+No new inference, editorial featuring, fixture fallback, publication or migration
+is involved. Existing comparison slugs and legacy redirects remain intact.
+
+
+Catalogue review refinements retain the full-width search field and the plain
+brand-blue «مشاهده همه مجموعه‌ها» link with an RTL arrow and visible focus.
+The proposed real-group hero shelf was reverted at the owner's request; the
+original saved hero samples/provider strip remain unchanged. The catalogue change
+was synced and archived on October 21, 2026 with all twenty tracked tasks complete.
+
+
+### Initial static homepage showcase — October 21, 2026 (superseded)
+
+Before the real-group restoration below, the saved hero course shelf was titled «پایتون مقدماتی». Its rows are static
+content, with no click action, keyboard stop, hover action or navigation arrow.
+The sample label is removed. Saved course facts remain independent of the live
+catalogue. The provider strip includes all five supported provider identities:
+Maktabkhooneh, Toplearn, Quera, Sabzlearn and Roocket, using bundled logos.
+Reduced-motion mode shows one wrapping set of all five providers. The existing
+mobile rule still hides the shelf and strip at 700px and below.
+
+
+## Restored real-group hero shelf — October 21, 2026
+
+The homepage hero course shelf omits the visible information-date labels by
+owner request. Retained source dates remain available in the underlying data.
+
+The owner's latest decision supersedes the earlier hero rollback. `/` passes the
+read-only detail request for `python-starting-programming` (limit three, offset
+zero) into its own Suspense shelf. The first three members retain judgment order;
+heading links to the group and each course links to its encoded comparison-row
+fragment. Provider identity, content duration, current retained price semantics
+(including free/subscription/unknown) reuse the existing
+public presentation helpers. No provider collection or model execution occurs.
+
+The selected group must have at least three members and return three ready courses.
+Missing/ineligible or too-small selections show a compact unavailable state with
+a catalogue action; upstream failures additionally offer a same-selection retry.
+No dated samples substitute for public data. Existing comparison/design-system
+fixtures remain available independently. The five-provider desktop marquee retains its reduced-motion treatment. At
+700px and below, the shelf and horizontal strip are hidden; the mobile provider
+wheel described below occupies the visual left of the compact hero.
+
+
+### Shared breadcrumbs — October 21, 2026
+
+Catalogue, public group details and the Python design fixture use the shared
+`Breadcrumb` component. Each trail starts with «صفحه‌ی نخست», uses the same
+RTL chevron separators, wrapping, link colors and keyboard focus style, and
+marks its final item as the current page. Category catalogue trails include
+the selected category; group trails link through the catalogue and category.
+
+The hero action «دیدن مجموعه دوره‌ها» uses a native `#groups` anchor so it
+scrolls to the homepage group section, including when the hash is already present.
+
+
+### Mobile provider wheel — October 21, 2026
+
+At 700px and below, the hero shows a vertical wheel of the five bundled provider
+logos and their names (to the visual left of each logo) in the visual left column. Logos enter from above, grow at the center and
+shrink toward the bottom over an 18-second cycle. The wheel has no visible motion control, at the owner’s request.
+Reduced-motion mode displays all five as a still column. Below 420px, description and action span the full width below
+the heading/wheel row. The desktop marquee and featured group shelf are preserved.
+
+The horizontal hero provider strip continues animating on hover, at the owner’s
+request. Reduced-motion preferences still show a static set.
+
+### Individual courses and group-first discovery — October 21, 2026
+
+Homepage primary search now opens `/groups?q=...` (empty search opens `/groups`).
+The real featured-group hero and category links retain their behavior. After group
+discovery, `#courses` shows at most six recently accepted eligible courses in one horizontally
+scrollable RTL row at every viewport size, with
+direct provider links and scoped retry; no course filters, global count or pagination.
+«مشاهده همه دوره‌ها» and public «همه دوره‌ها» navigation open `/courses`.
+The group catalogue's no-groups fallback also opens the course catalogue.
+
+`/courses` server-renders eighteen retained course cards per page with normalized
+title/provider/instructor search and single-choice provider, pricing-status and
+content-duration filters. No category or level control is exposed. The committed
+`q`, `provider`, `priceStatus`, `duration` and one-based `page` live in the URL;
+refresh and Back/Forward restore them. Search/filter changes and individual chip
+removal return to page one and preserve other conditions. Clear-all opens
+`/courses`; out-of-range positive pages redirect to the last matching page.
+Unsupported recognized selections produce a safe invalid state. Unrelated query
+fields, including category/level, are ignored and never forwarded to the API.
+
+Duration uses exact content minutes: less than 180, 180 to less than 600, or at
+least 600. Missing durations remain included only when duration is unrestricted.
+Pricing uses the card's selected summary; free, paid, subscription and unknown
+stay distinct. No filtering of only the loaded page, guessed source facts or
+quality/relevance ranking is introduced. Existing cards preserve instructors and price-date tooltips. Titles and «مشاهده دوره»
+open the exact retained provider URL in a new tab with safe opener behavior and an
+accessible notice; the retired local detail modal and its fetch are removed. Separate
+loading, empty, no-match and retry states never substitute fixture courses.
+
+Desktop controls use the right sidebar; mobile opens «فیلتر دوره‌ها», contains
+keyboard focus, closes with Escape/selection, and returns focus to its trigger.
+New filter controls have a local-state, backend-independent `/design-system`
+example. Public UI uses the existing tokens/Vazirmatn and Persian RTL conventions.
+
+October 21, 2026 — Owner follow-up: public course titles and «مشاهده دوره»
+open the course's retained provider page directly in a new tab. The early-stage
+local details dialog has been removed from public course browsing; price-date
+tooltips remain. Public course detail APIs and independent design-system fixture
+previews retain their separate contracts.
+
+October 21 catalogue polish: the course results keep a compact count without a
+second visible heading repeating the page title. The result section retains an
+accessible heading. Both course and group catalogue search inputs explicitly use
+RTL direction, keeping empty Persian placeholders aligned at inline start.
+
+October 21 follow-up: the owner restored the compact visible course result count.
+The duplicate result heading remains screen-reader-only; mobile filters and active-
+selection chips remain visible.
+
+## Unified public catalogue controls — October 22, 2026
+
+`/groups` and `/courses` now use `CatalogResults` and the component-owned
+`catalog.css` for the same RTL sidebar/results layout. The count is on the right
+and mobile filter trigger on the left, with one 20px toolbar-to-content gap;
+active chips wrap beneath the toolbar and have a 20px bottom gap when present.
+The sidebar is shown above 760 CSS pixels; at 760px and below the filter button
+opens the shared native modal. Category links and provider/pricing/duration radio
+controls remain separate domain content.
+
+`useCatalogNavigation` closes the modal before navigation and owns transition
+status, retry and pagination effects. Pending navigation keeps committed cards
+visible while the toolbar announces loading and the results region is busy.
+Successful empty results show zero; failed requests show retry without a numeric
+count. Selection applies immediately and returns modal focus to its trigger.
+A committed page-number change in either direction focuses the hidden results
+heading and scrolls the visible results region to its start, including a filter
+reset from a later page. Initial rendering and condition changes that stay on
+page one do not force focus or scrolling. A queued modal close event cannot
+steal focus back from the results heading after a page change.
+
+Query serializers, URL restoration, group/course eligibility, cards and twelve/
+eighteen result page sizes are unchanged. The independent `/design-system`
+example exercises the shared layout with local success, pending, empty and error
+choices; it does not query the catalogue API.
+
+
+## Public frontend polish — October 22, 2026
+
+The compact mobile hero now extends through 520px: the small provider wheel
+shares the heading row and the description/action span both columns. The 700px
+mobile boundary, provider animations, reduced-motion fallback and native
+`#groups` action are retained. This is a presentation refinement; the existing
+real-group shelf and course counts are unchanged.
+
+Comparison assessment bullets use 13px with 1.9 line-height; instructor and
+metadata text use 12px on desktop and mobile. Empty assessments remain omitted
+and retained facts, underlying offer data and course order remain unchanged.
+
+Public header navigation uses 13px labels with 44px minimum link heights. The
+existing current catalog link is underlined through `aria-current="page"`,
+including filtered and paginated URLs. The comparison header's existing
+«مجموعه دوره‌ها» link now opens `/groups`; category breadcrumbs and the homepage
+hero's section action retain their distinct destinations. No menu items were added.
+
+Shared real course cards use 12px provider/duration text and original-price and
+currency text, on both the homepage shelf and `/courses`. These overrides apply
+only to public real cards; fixture cards and unrelated price/button consumers
+retain their independent styling. Footer alignment, price dates, instructor
+placement and direct provider source actions remain intact.
+
+Owner follow-up: all public comparison rows omit the «گزینه‌های خرید» disclosure,
+including courses with multiple offers. The retained price summary and provider
+link remain visible; offer records remain available through the existing data
+contracts and provider destination.

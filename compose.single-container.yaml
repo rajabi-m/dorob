@@ -1,0 +1,18 @@
+# Optional production-like local runner. The default compose.yaml is unchanged.
+services:
+  app:
+    image: dorob:local
+    platform: linux/amd64
+    build: .
+    environment:
+      DOROB_DATABASE_PASSWORD: ${DOROB_DATABASE_PASSWORD:?Set a private database password of at least 16 characters}
+      DOROB_WEB_ORIGIN: ${DOROB_WEB_ORIGIN:-http://127.0.0.1:3000}
+      DOROB_STARTUP_SECONDS: ${DOROB_STARTUP_SECONDS:-120}
+    ports:
+      - "127.0.0.1:${DOROB_WEB_PORT:-3000}:3000"
+    volumes:
+      - application_data:/data
+    stop_grace_period: 75s
+    restart: "no"
+volumes:
+  application_data:

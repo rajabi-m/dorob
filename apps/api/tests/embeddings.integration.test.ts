@@ -1,0 +1,101 @@
+import {describe,test,expect} from 'bun:test';
+import {isolatedDatabase} from './helpers';
+import {migrate,readMigrations} from '../src/migrations';
+import {createEmbeddingRepository} from '../src/embeddings';
+import {createCatalogRepository} from '../src/catalog';
+import {hash,float32Vector} from '@dorob/embedding-engine';
+import {embeddingProfile} from '@dorob/core';
+const page={limit:100,offset:0};
+export const embeddingConfig=()=>{const body={model:'bge-m3',digest:'a'.repeat(64),dimensions:1024 as const,profile:embeddingProfile};return {...body,id:hash(body)};};
+describe.skipIf(process.env.API_INTEGRATION!=='1')('embedding storage and fenced execution',()=>{
+ test('frozen definitions, claims, immutable vector replay, force revisions, retry and cancellation',async()=>{await isolatedDatabase(async sql=>{
+  await migrate(sql,await readMigrations());const r=createEmbeddingRepository(sql),c=createCatalogRepository(sql),cfg=embeddingConfig();await r.configuration(cfg);
+  const group=await c.createGroup({slug:'embedding-group',title:'پایتون',description:'آموزش برنامه‌نویسی مقدماتی',categoryId:'code',targetLevel:null,isPublished:false});
+  const request={requestId:crypto.randomUUID(),configurationId:cfg.id,command:'generate',scope:{courses:[],groups:[group.id]},force:false,allowPartial:false};
+  const op=await r.start(request);expect((await r.start(request)).id).toBe(op.id);
+  await expect(r.start({...request,force:true})).rejects.toMatchObject({status:409});
+  const manifest=await r.capture(op.id);expect((await r.capture(op.id)).id).toBe(manifest.id);
+  const input=(await r.inputs(op.id,page)).items[0].input;
+  const attempt=crypto.randomUUID(),f=await r.claim(op.id,attempt);expect(await r.claim(op.id,attempt)).toEqual(f);
+  await expect(r.claim(op.id,crypto.randomUUID())).rejects.toMatchObject({status:409});
+  const competing=await r.start({...request,requestId:crypto.randomUUID()});await r.capture(competing.id);await expect(r.claim(competing.id,crypto.randomUUID())).rejects.toMatchObject({status:409});
+  const v=float32Vector(Array.from({length:1024},(_,i)=>Math.sin(i+1)));
+  const accepted=await r.acceptVector(f,{input,values:Array.from(v.values),checksum:v.checksum});
+  expect(await r.acceptVector(f,{input,values:Array.from(v.values),checksum:v.checksum})).toEqual(accepted);
+  await expect(r.acceptVector(f,{input,values:Array(1024).fill(0),checksum:v.checksum})).rejects.toMatchObject({status:422});
+  const stored=(await r.vectors(f,page)).items[0];expect(stored.revisionId).toBe(accepted.id);expect(float32Vector(stored.values!).checksum).toBe(v.checksum);expect((await r.revision(accepted.id)).configuration.digest).toBe(cfg.digest);
+  await r.finish(f,'complete',{stage:'complete'});
+  const reuse=await r.start({...request,requestId:crypto.randomUUID()});await r.capture(reuse.id);const rf=await r.claim(reuse.id,crypto.randomUUID());expect((await r.vectors(rf,page)).items[0].revisionId).toBe(accepted.id);await r.cancel(reuse.id);
+  const force=await r.start({...request,requestId:crypto.randomUUID(),force:true});await r.capture(force.id);const ff=await r.claim(force.id,crypto.randomUUID());expect((await r.vectors(ff,page)).items[0].revisionId).toBeNull();
+  const newer=await r.acceptVector(ff,{input,values:Array.from(v.values),checksum:v.checksum});expect(newer.id).not.toBe(accepted.id);
+  let rejected=false;try{await sql`UPDATE embedding_revisions SET checksum=${'b'.repeat(64)} WHERE id=${accepted.id}::uuid`;}catch{rejected=true;}expect(rejected).toBe(true);
+  await r.cancel(force.id);await expect(r.heartbeat(ff,{})).rejects.toMatchObject({status:409});await r.retry(force.id);const resumed=await r.claim(force.id,crypto.randomUUID());expect((await r.vectors(resumed,page)).items[0].revisionId).toBe(newer.id);
+  await sql`UPDATE embedding_attempts SET lease_until=clock_timestamp()-interval '1 second' WHERE id=${resumed.attemptId}::uuid`;
+  expect((await r.status(force.id)).state).toBe('interrupted');await expect(r.claim(force.id,crypto.randomUUID())).rejects.toMatchObject({status:409});
+ });});
+});
+describe.skipIf(process.env.API_INTEGRATION!=='1')('embedding result delivery and discovery promotion',()=>{
+ test('atomic evidence, unchanged inbox, stale approval, all-member promotion and idempotent delivery',async()=>{await isolatedDatabase(async sql=>{
+  const {createIngestionRepository}=await import('../src/ingestion');const {rich}=await import('../src/ingestion-examples');
+  const {createEmbeddingResults}=await import('../src/embedding-results');const {createSuggestionRepository}=await import('../src/group-suggestions');const {isGroupSuggestion}=await import('@dorob/core');
+  await migrate(sql,await readMigrations());const r=createEmbeddingRepository(sql),results=createEmbeddingResults(sql),c=createCatalogRepository(sql),ingestion=createIngestionRepository(sql),suggestions=createSuggestionRepository(sql),cfg=embeddingConfig();await r.configuration(cfg);
+  const members=[];for(const courseId of ['one','two']){const payload=rich();payload.providerCourseId=courseId;members.push((await ingestion.ingest(payload)).snapshot.courseId);}members.sort();
+  const group=await c.createGroup({slug:'matching',title:'برنامه‌نویسی',description:'تعریف آموزشی برنامه‌نویسی برای مبتدیان',categoryId:'code',targetLevel:null,isPublished:false});
+  const op=await r.start({requestId:crypto.randomUUID(),configurationId:cfg.id,command:'both',scope:{courses:members,groups:[group.id]},force:false,allowPartial:false});await r.capture(op.id);const f=await r.claim(op.id,crypto.randomUUID());
+  const vector=float32Vector(Array.from({length:1024},(_,i)=>i===0?1:0));
+  for(const row of (await r.inputs(op.id,page)).items)await r.acceptVector(f,{input:row.input,values:Array.from(vector.values),checksum:vector.checksum});
+  const revisions=(await r.vectors(f,page)).items.map(v=>v.revisionId!);const {defaults}=await import('@dorob/embedding-engine');
+  const begun=await results.begin(f,{settings:defaults,partial:false,expectedPairs:2,expectedSets:1,revisionIds:revisions});
+  const set={id:hash(members),members,seeds:members,medoid:members[0],mean:1,minimum:1,suppressedBy:null,reconciliation:[],status:'novel' as const,pairwise:[{a:members[0],b:members[1],score:1}]};
+  const pairs=members.map(courseId=>({id:hash([courseId,group.id]),courseId,groupId:group.id,score:1}));const batch=crypto.randomUUID();
+  await results.upload(f,batch,pairs,[set]);await results.upload(f,batch,pairs,[set]);await results.finalize(f);await results.finalize(f);
+  expect((await results.delivery(f)).delivered.length).toBe(2);expect((await results.delivery(f)).delivered.length).toBe(0);
+  const inbox=await suggestions.list(group.id,'pending',page);expect(inbox.items.every(isGroupSuggestion)).toBe(true);expect(inbox.items[0].confidencePercent).toBe(100);expect((await results.evidence(inbox.items[0].id)).current).toBe(true);
+  await c.updateGroup(group.id,{description:'تعریف آموزشی تغییر یافته'});await expect(suggestions.review(inbox.items[0].id,'approve',0)).rejects.toMatchObject({status:409});expect((await c.groupDetail(group.id,page)).courseCount).toBe(0);
+  await c.updateGroup(group.id,{description:group.description});const approved=await suggestions.review(inbox.items[0].id,'approve',0);expect(await suggestions.review(inbox.items[0].id,'approve',0)).toEqual(approved);
+  await suggestions.review(inbox.items[1].id,'reject',0);
+  const candidates=await results.candidates(begun.runId,page,false);expect(candidates.total).toBe(1);const candidate=candidates.items[0];
+  const review={requestId:crypto.randomUUID(),expectedVersion:0,status:'approved' as const,title:null,note:'بازبینی آزمایشی',acceptPartial:false};expect((await results.review(candidate.id,review)).version).toBe(1);expect((await results.review(candidate.id,review)).version).toBe(1);
+  await expect(results.review(candidate.id,{...review,requestId:crypto.randomUUID()})).rejects.toMatchObject({status:409});
+  const promote={requestId:crypto.randomUUID(),expectedVersion:1,group:{slug:'discovery-draft',title:'گروه آزمایشی',description:'تعریف صریح ویرایشگر',categoryId:'code' as const,targetLevel:null}};
+  const promotion=await results.promote(candidate.id,promote);expect(await results.promote(candidate.id,promote)).toEqual(promotion);
+  expect((await c.groupDetail(promotion.groupId,page))).toMatchObject({isPublished:false,courseCount:0});
+  expect((await results.promotionDelivery(promotion.promotionId)).delivered.length).toBe(2);expect((await results.promotionDelivery(promotion.promotionId)).delivered.length).toBe(0);
+  const discovered=await suggestions.list(promotion.groupId,'pending',page);expect(discovered.total).toBe(2);expect(discovered.items.every(x=>x.confidencePercent===100&&isGroupSuggestion(x))).toBe(true);
+  await c.updateGroup(promotion.groupId,{description:'تعریف تغییر یافته بعد از ساخت'});await expect(suggestions.review(discovered.items[0].id,'approve',0)).rejects.toMatchObject({status:409});
+  await c.membership(promotion.groupId,discovered.items[0].courseId,true);expect((await c.groupDetail(promotion.groupId,page)).courseCount).toBe(1);
+  expect((await results.evidence(discovered.items[1].id)).scoreKind).toBe('discovery-member-mean-cosine-v1');
+  await r.finish(f,'complete',{stage:'complete'});
+ });});
+});
+describe.skipIf(process.env.API_INTEGRATION!=='1')('educational frozen capture',()=>{
+ test('commercial changes reuse input; frozen source refs, sparse exclusions and protected groups survive refresh',async()=>{await isolatedDatabase(async sql=>{
+  const {createIngestionRepository}=await import('../src/ingestion');const {rich}=await import('../src/ingestion-examples');const {assertEducationalCurrent}=await import('../src/embedding-source');const {transaction}=await import('../src/catalog');
+  await migrate(sql,await readMigrations());const r=createEmbeddingRepository(sql),c=createCatalogRepository(sql),ingest=createIngestionRepository(sql),cfg=embeddingConfig();await r.configuration(cfg);
+  const payload=rich();const original=(await ingest.ingest(payload)).snapshot;
+  await c.registerCourse({providerId:'test',providerCourseId:'sparse',title:'عنوان تنها',sourceUrl:'https://example.com/sparse'});
+  await sql`INSERT INTO course_groups(id,slug,title,description,category_id) VALUES ('99fc95d2-868f-48a8-a6a0-a5c2fad96b1f','protected','گروه آزمایشی','شرح محافظت‌شده','code')`;
+  const operation=await r.start({requestId:crypto.randomUUID(),configurationId:cfg.id,command:'generate',scope:{courses:'all',groups:'all'},force:false,allowPartial:false});const manifest=await r.capture(operation.id);const inputs=await r.inputs(operation.id,page);expect(inputs.total).toBe(3);expect(inputs.items.map(i=>i.exclusion).sort()).toEqual([null,'missing-observation','protected'].sort());
+  const input=inputs.items.find(i=>i.input.entityId===original.courseId)!.input;const dependency={entity:'course' as const,entityId:original.courseId,inputHash:input.hash};
+  const refreshed=rich();refreshed.submissionId='commercial-only';refreshed.source.checkedAt='2026-10-17T00:00:00Z';await ingest.ingest(refreshed);
+  await transaction(sql,false,tx=>assertEducationalCurrent(tx,[dependency]));expect((await r.inputs(operation.id,page)).items.find(i=>i.input.entityId===original.courseId)!.sourceSnapshotId).toBe(original.id);
+  const changed=rich();changed.submissionId='educational-change';changed.title='آموزش کاملاً متفاوت آموزشی';await ingest.ingest(changed);await expect(transaction(sql,false,tx=>assertEducationalCurrent(tx,[dependency]))).rejects.toMatchObject({status:409});expect((await r.capture(operation.id)).id).toBe(manifest.id);
+ });});
+});
+describe.skipIf(process.env.API_INTEGRATION!=='1')('embedding snapshot and approval concurrency',()=>{
+ test('repeatable-read inputs ignore mid-capture ingestion; SHARE locks fence definition edits',async()=>{await isolatedDatabase(async sql=>{
+  const {createIngestionRepository}=await import('../src/ingestion');const {rich}=await import('../src/ingestion-examples');const {educationalSource,assertEducationalCurrent}=await import('../src/embedding-source');const {transaction}=await import('../src/catalog');
+  await migrate(sql,await readMigrations());const ingestion=createIngestionRepository(sql),c=createCatalogRepository(sql);const first=(await ingestion.ingest(rich())).snapshot;
+  await transaction(sql,true,async tx=>{const before=await educationalSource(tx,{entity:'course',entityId:first.courseId});const changed=rich();changed.submissionId='concurrent';changed.title='عنوان آموزشی جدید';await ingestion.ingest(changed);expect((await educationalSource(tx,{entity:'course',entityId:first.courseId})).input.hash).toBe(before.input.hash);});
+  const g=await c.createGroup({slug:'locked',title:'گروه',description:'دامنه آموزشی نخست',categoryId:'code',targetLevel:null,isPublished:false});
+  let release!:()=>void,locked!:()=>void;const gate=new Promise<void>(r=>{release=r;}),ready=new Promise<void>(r=>{locked=r;});
+  const held=transaction(sql,false,async tx=>{const source=await educationalSource(tx,{entity:'group',entityId:g.id});await assertEducationalCurrent(tx,[{entity:'group',entityId:g.id,inputHash:source.input.hash}]);locked();await gate;});
+  await ready;let changed=false;const update=c.updateGroup(g.id,{description:'دامنه آموزشی دوم'}).then(()=>{changed=true;});await Bun.sleep(25);expect(changed).toBe(false);release();await held;await update;expect(changed).toBe(true);
+ });});
+ test('compatible alias reuse and incompatible artifact rejection retain old revisions',async()=>{await isolatedDatabase(async sql=>{
+  await migrate(sql,await readMigrations());const r=createEmbeddingRepository(sql),c=createCatalogRepository(sql),cfg=embeddingConfig();await r.configuration(cfg);const g=await c.createGroup({slug:'alias',title:'پایتون',description:'آموزش پایتون',categoryId:'code',targetLevel:null,isPublished:false});
+  const req={requestId:crypto.randomUUID(),configurationId:cfg.id,command:'generate',scope:{courses:[],groups:[g.id]},force:false,allowPartial:false};const op=await r.start(req);await r.capture(op.id);const f=await r.claim(op.id,crypto.randomUUID()),input=(await r.inputs(op.id,page)).items[0].input,v=float32Vector(Array.from({length:1024},(_,i)=>i===0?1:0));const accepted=await r.acceptVector(f,{input,values:Array.from(v.values),checksum:v.checksum});await r.finish(f,'complete',{});
+  const {id:oldId,...identity}=cfg;expect(oldId).toBe(cfg.id);const aliasIdentity={...identity,model:'bge-m3:alias'};const alias={...aliasIdentity,id:hash(aliasIdentity)};await r.configuration(alias);const next=await r.start({...req,requestId:crypto.randomUUID(),configurationId:alias.id});await r.capture(next.id);const nf=await r.claim(next.id,crypto.randomUUID());expect((await r.vectors(nf,page)).items[0].revisionId).toBe(accepted.id);await r.finish(nf,'complete',{});
+  const incompatibleIdentity={...identity,digest:'b'.repeat(64)},incompatible={...incompatibleIdentity,id:hash(incompatibleIdentity)};await r.configuration(incompatible);const other=await r.start({...req,requestId:crypto.randomUUID(),configurationId:incompatible.id});await r.capture(other.id);const of=await r.claim(other.id,crypto.randomUUID());expect((await r.vectors(of,page)).items[0].revisionId).toBeNull();await r.cancel(other.id);expect((await r.revision(accepted.id)).configuration.digest).toBe(cfg.digest);
+ });});
+});

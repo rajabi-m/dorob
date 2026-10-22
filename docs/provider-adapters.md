@@ -1,8 +1,18 @@
 # Provider adapters
 
-Four standalone adapters are implemented in `apps/utils`: Maktabkhooneh, TopLearn, Sabzlearn, and Roocket. All emit the [version-2 course contract](course-data-format.md). They remain owner-authorized ingestion groundwork; production backend integration and scheduling belong to phase 3. Use [the utility README](../apps/utils/README.md) for commands and the local dashboard. Historical implementation instructions below record the original version-1 work; current output is version 2. See [current validation](validation.md).
+Four server-only native v3 collectors are implemented in `apps/utils`: Maktabkhooneh,
+TopLearn, Sabzlearn and Roocket. Explicit ingestion uses the existing local API,
+immutable snapshot history and hosted thumbnails. Maktabkhooneh's v2 export and
+saved-v2 conversion remain unchanged; the other providers' export commands and
+standalone dashboard/aggregation commands are retired. The owner approved retaining
+the pure aggregation helper for the unchanged Maktabkhooneh regression test.
+See [utility commands](../apps/utils/README.md), [validation](validation.md), and
+current [TopLearn](provider-audits/toplearn.md), [Sabzlearn](provider-audits/sabzlearn.md)
+and [Roocket](provider-audits/roocket.md) field audits. The original mapping notes
+below describe dated source observations; the audits are authoritative for current
+migration behavior and unresolved source gaps. No scheduling or AI is enabled.
 
-## Provider selection and implementation groundwork
+## Historical provider groundwork — October 2026
 
 The owner explicitly authorized three parallel agents to add standalone provider adapters modeled on the Maktabkhooneh utility. This is a bounded extension of ingestion groundwork, not activation of phase 3 or frontend integration.
 
@@ -18,7 +28,7 @@ Quera is excluded at the owner's request because its varying course landing page
 
 Faradars was assessed and deferred: fetched course-detail pages exposed client-rendered shells rather than extractable course facts; its published product sitemap covered public `/videos/` entries and robots disallowed `/product/`. A partial video-only feed would not meet the intended full-course adapter scope. Browser rendering or a verified permitted course feed can be evaluated later.
 
-### Shared agent instructions
+### Historical standalone-export agent instructions
 
 Read AGENTS.md, Plan.md, apps/utils/README.md, docs/course-data-format.md, and the existing Maktabkhooneh scraper/CLI/tests. Preserve other contributors' uncommitted changes. No commits, branches, pushes, frontend edits, dependencies, credentials, scheduling, or database integration.
 
@@ -39,7 +49,7 @@ Root reviews all three adapters, common contract compliance, provenance and pric
 
 The scraper downloads public course pages and exports their information to JSON. It runs manually for now; automatic refreshes will be added in the backend.
 
-Parser version **3.1.0** emits the same complete [golden course structure](course-data-format.md) as the other three adapters. Course IDs are now `maktabkhooneh:<courseDetails.id>`; the old `mk` slug identifier remains in `raw.slugId`. Covers use `image: {url, alt}`, provider labels use `providerLevel`/`providerStatus`, and source metadata includes `parser`, `parserVersion`, `warnings`, and the shared fact hash. All required nullable fields and `derived: null` are present. Offers have stable IDs, original source price evidence and explicit free status. A numeric zero without `type=FREE` remains an unknown normalized price.
+Parser version **3.1.1** emits the same complete [golden course structure](course-data-format.md) as the other three adapters. Course IDs are now `maktabkhooneh:<courseDetails.id>`; the old `mk` slug identifier remains in `raw.slugId`. Covers use `image: {url, alt}`, provider labels use `providerLevel`/`providerStatus`, and source metadata includes `parser`, `parserVersion`, `warnings`, and the shared fact hash. All required nullable fields and `derived: null` are present. Offers have stable IDs, original source price evidence and explicit free status. The current public `type=MAKTAB` identifies free enrollment, alongside legacy `type=FREE`; a numeric zero without either type remains an unknown normalized price. The provider-linked LPIC-1 URL is now `/course/آموزش-رایگان-آزمون-lpic1-1555-mk711/`; its former slug returns HTTP 500. Type mapping was verified against the provider’s public course template and Chrome’s free enrollment display on October 10, 2026.
 
 Chapter/lesson IDs are strings. Provider lesson labels remain in `providerType`; unverified labels such as `lecture` map to `unknown`. Chapter and lesson effort labels remain under `raw.syllabusEffort` and never become video duration. Missing instructor/lesson lists remain null. Rating counts come from `rating_count`, not substituted review totals; ambiguous provider update dates stay raw. Signed cover expiry parameters do not change the fact hash.
 
@@ -104,11 +114,11 @@ Audit validation: 17 Maktabkhooneh tests plus 11 Sabzlearn tests, utility lint a
 From the repository root:
 
 ```sh
-bun run apps/utils/scrape-toplearn.ts --url https://toplearn.com/c/6274
-bun run apps/utils/scrape-toplearn.ts --limit 10 --output apps/utils/output/toplearn-v2.json
+bun run ingest:toplearn --url https://toplearn.com/c/6274 --checkpoint apps/utils/output/toplearn-paid-v3.json
+bun run ingest:toplearn --limit 10 --checkpoint apps/utils/output/toplearn-v3.json
 ```
 
-`--all` selects the discovered catalog; `--resume` reuses compatible successful checkpoints. Version-1 exports need a new output path without resume. Full discovery proves coverage of the advertised course sitemap only. The shared transport enforces same-origin HTTPS, robots, sequential bounded requests, retries, cancellation, and denial stops. No authentication or browser bypass is used.
+`--all` selects the discovered catalog; `--resume` reuses compatible private worker journals. Old exports are incompatible; use a new checkpoint. Full discovery proves coverage of the advertised course sitemap only. The shared transport enforces same-origin HTTPS, robots, sequential bounded requests, retries, cancellation, and denial stops. No authentication or browser bypass is used.
 
 ### Mapping
 
@@ -177,12 +187,12 @@ Only the embedded page is collected. Source order is preserved; pinned/selection
 Robots inspected October 3, 2026 allow public course pages and advertise the sitemap; account, lesson, lab, and admin paths are excluded. Discovery traverses course maps only. The October 2 discovery smoke check found 89 published URLs; this is sitemap coverage, not proof every course is indexed. Existing sequential transport enforces robots, delay, timeouts, bounded retries/size, cancellation, and 401/403 stops.
 
 ```sh
-bun apps/utils/scrape-sabzlearn.ts --url 'https://sabzlearn.ir/course/python/' --output apps/utils/output/sabzlearn-v2.json
-bun apps/utils/scrape-sabzlearn.ts --limit 2
-bun apps/utils/scrape-sabzlearn.ts --help
+bun run ingest:sabzlearn --url 'https://sabzlearn.ir/course/python/' --checkpoint apps/utils/output/sabzlearn-v3.json
+bun run ingest:sabzlearn --limit 2 --checkpoint apps/utils/output/sabzlearn-limited-v3.json
+bun run ingest:sabzlearn --help
 ```
 
-Version-1 outputs require a fresh export to a new path, without resume. The shared CLI defaults to ten courses and an ignored output; `--all` means published sitemap URLs. Import `SabzlearnScraper` from `@dorob/utils/sabzlearn` for later ingestion.
+Old exports cannot resume as worker journals. The native CLI defaults to ten courses and requires an explicit private checkpoint; `--all` means discovered published sitemap URLs. Import `SabzlearnScraper` from `@dorob/utils/sabzlearn` for native observations.
 
 October 3 bounded public Python smoke check: ID `25`, 246 published/extracted lessons (coverage unknown), explicit audience/project/support evidence, and four anonymous top-level comments retained from 12 embedded candidates; eight excluded, more pages available, total scope unknown. No full-catalog collection or comment endpoint requests. Live HTML was inspected in memory; feedback/identities were not saved as fixtures or logged. Initial sandbox DNS failure required an authorized network retry.
 
@@ -226,12 +236,12 @@ Technologies, language, categories, level and offer support/access terms remain 
 ### Usage
 
 ```sh
-bun run scrape:roocket --limit 2
-bun run scrape:roocket --url 'https://roocket.ir/series/learn-python/'
-bun run scrape:roocket --help
+bun run ingest:roocket --limit 2 --checkpoint apps/utils/output/roocket-run.json
+bun run ingest:roocket --url 'https://roocket.ir/series/learn-python/' --checkpoint apps/utils/output/roocket-free.json
+bun run ingest:roocket --help
 ```
 
-The shared CLI supports `--all`, `--output` and checkpoint `--resume`. Version-1 checkpoints require a fresh export to a new output path. Default sampling selects ten courses; no full-catalog run is needed for development. Transport respects robots, sequential spacing, bounded requests/retries and access-denial stops. Backend exports expose `RoocketScraper` and pure parsing helpers; never import the utility into frontend code.
+The shared native CLI supports `--all`, private `--checkpoint` and `--resume`, backend selection, bounded feedback and human/JSON reports. Legacy exports cannot resume here; use a new private checkpoint. Default sampling selects ten courses; no full-catalog run is needed for development. Transport respects robots, sequential spacing, bounded requests/retries and access-denial stops. Backend exports expose `RoocketScraper` and pure parsing helpers; never import the utility into frontend code.
 
 ### Validation and remaining work
 
@@ -239,8 +249,46 @@ Reduced public fixtures preserve free Python/paid Laravel facts, explicit educat
 
 All **18 Roocket tests**, utility lint and type checking pass, covering currency matching/mismatch, v2 fields, anonymous feedback classification/redaction/deduplication, partial coverage, evidence hashing, bounded API transport, robots/denial and checkpoint resume. A bounded live ten-course run exported **10 courses, zero errors, seven paid prices, three explicit free offers and 34 anonymous comments**. All ten courses contain feedback; three have further comment pages. No full-catalog crawl was performed. Source labels, optional missing fields and conservative question filtering still need broader provider-template sampling before production.
 
-## Backend milestone 2 integration
+## Native v3 collection template
 
-The backend job pipeline wraps the existing Maktabkhooneh and Roocket adapters with injectable, bounded transports and zero adapter retries. Provider identity/unknown values/original currency evidence use the same version-2 validation and import service as saved exports. All requests, including Roocket's second public API origin, use one shared PostgreSQL provider lease, spacing/crawl-delay and denial pause. This pipeline has offline fixture/PostgreSQL/container acceptance coverage; no new live provider run is claimed. Standalone export CLI tools retain their existing local-only transport and must not run concurrently against a provider managed by the worker limiter. See [bounded collection and recovery](backend-operations.md#bounded-manual-ingestion).
+`@dorob/utils/base` exports the server-only abstract `BaseScraper`,
+`BaseScraperOptions` and `CollectionResult`. It owns robots initialization,
+serialized controlled requests, bounded sitemap discovery (100 maps by default),
+canonical deduplication, cancellation and API v3 validation. Discovery defaults
+to ten selections; pass `Infinity` only for an explicitly selected full traversal.
+Read `discoveryIsComplete` and `discoveryWarnings`; partial traversal retains
+available selections and does not establish full provider coverage.
 
-Milestone 3 placement consumes the same immutable version-2 revisions written by saved imports and bounded backend ingestion. No adapter model calls, inferred provider facts, new collection or fixture changes are introduced. The persistence transaction adds a durable manual placement outbox; model selection, finite budgets and operator review are separate. See [placement operations](placement.md).
+A subclass supplies `providerId`, `extractorVersion`, `canonicalCourseUrl`,
+`courseKey`, `relevantSitemap`, and the pure `extract(body, url, checkedAt, id)`
+hook. See the executable, typechecked [fixture subclass](../apps/utils/tests/base.test.ts).
+Use protected `request` for the main origin or `originClient` for explicitly
+configured additional HTTPS origins. Each client has its own robots and spacing;
+parsers receive fetched bodies instead of unrestricted network functions.
+Inject `fetch`, `sleep`, `clock`, `now`, `id` and `signal` for deterministic tests.
+The stream returns `{ sourceUrl, observation, error }`; fresh successful
+collection gets a fresh ID. Access denial and cancellation stop the stream.
+This abstraction performs no backend writes. Keep it out of browser imports;
+`packages/core` remains dependency-free source contracts.
+
+
+## Maktabkhooneh programmatic v3 migration
+
+`MaktabkhoonehScraper` from `@dorob/utils/maktabkhooneh` now extends
+`BaseScraper`: `scrapeCourse(url)` returns `CourseIngestion` v3 and
+`scrapeCourses(urls)` yields `{ sourceUrl, observation, error }`.
+Native observations have fresh submission IDs, canonical provider identity and
+section coverage from embedded source inspection. Pricing/cover/description
+can be evidenced complete; educational/curriculum/feedback sections retain
+partial or unknown coverage. Invalid optional curriculum records a failed
+section; invalid required identity or pricing fails collection. Anonymous
+feedback remains a bounded page sample.
+
+`LegacyMaktabkhoonehScraper` is the explicit v2 compatibility adapter over
+the same parser and controlled transport. `bun run scrape:maktabkhooneh --help`
+and its existing URL/limit/all/output/resume workflow stay export-only,
+without backend requests. Saved-v2 conversion still uses
+`bun run convert:courses --input SAVED_V2.json --output NEW_V3.json`, with
+unknown coverage and deterministic IDs for replay. The dashboard is retired;
+TopLearn, Sabzlearn and Roocket are native v3-only. Do not pass worker journals as v2
+export checkpoints.

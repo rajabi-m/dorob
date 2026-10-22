@@ -1,6 +1,6 @@
 # Project history
 
-Historical checkpoints through October 4, 2026. Earlier scope, validation failures, and “no commit requested” notes describe their original checkpoints; consult [the current plan](../Plan.md) and [validation](validation.md) for current status.
+Historical checkpoints through October 3, 2026. Earlier scope, validation failures, and “no commit requested” notes describe their original checkpoints; consult [the current plan](../Plan.md) and [validation](validation.md) for current status.
 
 ## Implementation progress — September 30, 2026
 
@@ -247,14 +247,3 @@ Migration validation: all four adapters emit version 2; all 62 utility tests and
 Owner-requested bounded scraper run selected ten courses per provider and saved 39 courses, 84 feedback items and one TopLearn identity failure into an ignored aggregate JSON. Added a standalone read-only Persian RTL dashboard served on loopback, with search/filtering, syllabus, feedback, evidence and record inspection. This local inspection utility does not connect provider data to product pages or add production scheduling/AI. Workspace lint/type checking pass; desktop/320px browser and keyboard-tab review completed. No commit requested.
 
 October 3 provider repairs: owner-requested agents fixed TopLearn purchase units and verified legacy course aliases, Roocket course-scoped currency evidence and script-disclosed public API comments, Maktabkhooneh duration variants/category/language evidence, and Sabzlearn explicit FAQ outcomes/access. The refreshed local aggregate contains 40 courses, zero errors and 118 anonymous feedback items; all courses have content duration, 39 have free/paid prices and one is subscription-only. TopLearn's public comments route returns provider 404 markup, so feedback remains unknown. Bounded first-page comment samples are identified as partial where appropriate. All 72 utility tests, workspace lint/type checking and whitespace checks pass; the running dashboard serves the refreshed aggregate. No commit or production integration requested.
-
-
-## Phase 3 milestone 1 — October 4, 2026
-
-- The owner requested backend implementation in `apps/backend` and separate backend/worker Docker containers for eventual cloud hosts, superseding the earlier Next.js-only backend boundary.
-- Added a Bun HTTP backend and operator CLI, an independent Bun pg-boss worker, browser-safe DTOs and server-only database/domain packages.
-- Added PostgreSQL/pgvector Compose setup, reviewed Drizzle SQL migrations with evidence ownership/immutability constraints, a version-2 saved-export importer and revision-bound deterministic factual group workflows.
-- Group creation/job insertion and snapshot/follow-up insertion share transactions. Retry/restart, stale-input and publication checks retain valid evidence and prevent duplicate accepted results. Manual factual publication and private draft inspection are available; AI analysis remains null.
-- Added a placeholder `.env.example`, separate API/worker image targets, a private compatible Node dashboard, setup/recovery documentation and the five-milestone backend status. Milestone 2 (bounded ingestion/revision handling) is next.
-- Workspace lint/type checking, 72 utility tests, 10 offline backend tests, 16 PostgreSQL integration tests, both Bun builds and the API/worker/dashboard container workflow pass. The frontend build still reproduces the existing Bun CommonJS runtime blocker after compilation/types.
-- No live collection, model calls, refresh schedules, cloud deployment or frontend database integration were enabled. The owner explicitly requested this documentation update and backend-foundation commit; generated exports, build outputs and real secrets are excluded.

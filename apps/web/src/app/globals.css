@@ -9,8 +9,15 @@
   --ds-surface: #fff;
   --ds-muted: #5e6873;
   --ds-border: #d7dee5;
+  --ds-popular: #b32959;
+  --ds-popular-soft: #fff0f5;
   --ds-success: #24653a;
   --ds-warning: #805209;
+  --ds-success-soft: #eef7f0;
+  --ds-warning-soft: #fff6e3;
+  --ds-danger: #b42318;
+  --ds-danger-soft: #fef3f2;
+  --ds-danger-border: #f3b7b1;
   --ds-radius: 8px;
   --ds-gap: 18px;
   --ds-logo-surface: var(--ds-surface);

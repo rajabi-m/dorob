@@ -4,11 +4,16 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./base": "./scrapers/base.ts",
     "./maktabkhooneh": "./scrapers/maktabkhooneh.ts",
     "./toplearn": "./scrapers/toplearn.ts",
     "./sabzlearn": "./scrapers/sabzlearn.ts",
     "./roocket": "./scrapers/roocket.ts",
-    "./course": "./scrapers/course.ts"
+    "./course": "./scrapers/course.ts",
+    "./worker": "./worker/worker.ts",
+    "./backend-client": "./worker/backend-client.ts",
+    "./native-v3": "./scrapers/native-v3.ts",
+    "./ingest-provider": "./ingest-provider.ts"
   },
   "scripts": {
     "test": "bun test tests",

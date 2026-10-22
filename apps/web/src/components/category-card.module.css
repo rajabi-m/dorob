@@ -10,8 +10,9 @@
 .arrow:dir(rtl) { transform: scaleX(-1); }
 @media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) {
-  .card { flex-wrap: wrap; gap: 10px; padding: 12px; }
-  .card > svg:first-child { inline-size: 100%; }
-  .copy { flex: 1; }
+  .grid { grid-template-columns: none; grid-template-rows: repeat(2, minmax(68px, auto)); grid-auto-flow: column; grid-auto-columns: 184px; gap: 10px; overflow-x: auto; overscroll-behavior-inline: contain; scroll-snap-type: inline proximity; padding: 6px; }
+  .card { gap: 10px; padding: 10px; scroll-snap-align: start; }
+  .card > svg:first-child { inline-size: 48px; }
   .copy strong { font-size: 13px; }
+  .copy small { display: none; }
 }

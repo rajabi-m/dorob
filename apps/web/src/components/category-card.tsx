@@ -25,10 +25,11 @@ export function CategoryCard({ category, href, onSelect, active = false }: Props
     : <button type="button" className={styles.card} aria-pressed={active} onClick={onSelect}>{content}</button>;
 }
 
-export function CategoryGrid({ categories, selectedId, onSelect }: {
+export function CategoryGrid({ categories, selectedId, onSelect, hrefFor }: {
   categories: readonly Category[];
   selectedId?: string;
-  onSelect: (id: string) => void;
-}) {
-  return <div className={styles.grid}>{categories.map(category => <CategoryCard key={category.id} category={category} active={selectedId === category.id} onSelect={() => onSelect(category.id)} />)}</div>;
+} & ({onSelect:(id:string)=>void;hrefFor?:never}|{hrefFor:(id:string)=>string;onSelect?:never})) {
+  return <div className={styles.grid}>{categories.map(category => hrefFor
+    ? <CategoryCard key={category.id} category={category} href={hrefFor(category.id)} />
+    : <CategoryCard key={category.id} category={category} active={selectedId === category.id} onSelect={() => onSelect(category.id)} />)}</div>;
 }

@@ -1,103 +1,1855 @@
 # Validation and known limitations
 
-Milestone 5 implementation and validation: October 5, 2026. Phase 2 is complete for now; phase 3 milestones 1 and 2 are complete and locally validated; milestone 3 is complete and locally validated with offline model transports. Milestone 4 is complete and locally validated with offline transports. Milestone 5 is complete for local offline acceptance, including desktop/320px keyboard browser checks. No production/live integration is active.
+## Dedicated course catalogue — October 21, 2026
+
+`add-course-catalog-page` implements group-first homepage search, a bounded
+three-course shelf and `/courses` with eighteen-item pages and provider,
+pricing-status and exact content-duration filters. All data changes in tests use
+isolated schemas; no working-catalog ingestion, source refresh, publication,
+judgment generation, migration, commit or push was performed.
 
 | Check | Result |
 | --- | --- |
-| `bun run lint` | Pass: web, utilities, backend, worker and shared packages. |
-| `bun run typecheck` | Pass: route generation, web TypeScript, utilities, backend, worker and shared packages. |
+| Core/web regression | 84 passing tests across 22 files run in separate Bun processes (including course/group catalogue route acceptance); isolated processes prevent module-mock interference. The final course UI suite has 8 tests/43 assertions. |
+| Full API regression | `API_INTEGRATION=1 bun run test:api`: 81 tests, 1,225 assertions, all pass with temporary PostgreSQL schemas and storage. Includes 45 assertions in the expanded public-course integration test. |
+| Filter contracts | Provider/status intersections, mixed free/paid offers, subscription/unknown separation, null/fractional content duration and 180/600-minute boundaries, totals before paging, stable order, legacy category/free-only behavior, invalid/conflicting/duplicate conditions and proxy forwarding pass. |
+| Page and interaction checks | Server query/response handling, eighteen-item paging, positive out-of-range correction, invalid states, chips/reset, restored controls, search/filter page reset, retry, details/provenance and focus return pass. Page changes focus and scroll to results in both directions. |
+| Live retained catalogue | In the existing local app, 1,493 eligible courses render without fixtures; Roocket filters show 104 courses, free shows 21, and free plus under-3h shows 9. Back/Forward and reload restore conditions; real details and Escape focus return pass. Homepage has exactly three course cards and no course pagination; Persian homepage search opens the matching group catalogue and a real Python comparison. Course-page paging and no-match recovery were exercised. |
+| Desktop/mobile review | Desktop plus 390px and 320px layouts reviewed with real mixed Persian/Latin titles, Persian digits and Jalali detail dates. Document scroll width equals viewport width. Sidebar is desktop-only; mobile trigger opens a labelled modal. Shift+Tab/Tab contain focus through selected radio controls, Escape restores the trigger, and selecting a condition dismisses the modal. |
+| Failure/empty coverage | Happy DOM interaction and route tests distinguish no eligible courses, zero matches, upstream failure, invalid response/selection and retry; live browser checks cover matching/no-match recovery. The working API was not stopped to manufacture an outage. |
+| RTL audit | All 11 touched UI files scanned individually/by directory: zero errors or warnings. New URL/label helpers preserve mixed-text isolation at presentation boundaries. |
+| Lint/types/API build | Workspace `bun run lint`, `bun run typecheck`, and `bun run build:api` pass. Web lint/types repeated after the final focus refinement. |
+| Frontend production build | Compilation and TypeScript pass. Page-data collection still fails under Bun 1.3.8 with `Expected CommonJS module to have a function wrapper`; this is the previously documented environment limitation, not a successful production build. |
+| Scope/validation | Strict OpenSpec validation and whitespace review pass. No dependencies, lockfile, scraped files, database schema or independent scraper-change artifacts changed. New filters are showcased using local state in `/design-system`. |
+
+The first sandboxed socket/database attempts were blocked by local networking
+restrictions; reruns with local network access passed. Happy DOM emits existing
+Next Image zero-layout and Link scheduling notices because it does not perform
+browser layout; actual responsive checks were performed in the browser.
+
+## Ingestion CLI reporting — October 11, 2026
+
+`improve-ingestion-cli-output` replaces default per-selection JSON stdout with a
+bounded human summary. Explicit `--json` retains the existing full report fields
+and exit semantics; startup failures produce one safe error document. Progress,
+retries and diagnostics stay on stderr in both modes. Optional observers are
+isolated from checkpointing, and saved journals remain version 1.
+
+| Check | Result |
+| --- | --- |
+| `bun run test:utils` | Pass: 112 tests across 15 files, including existing provider regressions and new reporting coverage. |
+| `bun run lint` | Pass across web, utilities and API. |
+| `bun run typecheck` | Pass across web, utilities and API. |
+| `bun run build` | Frontend compilation and TypeScript pass; page-data collection fails with the previously documented Bun CommonJS function-wrapper error (the pre-commit rerun failed at `/icon.svg`; the earlier run failed at `/api/courses/[courseId]`). No frontend code changes are included here. |
+| CLI/worker integration | Offline complete, partial, canceled and resumed runs preserve observation/receipt identity; 1,000 selected URLs stop after one failed delivery with one pending and 999 unattempted selections. Resume uses the original 1,000-selection journal. |
+| Output/privacy/recovery | TTY replacement and ten-second discovery/request liveness, redirected throttling, cancellation/fatal timer cleanup, bounded failure groups, stage-specific guidance, spaces/apostrophes in shell commands, control-character rejection, unsafe exception/body redaction, lock/mismatch protection, terminal rejection review and pre-checkpoint failures are covered. |
+| Machine mode/help | Captured stdout parses as one unchanged report or safe fatal-error document; stderr carries diagnostics. Executable startup-error exit codes and standalone help pass. |
+| Scope/whitespace | Intended changes are utility reporting/request diagnostics, adjacent tests, operator docs and this OpenSpec task tracker. `git diff --check` passes. The separate `refine-homepage-course-cards` planning change is left untouched. |
+
+HTTP error messages remain compatible with legacy exports (`HTTP 404`), and
+request retries/rate limits are unchanged. Historical `transport` codes cannot
+recover previously discarded causes. All reporting verification uses fixtures
+and injected services; it does not crawl the live catalog, resolve the original
+backend outage or claim that the owner's pending live journal completed. No app
+server was started for this change. Its four CLI requirements are synced to the
+main `scraper-worker` spec, all ten main specs pass strict OpenSpec validation,
+and the completed change is archived under
+`openspec/changes/archive/2026-10-11-improve-ingestion-cli-output/`.
+Pre-commit checks repeated the 112-test, lint and type-check passes and the
+existing production-build limitation.
+
+
+## Whole-app development launcher — October 10, 2026
+
+`bash -n run.sh`, help/invalid-port handling and whitespace checks pass. Invoking
+the launcher by absolute path from another directory starts healthy Compose
+PostgreSQL, applies migrations and launches both watchers on overridden frontend/API
+ports. Frontend and Swagger return HTTP 200; API readiness reports database up.
+Ctrl+C stops both app process groups and leaves the already-running PostgreSQL
+service available. Database shutdown when newly started is implemented but was
+not exercised against the existing development container. No database volume
+removal occurs.
+
+## Course ingestion history — October 10, 2026
+
+`add-course-ingestion-history` has all **22/22 tracked tasks complete** and implements
+local v3 snapshot ingestion, whole-snapshot
+current/history reads, explicit thumbnail processing and retained hosted assets.
+The owner approved a temporary IP-pinning exception for internal crawler image
+URLs. Both main specs are synced and strictly validated; the change is
+[archived](../openspec/changes/archive/2026-10-10-add-course-ingestion-history/).
+The owner requested committing this implementation and its archived specifications.
+No branch change or push was performed.
+
+| Check | Result |
+| --- | --- |
+| Root `bun run lint` / `bun run typecheck` | Pass across web, utilities and API. |
+| `bun run test:utils` | Pass: 75 tests, including sparse/reduced saved-provider conversion and refusal to overwrite source/output. V2 adapters and dashboard contracts unchanged. |
+| `bun run test:api` | Pass: 31 offline tests, 17 explicit integration skips. |
+| `API_INTEGRATION=1 bun run test:api` | Pass: 48 tests, 478 assertions across 14 files, using isolated PostgreSQL schemas. Existing curation/readiness/shutdown checks remain green. |
+| New migration/repositories | Reruns, concurrent runners, transactional DDL failure, old references/memberships, same-course current FK, concurrent observations, replay/conflict, stable IDs, whole-snapshot current, legacy null state and exact/paginated history verified. |
+| Raster dependency | Sharp 0.34.5 pinned; JPEG/PNG/WebP decode and WebP encode pass under Bun 1.3.8 in source and built output. Resize/orientation/no-upscale/metadata removal, invalid/SVG/animation/byte/pixel limits and killable deadline pass. |
+| Upload/assets | Expiry/consumption/replay, compressed staging recovery, content-addressed concurrent reuse, leases, old-snapshot processing, missing/corrupt current files, safe failures, explicit retries, ETag/immutable cache headers and retained historical image access verified. |
+| `bun run build:api` | Pass: API and isolated raster worker bundled; Sharp remains an installed native external dependency. |
+| `bun apps/api/tests/built-ingestion-smoke.ts` | Pass against the default built service: rich/sparse ingestion, changed pricing/images, replay, real HTTPS URL/upload asset reuse, safe private-URL failure, retained memberships/history/assets, migration rerun and normal API restart. The script removes only its temporary database/storage/listener. |
+| OpenAPI/documented flow | Schema/examples and synthetic ingestion/process/history/hosted-image URL/upload flow verified locally. Documented JSON validates; converter help and explicit command are verified. |
+| Web production build | Compilation and TypeScript pass; existing Bun CommonJS wrapper failure recurs during page-data collection (latest run reports `/design-system`). Frontend code unchanged. |
+| OpenSpec / whitespace | Strict change validation, all six main specs and `git diff --check` pass. Both ingestion/thumbnail specs match their deltas; the change is archived with all 22 tasks complete. |
+
+Bun's pinned TLS transport previously failed with
+`UNKNOWN_CERTIFICATE_VERIFICATION_ERROR` while rewriting the request hostname to
+an IP. Per owner decision, further work on that transport stopped. Retrieval now
+uses standard HTTPS with `rejectUnauthorized: true`, manual redirect validation,
+public-address DNS preflight, credential omission, bounded streams, deadlines and
+concurrency. Controlled tests assert these protections and the deliberate absence
+of connection pinning; the built smoke verifies a real public JPEG over TLS.
+
+**Known security risk / TODO:** preflight DNS and HTTPS connection DNS resolve
+independently. An address can change after preflight, allowing SSRF through DNS
+rebinding despite the preflight checks. This risk was accepted temporarily on
+October 10 for URLs supplied by the internal crawler. Restore verified connection
+IP pinning later; TLS verification must remain enabled. See
+[thumbnail retrieval](../apps/api/src/image-download.ts) and the change's thumbnail
+requirements/design for the same exception.
+
+The ingestion smoke restarts the API against the same database/files; it does not
+claim a new PostgreSQL server restart check. Earlier foundation/catalog checks
+verified the named database volume across normal database restarts. History and
+permanent assets are retained; only bounded temporary/unreferenced staging files
+are cleaned. Back up the database and asset directories together. Management
+remains local/unauthenticated, originals are not retained, and AI, automatic
+scraping/import, frontend consumption and production integration remain deferred.
+The lockfile adds the API's pinned Sharp and TypeBox dependencies while preserving
+Next's existing Sharp 0.35.5 and the resolver's existing runtime in nested entries.
+`bun install --frozen-lockfile --offline` passes without changes. Final scope review
+against both capability deltas found no automatic scraping/import/AI execution,
+changes to existing v2 adapters/dashboard or frontend code, secrets, generated
+assets, or destructive history/permanent-asset cleanup in the change.
+
+
+## Backend foundation — October 9, 2026
+
+The spec-driven `introduce-backend-project` change has all 12 tracked tasks complete and is [archived](../openspec/changes/archive/2026-10-09-introduce-backend-project/) with both main specs synced and strictly validated. It runs on the existing Bun 1.3.8 runtime, with pinned Elysia 1.4.30, `@elysia/openapi` 1.4.16, Swagger UI 5.33.1, and Bun types 1.3.8. Installation and frozen-lockfile verification passed; existing workspace versions were retained.
+
+| Check | Result |
+| --- | --- |
+| Focused API lint/typecheck/build | Pass. Bundled Bun entry point runs from `apps/api/dist/index.js`. |
+| `API_INTEGRATION=1 bun run test:api` | Pass: 12 tests, including real PostgreSQL and process-level SIGINT/SIGTERM checks. |
+| Root environment loading | Pass: temporary API `.env` port override loaded through both root `dev:api` and `start:api`; test file removed. |
+| `docker compose config --quiet` / `bun run db:up` | Pass: Docker Desktop started, pinned PostgreSQL 17.11-alpine3.23 pulled, service healthy. |
+| Database readiness | Real SELECT 1 succeeds; unavailable connection returns false within five seconds. Slow `pg_sleep(30)` fails in about 4.0 seconds; next query on a single-connection pool succeeds, with no slow query left active. |
+| Shutdown | SIGINT and SIGTERM pass with idle and in-flight database work. In-flight cleanup takes about 4.1 seconds, below the ten-second bound; listener can be rebound and slow database work is gone. |
+| Persistent volume and API recovery | Pass: a unique `validation_…` schema/table held a test record across normal `db:down` / `db:up`. Only that generated schema was dropped afterward; the volume was retained. |
+| Local smoke | Dev-mode hello/live/ready succeeded. During database outage, readiness returned 503 in 0.003 seconds while hello/live stayed 200; readiness recovered in 0.013 seconds without API restart. Built-output hello and readiness also succeeded. |
+| OpenAPI/local Swagger assets | Handler tests pass: all three operations, readiness 503, relative API origin, locally served JS/CSS, no external HTML asset URLs. Chrome Swagger Try it out / Execute passed: current-origin request returned HTTP 200 and `{"message":"سلام دنیا"}`. |
+| Root lint/typecheck / utility tests | Pass: lint and typecheck cover web, utilities, and API; 72 utility tests pass. |
+| Default API tests / production build | Pass: six offline tests; six explicit integration skips. API build passes independently of the web build. |
+| Web production build | Existing Bun CommonJS failure reproduced after successful compilation and TypeScript, during page-data collection for `/icon.svg`. No web code or runtime changed. |
+| OpenSpec / whitespace | `openspec validate introduce-backend-project --strict` and `git diff --check` pass. |
+
+Initial real checks exposed a Bun 1.3.8 cancellation limitation: query cancellation returned while PostgreSQL still ran `pg_sleep`, leaving a connection busy. The implementation combines a four-second PostgreSQL startup `statement_timeout`, a two-second connection timeout, and cancellation at 4.5 seconds. Repeated integration checks then verified release and recovery. No runtime upgrade was needed.
+
+Smoke validation created and removed a temporary API environment file; copy the tracked example before running the API yourself. PostgreSQL's normal restart preserved its named volume. No product tables or migrations were introduced, no volume was removed, and the frontend still reads fixtures. See [backend setup](../README.md#backend-development).
+
+After the owner repaired Chrome control, interactive Swagger execution was verified in Chrome at `http://127.0.0.1:3001/docs`. The request URL matched the running API origin, the server response was 200, and the displayed Persian JSON was exact. API and PostgreSQL remain running locally for review.
+
+Archive/commit verification on October 9 reran root lint/typecheck, 72 utility tests, six offline API tests, the API build, and strict main-spec validation successfully. All 12 API integration tests passed with local network access after sandbox restrictions prevented loopback listeners and database access. The web build again compiled and type-checked successfully, then reproduced the known Bun CommonJS failure during page-data collection for `/`. No new browser review or database restart/persistence check was performed during archiving.
+
+## Curated catalog — October 9–10, 2026
+
+Shared-category extraction passed root type checking and the RTL detector (zero errors/warnings in the edited showcase). Chrome desktop review confirmed the six ordered Persian labels and retained SVG artwork/descriptions. Code, data, tools, and language selection returned 13, 2, 3, and 0 snapshot courses respectively; selection focused the results heading and Shift+Tab showed a visible focus outline. Mixed Persian/Latin course titles (HTML, CSS, JavaScript, Agentic AI, n8n) remained readable. Chrome iPhone SE emulation at 375×667 showed all six cards in two columns with wrapping labels, preserved artwork, and the selected language empty state. This is a focused category regression check, not a full accessibility audit.
+
+The `add-curated-course-groups` implementation adds a dependency-free core registry/contracts, explicit native Bun SQL migrations, manual group/reference persistence, local management APIs, and eligible public reads. Frontend fixtures and `/groups/[id]` remain independent.
+
+| Check | Result |
+| --- | --- |
+| Root `bun run lint` / `bun run typecheck` | Pass across web, utilities, and API. Both apps import the shared core package. |
+| `bun run test:api` | Pass: 12 offline tests, 11 explicit integration skips. Includes bounds, input/JSON validation, unknown PATCH rejection, ordering, encoded membership IDs, 404/409/422/503, minimal public references, category outage behavior, and OpenAPI schemas. |
+| `API_INTEGRATION=1 bun run test:api` | Pass: all 23 tests, 263 assertions. Includes unchanged database/readiness and SIGINT/SIGTERM contracts. |
+| Migrations | Initial execution, rerun retaining data, concurrent serialized runners, checksum drift rejection, and failed-DDL rollback pass against isolated PostgreSQL schemas. Root `db:migrate` also passes against the persistent development database, without seeding or startup migration. |
+| SQL/repository | All six category IDs accepted; invalid categories/levels, duplicate slugs/provider identities/memberships, and dangling links rejected. Stable course upserts, group edits, multiple memberships, eight concurrent assignments, repeated removals, conflict/write rollback, counts, stable pages, and publication transitions pass. |
+| Chrome Swagger | All new operations exercised at loopback port 3011: categories, two synthetic registrations, course/group lists, draft creation, group detail with one-item page/total two, PATCH/publication, both assignment/removal methods, public listing/detail, and two-to-one-to-two visibility (200→404→200). Responses use the current origin. |
+| Persistent restart/outage | Synthetic group/course identities, assignments, flag, and public details matched exactly after migration rerun and normal API/database restart. During outage, catalog and readiness returned safe 503s; hello/live/categories/docs JSON stayed 200. Built API startup succeeded. |
+| API production build | Pass. Native SQL ownership remains one shared five-connection pool, closed by existing shutdown. |
+| Web production build | Compilation and TypeScript pass; known Bun 1.3.8 CommonJS wrapper failure recurs during page-data collection for `/`. No runtime/dependency upgrade made. |
+| Lockfile / scope | Offline installation and frozen-lockfile verification pass. Lockfile changes only add the core workspace and its links; pinned dependency versions retained. No AI/ingestion/admin UI, frontend API consumption, generated outputs, or local environment files included. |
+| OpenSpec / whitespace | Strict change validation and `git diff --check` pass. |
+
+Two implementation compatibility issues were reproduced and resolved: Bun 1.3.8 transaction callbacks leaked failed-query rejections, so catalog writes/reads and migration execution use explicit transactions on reserved sessions; rollback is verified. `@elysia/openapi` 1.4.16 emitted invalid 204 `content: { type: "void" }`, breaking Swagger response rendering; the docs JSON hook removes content from 204 responses, with offline and Chrome regression checks. Malformed JSON now returns a safe 422. No dependency upgrades were needed.
+
+Validation removed only its uniquely named Swagger group/two references and isolated schemas, including two abandoned constraint-test schemas verified to contain only the exact test fixtures. The catalog tables and migration ledger remain, and PostgreSQL's named volume was retained. Built API runs locally on `127.0.0.1:3011` for review; the documented default remains 3001. Management remains unauthenticated local development only. Full provider facts, authentication, frontend integration, ingestion, ranking, AI comparison, and production deployment remain deferred; see [catalog workflow](catalog.md).
+
+Commit verification on October 10 reran root lint/typecheck, all 23 API tests with real PostgreSQL (263 assertions), 72 utility tests, the API build, and strict validation of all four main specs successfully. The archived change has all 18 tasks complete, and both new main specs match their deltas with Purpose and scenarios preserved. The web build compiled and type-checked, then reproduced the known Bun CommonJS wrapper failure during page-data collection for `/design-system`. Docker socket inspection was unavailable inside the sandbox; integration tests passed with local access. This commit pass did not repeat the earlier browser review or normal database restart check.
+
+## Frontend milestone — October 4, 2026
+
+Phase 2 is complete for now by owner decision; this does not imply production readiness. The following records preserve that milestone's checks.
+
+| Check | Result |
+| --- | --- |
+| `bun run lint` | Pass: web and utilities. |
+| `bun run typecheck` | Pass: route generation, web TypeScript, and utilities. |
 | `bun run test:utils` | Pass: 72 tests across five files. |
-| `bun run test:backend` | Pass: 25 offline configuration/HTTP/validation/ingestion/placement/group-assessment tests, including synthetic Jev/embedding/generative contracts, evidence/schema/excerpt validation, Persian normalization, price/access comparisons and abstention. |
-| `bun run test:backend:integration` | Pass: 70 real PostgreSQL/pgvector tests; migrations apply twice, schema 43 verified. Both ingestion adapters plus placement/retrieval, duplicate delivery, retry/resume/cancellation, independent connections, session locks/reservations, budgets, stale course/group/taxonomy work, immutable inputs, response reuse, rollback/outbox handoff and approval/publication gates checked. Milestone 4 includes retained definitions/reviews, normalized-definition concurrency, assessment partial outcomes, generative retries/fencing and rollback/reuse. |
-| `bun run test:web` | Pass: 4 offline SSR/service tests (38 assertions): fixtures, strict queries, backend failures without fallback, hostile text, unknown facts and stale/partial output. |
-| `bun run build:backend` | Pass: both Bun backend and worker entrypoints. |
-| API/worker Docker image builds | Pass: pinned Bun 1.3.8, frozen filtered production installs, separate targets and non-root runtime. |
-| Private dashboard Docker build/auth | Pass: Node 22.20.0/dashboard 1.10.0 image, unauthenticated 401 and authenticated read against pg-boss schema 43. |
-| `bun run test:backend:containers --dashboard` | Pass: actual separate API and two worker containers, both providers plus Decisions/embedding/generative transports, discovery/definition/assessment/publication review, hybrid retrieval, response reuse, shared coordination and model/provider kill/restart/resume. Private dashboard authentication included. Milestone 5 adds the Next-to-backend HTTP journey, approved synthetic analysis, unavailable API behavior, bounded refresh coalescing and an independent fixture worker. |
-| `bun run build` | Compilation and build TypeScript pass; page-data collection reproduces the established Bun CommonJS error (latest milestone 5 route: `/design-system`). |
-| Historical frontend RTL detector | Zero errors; 25 warnings in the two JSON snapshots, for preserved provider source text/titles with Latin digits. |
-| Historical saved-data dashboard RTL detector | Pass: zero errors and warnings. |
-| Integration UI RTL detector | Pass: zero errors/warnings across new components, services and public routes. |
-| Documentation and whitespace | Milestone 5 modes, API, refresh, recovery and limitations documented. The owner authorized committing the current changes on October 9, 2026; current checks are recorded below. |
+| `bun run build` | Compilation and build TypeScript pass; page-data collection fails with the Bun CommonJS error below. |
+| Frontend RTL detector | Zero errors; 25 warnings in the two JSON snapshots, for preserved provider source text/titles with Latin digits. |
+| Dashboard RTL detector | Pass: zero errors and warnings. |
+| Documentation links and whitespace | Checked before committing the milestone. |
 
 The RTL warnings concern retained source evidence and provider titles, not physical layout properties. Price, duration, date, and count rendering use Persian formatters. The detector is a static floor; it does not replace browser or screen-reader testing.
 
-## October 9 checkpoint checks
-
-The owner authorized a commit preserving the current modified and new implementation files after raising backend product-fit concerns and proposing an OpenSpec restart. Historical milestone results above remain historical evidence; this checkpoint does not establish product acceptance.
-
-Fresh checks pass: workspace lint and type checking, 72 utility tests, 25 backend tests, 4 frontend tests, both backend/worker builds, and the RTL detector across integration components, services and public routes (zero errors/warnings). Persian text, mixed-direction isolation, logical layout properties and focus controls were reviewed in source. Browser/mobile checks were not repeated; prior coverage is recorded below.
-
-The frontend production build compiles and type-checks, then fails collecting `/_not-found` page data with the existing Bun CommonJS function-wrapper error. PostgreSQL integration tests could not start because the Docker daemon is unavailable and its socket is absent. Docker image/container checks were not repeated. No live provider/model requests, revert, OpenSpec setup, push or deployment were performed.
-
 ## Production build
 
-On Bun 1.3.8, Next.js 16.3.7 compiles and type-checks, then fails while collecting page data (historically `/design-system`; earlier runs failed at `/icon.svg`; the milestone 2 pre-commit rerun failed at `/groups/[id]`; the milestone 3 sequential build failed at `/design-system`; milestone 4 sequential runs fail at `/groups/[id]`; milestone 5 sequential run fails at `/design-system`):
+On Bun 1.3.8, Next.js 16.3.7 compiles and type-checks, then fails while collecting page data for `/design-system`:
 
 ```text
 Expected CommonJS module to have a function wrapper
 ```
 
-The experimental `turbopackPluginRuntimeStrategy: "workerThreads"` setting avoids the previously reproduced socket-based worker-port failure. The earlier October 2 investigation also reproduced the CommonJS error using Webpack; switching page-data workers to threads did not fix it and was reverted. The existing Homebrew Node executable previously failed to start because `libllhttp.9.3.dylib` was missing. The frontend runtime/dependencies were unchanged; the backend foundation introduces its own pinned dependencies and container runtimes. No system database service was installed.
+The experimental `turbopackPluginRuntimeStrategy: "workerThreads"` setting avoids the previously reproduced socket-based worker-port failure. The earlier October 2 investigation also reproduced the CommonJS error using Webpack; switching page-data workers to threads did not fix it and was reverted. The existing Homebrew Node executable previously failed to start because `libllhttp.9.3.dylib` was missing. No runtime, dependency, or system installation changes were made for this milestone.
 
-An earlier phase 2 build attempt collided with simultaneous Next route-type generation (`ENOTEMPTY` in `.next/types`). A sequential rerun completed compilation/types and reproduced the established runtime blocker. Run Next type generation and production builds sequentially because they share `.next`.
+The first build attempt during this check collided with simultaneous Next route-type generation (`ENOTEMPTY` in `.next/types`). A sequential rerun completed compilation/types and reproduced the established runtime blocker. Run Next type generation and production builds sequentially because they share `.next`.
 
 ## Browser review coverage
 
 Historical Firefox reviews cover desktop and narrow mobile layouts, Persian and mixed Latin search, course details and Escape/focus restoration, filters, comparison-heading focus, categories/cards, cover galleries, and the local data dashboard. Specific iterations and incomplete checks remain in [frontend](frontend.md), [provider snapshots](provider-snapshots.md), and [project history](project-history.md).
 
-Milestone 5 native Chrome desktop review covers the explicit fixture notice, URL-backed Python search, the three-alternative Python group, unknown facts and source disclosures. At 320px, fixture and synthetic backend review covers RTL discovery/filter layout, Latin search and titles, Persian empty search, stale-analysis/unknown-level notices, price/access facts, wrapped LTR source URLs, keyboard skip-link navigation and visible focus on search/source/disclosure controls. The initial computer-use stale-viewport/`noWindowsAvailable` failures recovered; the later verified review supersedes that incomplete attempt. Development logs include HMR messages and the existing localhost/127.0.0.1 development-origin warning. Comprehensive screen-reader testing, every breakpoint and animation/reduced-motion review remain follow-ups. No complete production build or release validation is claimed.
+This documentation/commit pass does not claim a new browser interaction review. Comprehensive screen-reader testing, every breakpoint, final Python mobile-card/focus review, and animation/reduced-motion review remain follow-ups. No complete production build or release validation is claimed.
 
 ## Data boundaries
 
-Fixture mode uses dated saved samples and labels them explicitly; it exposes no approved analytical copy. Backend mode uses eligible published source facts and only current, explicitly reviewed analysis. The retained eight-course prototype is not a public membership source. Current standalone adapters emit version 2 and return `derived: null`; frontend snapshots are separate browser-safe fixtures. Utility tests run offline with retained and synthetic fixtures. No new live collection or full-catalog crawl was run for milestone 2. Broader provider-template sampling, freshness operations, deployment monitoring, and evidence-backed AI evaluation remain future work.
+Homepage course results and real-course details use retained public catalog observations; surrounding sample course facts are dated fixtures, and analytical copy and ordering are labeled editorial/prototype content. Standalone export commands emit version 2 and return `derived: null`; the programmatic Maktabkhooneh adapter and explicit ingestion worker emit version 3. Frontend snapshots are separate browser-safe fixtures. Utility tests run offline with retained and synthetic fixtures. Owner-requested live dev samples are recorded below; no full-catalog crawl was performed. Broader provider-template sampling, freshness operations, deployment monitoring, and evidence-backed AI evaluation remain future work.
 
-Generated provider exports/dashboard snapshots stay ignored under `apps/utils/output/`; they are not part of the commit. The local dashboard therefore requires local exports before use. See [utility usage](../apps/utils/README.md).
+Generated provider exports/dashboard snapshots stay ignored under `apps/utils/output/`; they are not part of the commit. The dashboard has since been retired; those saved files remain preserved. See [utility usage](../apps/utils/README.md).
 
-## Backend foundation boundaries
+## Scraper pipeline redesign — October 10, 2026
 
-Integration tests use a separate ephemeral `dorob_test` PostgreSQL 17/pgvector container. Test-only synthetic facts are clearly marked and are never imported into the application database. The native queue was failed/retried and its client restarted to simulate redelivery; rollback tests prove domain results and follow-up insertion share a transaction. The container smoke test checks actual service startup, graceful worker shutdown/restart and processing of a later revision. These tests do not prove production recovery during every possible host/network failure.
+OpenSpec `redesign-scraper-pipeline` has **21/21 tasks complete** under the
+owner-revised acceptance scope: paid-course live ingestion/image/resume passed;
+free LPIC-1 live acceptance is deferred as a TODO in `Plan.md`. The original
+paid/free attempt and failure investigation below are historical evidence. No frontend integration, other-provider migration, database schema
+change, automatic startup collection, commit or publication was performed.
 
-On the first attempt Docker was stopped and its obsolete manual proxy pointed at unavailable `127.0.0.1:12334`. With the owner's explicit authorization, the manual overrides were removed, settings backed up locally, and Docker restarted; registry access and image downloads then worked. No system database service was installed. The separate cloud-ready images have been tested locally; no cloud infrastructure was provisioned or deployed.
+### Commit verification and dev sampling
 
-The frontend has explicit fixture/backend modes, public discovery and unavailable states. Bounded manual provider jobs and opt-in refresh are implemented and validated offline. Model Decisions/embedding clients, provisional taxonomy, operator placement/review and hybrid retrieval are implemented and tested offline. Milestone 4 generative assessment/definition editing is implemented. Live model evaluation/availability remain outstanding. Factual publication still produces source facts with `analysis: null`; milestone 4 can explicitly publish reviewed qualified analysis, with source offers/freshness projected from current records. The minimum/distinct-identity gate requires explicit operator comparability review and does not establish a winner. Backups/restore, least-privilege roles, cloud routing/TLS and full production monitoring are not yet validated. See [backend operations](backend-operations.md).
+The owner subsequently authorized bounded dev ingestion and this commit.
+The first run accepted ten new paid courses with ten verified hosted WebPs.
+The next run selected 99 sitemap URLs plus known free LPIC-1 `mk711`:
+99 observations were accepted (89 new course records and ten refreshes),
+with 99 current snapshot IDs and hosted WebPs verified through the API.
+Pricing was 95 paid and four unknown; LPIC-1 exhausted normal retries on
+provider HTTP 500 before parsing. No delivery or image failures occurred.
+The partial journal retains that collection failure for explicit later resume.
+Final dev totals were 99 Maktabkhooneh courses and 109 retained snapshots,
+each accepted snapshot with a ready thumbnail. Private reports, diagnostics,
+journals and generated assets are excluded from the commit.
 
-## Milestone 2 validation boundaries
+Fresh commit checks: workspace lint and type checking passed; 95 utility tests
+and 31 offline API tests passed, with 17 explicitly gated API integration tests
+skipped. The separate isolated worker real-API integration passed, including
+lost-receipt replay, retained/changed history, thumbnail failure/retry/reuse,
+hosted assets and normal restart. API build passed; all eight main OpenSpec
+specifications passed strict validation. Frontend production compilation and
+TypeScript passed, but page-data collection reproduced the existing Bun 1.3.8
+`Expected CommonJS module to have a function wrapper` failure. No UI code
+changed, so no new browser layout review was required. Temporary run/report
+helpers were moved out of the utility source tree after an initial type-check
+failure in a report-only callback; final workspace type checking passed.
 
-All new automated provider collection uses retained offline adapter fixtures, synthetic robots/sitemaps/errors and injectable transports. The actual backend CLI runs in its own API image; fixture transports are mounted only in two actual worker containers. Production images include neither fixture files nor a fixture-mode environment switch. The container suite checks shared provider spacing across both workers, revision deduplication on repeated unchanged collections and abrupt worker loss during a request. The persisted 60-second provider reservation delays replacement traffic until safe admission; resume records the interrupted attempt and accepts one result.
+### Earlier implementation checks
 
-The database suite also proves provider session locks prevent overlap even after a reservation's wall-clock expiry and verifies stale lease tokens cannot accept responses/release replacements. Ingestion success and continuation insertion roll back together; invalidation outbox insertion is atomic with revision advancement, and outbox dispatch/job insertion rolls back/coalesces across dispatchers. Changed evidence never silently approves membership; published history is retained and the minimum eligible-alternatives gate remains enforced.
+- Workspace lint/typecheck passed. Utility tests: 95 passed, zero failures.
+- Offline API tests: 31 passed, 17 explicitly gated integration tests skipped,
+  zero failures. The separate worker real-API integration ran successfully.
+- API build passed. Frontend production compilation and TypeScript passed;
+  page-data collection still fails under Bun 1.3.8 with the existing
+  `Expected CommonJS module to have a function wrapper` runtime limitation.
+- Strict OpenSpec validation and `git diff --check` passed.
+- `bun apps/utils/tests/worker-integration.ts` passed against an independently
+  created temporary PostgreSQL database and asset directories. Controlled Nuxt
+  source and PNG fixtures exercised actual HTTP ingestion, lost-response replay,
+  changed fresh observations, retained history, HTTP-200 image failure/retry,
+  content reuse, historical hosted WebP bytes, migration rerun and normal API
+  restart. Its own database/assets/journals were removed; existing data remained.
+  Local database/network execution required sandbox escalation.
 
-No new live provider smoke check is claimed. Broader provider-template/access review, production database/TLS/backup/monitoring validation and later AI/retrieval/frontend work remain outstanding. Standalone utility collectors do not share the backend PostgreSQL limiter. The frontend production build was attempted sequentially after successful Next route generation; compilation and TypeScript passed, and page-data collection reproduced the existing Bun CommonJS error (latest milestone 3 route: `/design-system`; earlier milestone 2 run: `/icon.svg`). Frontend code/runtime and the lockfile are unchanged.
+`bun apps/utils/tests/worker-live.ts` selected exactly two explicit public
+courses, with no discovery: paid Python `mk346` from the existing snapshot URL
+and free LPIC-1 `mk711` from the provider's public free-course shortlink. Robots
+policy was consulted. It used a temporary isolated backend/database/assets.
 
-## Milestone 3 validation boundaries
+- Python collected at `2026-10-10T10:36:41.714Z`, stable source identity
+  `maktabkhooneh:10465`, and was accepted once. FULL price was 1,169,550 toman
+  (original 2,599,000), CONTENT 719,550 (original 1,599,000). Both retained source
+  price/unit evidence. Pricing/thumbnail/description coverage was complete;
+  curriculum, feedback, educational/classification/instructor/provider-state
+  and selected evidence sections retained partial coverage. Its hosted WebP
+  was ready and fetched successfully; history count was one.
+- LPIC-1 failed collection, with no observation or backend acceptance. The
+  credential-safe worker records `collection_failed`; this check did not
+  determine whether request/template/extraction/validation caused it. It does
+  not establish a live free-course result. No new course selection or automatic
+  recollection was attempted after the failure.
+- Same-checkpoint live resume/history verification was not performed because
+  source acceptance was incomplete. Offline and controlled real-API replay
+  verification passed independently; it does not replace live acceptance.
+- Private diagnostic journal retained under ignored
+  `apps/utils/output/live-9O22qj/paid-free.json`. Its temporary backend/database
+  and assets were removed; the journal is evidence of that test and cannot resume
+  against the now-removed destination. The sandbox-failed initial attempt
+  created no database or provider requests.
 
-Measured locally October 4, 2026: 20 backend unit tests, 49 real PostgreSQL integration tests, 72 existing utility tests, workspace lint/type checking, both Bun builds and Docker image builds pass. The full `--dashboard` container suite passed both providers and all new model workflows, operator approval, hybrid retrieval, kill/restart and retained reservations. After the final call-ledger/database-clock/attempt-fencing audit, refreshed API/worker images passed `--dashboard --placement-only`, explicitly requiring model transports to run on both actual worker hosts. No fixture-mode switch ships in production images.
+The initial implementation paused at task 5.2 under the apply workflow's blocker rule; the owner later requested skipping this course (see completion below).
+Investigate the failed selection before claiming the golden example complete;
+any further live run should remain limited to these explicit course selections.
 
-The database suite covers Choice option/distribution/confidence validation, Noul/sufficiency outcomes, unknown/multi-level separation, compatible vector spaces, alias retrieval/RRF ranking, revision outbox atomicity, duplicate request/delivery coalescing, concurrency beyond reservation clock expiry, call/USD budget admission, reported overruns, timeout/unknown outcomes, bounded resume and abandoned attempt recovery. It also checks retained response reuse without a configured transport after acceptance rollback, reported cost overruns surviving that rollback, late model-attempt fencing and reservation protection, membership/downstream rollback, explicit taxonomy/operator boundaries, PostgreSQL input immutability, definition-bound publication eligibility and durable unmatched status. Fixtures are labeled synthetic and review identities refer only to test acceptance, not production taxonomy or educational quality.
+### Free-course failure investigation — October 10, 2026
 
-No live Jev, embedding or provider request was performed. Current official OpenRouter/TypeSafe contracts were checked; tests verify a synthetic transport reaches the Decisions endpoint and expected wire shapes. This proves implementation contract/orchestration behavior, not live model access or Persian accuracy. Model selection, availability/pricing/dimension verification, credentials, explicit live authorization/budget and a human-reviewed production evaluation set remain prerequisites to a bounded live check. The proposed paid embedding candidate was not selected or called. USD reservations are conservative admission estimates, not a provider billing cap; unknown calls may have been billed and exactly-once billing is not promised.
+The owner authorized investigation of the remaining live acceptance failure.
+A diagnostic fetch used `MaktabkhoonehScraper.fetchCoursePage` for the same
+LPIC-1 `mk711` selection, retaining robots, origin, spacing and timeout policy.
+The normal bounded retry sequence exhausted on **HTTP 500** before any page
+body was returned to extraction. A second diagnostic with retries disabled
+confirmed **robots HTTP 200, selected course HTTP 500**. No parser or API
+validation stage was reached, so this failure does not demonstrate an
+extraction defect. No alternative course, catalog discovery or backend
+submission was performed during the investigation.
 
-The frontend build ran sequentially after successful Next type generation; compilation and TypeScript passed, then page-data collection reproduced `Expected CommonJS module to have a function wrapper` for `/design-system`. No frontend source/runtime, dependency or lockfile change was made. No new UI/browser review is claimed. Cloud release, generative group creation/assessment/ranking, frontend integration and schedules remain outside milestone 3.
+The remaining task 5.2 is blocked by the selected provider endpoint's server
+error. No implementation fix or access-policy bypass is justified by this
+response. The original worker's partial journal correctly retains the accepted
+paid course and the failed free selection. All previously recorded offline and
+isolated real-API checks remain valid; live free acceptance and same-checkpoint
+live resume remain incomplete. Retry the same explicit selection after the
+provider recovers, using a new isolated test database/journal because the prior
+acceptance destination was temporary and has been removed.
 
-## Milestone 4 validation boundaries
+### Owner-authorized completion with LPIC-1 deferred — October 10, 2026
 
-Current offline implementation adds bounded unmatched discovery with source-set proposal coalescing, normalized-definition uniqueness, retained structured Persian definitions and operator corrections, evidence/rubric-bound candidate assessments, explicit approval/publication and qualified price differences. Exact evidence references/excerpts, candidate accounting, immutable history, revision/definition/membership/taxonomy/policy fences, disabled rankings/badges, budgets, generative late-attempt fencing, unknown outcomes, bounded resume and transactional handoffs are tested. The newest checks include malicious provider instructions: inputs retain them as untrusted evidence and generated instruction excerpts cannot reach approved public output.
+The owner explicitly requested skipping the failed LPIC-1 course, retaining a
+TODO and continuing. Task 5.2 and the change design now reflect that acceptance
+scope. The actual worker still reports failed selections honestly; no automatic
+error suppression or modification of the original partial journal was added.
 
-The completed full `--dashboard` container suite used the actual API and two independent worker images, mounted synthetic Decisions/embedding/generative transports, provider fixtures and private dashboard authentication. It verified discovery coalescing, generative worker kill/restart with a retained 60-second PostgreSQL reservation, served-model history, both hosts executing generation, reviewed analytical HTTP output and the existing provider kill/restart workflows. Final refreshed API/worker images passed `--dashboard --placement-only`; `--placement-only` now includes milestone 4 discovery/definition/assessment/publication while skipping only provider collection. Production startup contains no fixture switch.
+`bun apps/utils/tests/worker-live.ts` now selects only the same paid Python
+`mk346` course. On the final run, source observation time was
+`2026-10-10T10:43:26.768Z`, course `maktabkhooneh:10465`, snapshot
+`18077bbf-68f7-4343-8830-af24c413951f`. One observation was accepted with the
+same FULL/CONTENT prices recorded above and honest partial section coverage.
+Its hosted WebP fetched successfully. Same-checkpoint resume completed with
+exit zero and history remained exactly one snapshot; observation time and
+snapshot identity were unchanged. No LPIC-1 request or discovery occurred.
 
-Workspace lint/type checking, 72 utility tests, 25 backend unit tests, 65 real PostgreSQL tests, backend builds and refreshed Docker builds pass. Migrations 0013/0014 apply twice; existing queue schema 43 and prior workflows remain validated. The frontend production build ran sequentially after Next type generation; compilation and TypeScript passed, and page-data collection reproduced the existing Bun CommonJS error at `/groups/[id]`. Frontend code/runtime and the lockfile remain unchanged; no new browser review is claimed.
+Private evidence journal: `apps/utils/output/live-EPz4mp/paid.json`. The isolated
+test database/assets were removed afterward; existing application data was
+unaffected. The journal is retained diagnostic evidence, not resumable against
+that removed temporary destination.
 
-Current official OpenRouter chat-completion/structured-output documentation was checked. No live Jev, embedding, generative or provider call was performed for this milestone. No paid model is selected. Synthetic transports validate implementation/orchestration, not live availability, Persian prose quality, educational judgments or calibration. Exact references/excerpts do not establish entailment; explicit human semantic review remains mandatory. Feedback is omitted from generation v1, quality/reputation/employment claims are excluded, and proposed ranking/badge weights remain unapproved/disabled. The bundled taxonomy remains provisional. Model selection/availability/pricing, credentials, explicit live authorization/budgets and a human-reviewed evaluation set remain prerequisites to a live check.
+Final workspace lint/typecheck, 95 utility tests, strict OpenSpec validation
+and whitespace checks passed. Previously recorded API tests/build and isolated
+worker integration remain valid. The existing frontend production Bun/CommonJS
+limitation remains. Live free-course acceptance is still unverified and tracked
+in the `Plan.md` TODO; it was not represented as a passed check.
 
-Cloud deployment, frontend integration, schedules, broader collection and production backup/TLS/monitoring remain later work. The owner authorized committing milestone 4 on October 5, 2026; no push, branch creation or deployment is authorized or performed.
+### Free-course regression fix and live acceptance — October 10, 2026
 
-## Milestone 5 validation boundaries
+Chrome confirmed that the previously selected LPIC-1 slug
+`/course/آموزش-رایگان-آزمون-LPIC1-mk711/` still shows the provider's server
+error. Following the provider's Linux listing opened the current URL
+`/course/آموزش-رایگان-آزمون-lpic1-1555-mk711/`, which displays free enrollment.
+A robots-aware scraper request to that current URL returned valid source data:
+provider ID `1555`, slug ID `711`, type `MAKTAB`, disabled full/content sale
+flags and zero price slots. Before the fix, v3 collection succeeded but emitted
+unknown/null pricing because extraction recognized only `FREE`.
 
-Workspace lint and type checking, 72 utility tests, 25 backend unit tests, 4 frontend tests, 70 real PostgreSQL integration tests, backend builds and rebuilt API/worker images pass. Migration 0015 applies twice. New PostgreSQL checks cover eligibility before pagination, published metadata visibility, Persian/Latin aliases, category/unknown-level filtering, changed member exclusion and retained history, immutable refresh selection, distinct-course budgets across overlapping groups, duplicate requests across independent connections, rollback, disabled/offline transport gates and cancellation fencing.
+The provider's public course rendering asset `/_nuxt/eX17ZAdj.js` corroborated
+`MAKTAB` free enrollment. Parser 3.1.1 now recognizes that type alongside legacy
+`FREE`, preserves type evidence, rejects conflicting enabled positive prices,
+and keeps unrelated disabled/ambiguous zeros unknown. A reduced real Nuxt
+fixture retains only course identity, pricing, published duration and state;
+unrelated sections, reviews and user state are omitted. The regression tests
+failed on unknown pricing before the fix and passed afterward for both native
+v3 and the shared legacy v2 extraction path.
 
-The full `--dashboard` separate-container suite passed with the actual API and two worker images. Next development rendering against approved synthetic publications verified search-to-group navigation, qualified reviewed comparisons and unavailable API behavior without sample fallback. The bounded offline refresh CLI coalesced a duplicate request and handed work to an independent injected-fixture worker. Synthetic operator approvals establish contract/orchestration behavior only, not Persian or educational quality. No visitor request scrapes or calls a model.
+Validation:
 
-The frontend production build was attempted sequentially after Next type generation. Compilation and TypeScript passed, but page-data collection failed at `/design-system` with the documented Bun 1.3.8 CommonJS function-wrapper error. No runtime/dependency workaround was introduced; the lockfile is unchanged. Desktop fixture and 320px fixture/backend keyboard browser checks passed within the coverage above. Milestone 5 is complete for this local offline scope; production readiness remains blocked. Comprehensive screen-reader testing is also unperformed.
+- `bun run test:utils`: 96 passed, zero failed.
+- `bun run lint` and `bun run typecheck`: passed across all workspaces.
+- `bun run build:api`: passed.
+- `bun run build`: frontend compilation and TypeScript passed; page-data
+  collection still fails with the previously documented Bun 1.3.8 CommonJS
+  function-wrapper error for `/_not-found`.
+- `bun apps/utils/tests/worker-live.ts`: passed with exactly paid Python
+  `mk346` and current free LPIC-1 `mk711`, no discovery, in an isolated temporary
+  PostgreSQL database/backend/assets. Both observations were accepted once,
+  both hosted WebP thumbnails were fetched with verified byte sizes, and
+  same-checkpoint resume retained one history entry per course.
+- Free LPIC-1 observed at `2026-10-10T20:01:48.119Z` as
+  `maktabkhooneh:1555`, with a zero-amount free offer, `MAKTAB` type evidence,
+  complete pricing coverage and ready thumbnail. Paid prices remained
+  1,169,550 toman FULL and 719,550 toman CONTENT.
 
-Refresh and live refresh default off; schedules remain disabled. Refresh uses explicit retained providers/courses/groups, bounded collection attempts, PostgreSQL coordination and existing durable outboxes. Source changes invalidate affected approvals; definitions, memberships and assessments still require operator review and explicit publication. Refresh does not automatically schedule or approve model work. No live provider/Jev/embedding/generative call, paid model selection, cloud deployment, broader collection or production calibration occurred. See [frontend integration](frontend-integration.md) for controls and recovery.
+Private checkpoint: `apps/utils/output/live-9EeTd5/paid-free.json` (ignored).
+Its temporary database and assets were removed; it cannot resume against that
+removed destination. Existing development records/checkpoints were unchanged.
+The stale URL is not automatically resolved or retried through an alternative
+route; operators should select the current provider-linked URL. This fixes the
+pricing regression and completes the previously deferred live free acceptance;
+it does not establish full-catalog coverage.
+
+## Homepage public course integration — October 11, 2026
+
+Acceptance scope: the owner explicitly narrowed browser review to the homepage course section on October 11. Other frontend regions remain unchanged and broader review is deferred. No owner course/group records were created, edited or removed for acceptance.
+
+- Chrome desktop (1440px) and iPhone SE emulation (375×667): inspected hosted thumbnails, long Persian titles and the mixed `Retention & Engagement` title, Persian digits/Jalali source dates, discounted/unknown prices, and card actions. No unintended horizontal overflow appeared in the reviewed course section or detail dialog. Maktabkhooneh’s existing local mark now appears beside its name using the shared card logo sizing; unknown providers retain their names without a guessed mark.
+- Existing development catalog: 99 eligible courses, 18 per initial page, six pages. Chrome advanced to page two with updated courses and focus moved to the results heading. Searching «پیش‌بینی» found three courses including a page-two match and reset paging; `Retention` found one mixed-title course. Free-only returned zero honestly (the development samples contain paid/unknown offers); clearing restored 99. The programming category returned zero with the explanation that membership follows published backend editorial groups.
+- Real detail fetched current facts and offers with explicit missing certificate/access/support fields. Chrome followed its source link into a new provider tab at the retained URL. Escape restored the originating card button focus; Tab visibly focused the source action. React development effect replay initially dismissed the dialog; removing cleanup-driven close fixed it. StrictMode DOM regression tests now exercise this lifecycle, as well as 404/error/retry, newer observations, cancellation and focus restoration.
+- Initial server-rendered cards were verified in returned HTML. Stopping the API produced a safe same-origin 503 and a homepage course-only retry state while the page remained HTTP 200; restarting restored the 99-course response. Controlled web tests verify subsequent query failure/retry, stale-response cancellation, neutral image placeholders and malformed-response rejection. No fixture fallback is used.
+- Results/status loading and errors use live status semantics and `aria-busy`; keyboard focus was reviewed in Chrome. This is not a full assistive-technology audit. Browser control intermittently reported unavailable windows/stale app state; completed observations above were obtained after reconnecting.
+- Default API configuration and launcher `--api-port 3013` both served the same 99-course catalog through the web origin. The server-only import guard rejected a temporary client import; the temporary check was removed. Local Swagger executed the list request successfully against an isolated synthetic ready course.
+
+Final checks:
+
+- `bun run lint` and `bun run typecheck`: passed across the workspace. Web lint/types also passed after the provider-mark fix.
+- `bun test packages/core/tests apps/web/tests`: 11 passed, zero failed, 125 assertions. Happy DOM has no CSS layout, so Next Image emits fill-parent layout warnings there; actual card sizing was inspected in Chrome.
+- `bun run test:api`: 32 passed, 18 database integration tests skipped, zero failed.
+- `API_INTEGRATION=1 bun run test:api`: 50 passed, zero failed, 535 assertions against isolated PostgreSQL schemas/storage; cleanup completed.
+- `bun run build:api`: passed (353 bundled modules).
+- `bun run build`: compilation and TypeScript passed; page-data collection failed for `/design-system` with the existing Bun 1.3.8 error `Expected CommonJS module to have a function wrapper`. Production build acceptance remains limited by this documented runtime issue.
+- RTL detector: components (27 files) and homepage CSS, zero errors/warnings. `bash -n run.sh` and `git diff --check` passed.
+- Final diff: course-only opt-in, separate real detail/card components, browser-safe contracts, public API/proxies and configuration/docs. Shared card headings reserve two title lines to align neighboring provider rows; fixture data, hero styles and group implementations retain their existing content. The broader browser comparison was removed from this change’s remaining acceptance at the owner’s request.
+
+Known limits: full eligible candidates are searched in memory for the small local catalog; offsets can shift during concurrent ingestion; source facts and prices retain their observation date. Some source descriptions contain literal encoded HTML entities; they are rendered as text, never injected as HTML. No new collection, AI analysis, group migration or production deployment is included.
+
+### Archive and commit verification — October 11, 2026
+
+All 20 tasks are complete; `connect-homepage-courses` is archived with both contracts synced to main specs. Fresh commit checks passed: workspace lint/typecheck, 11 shared/web tests (125 assertions), 96 utility tests, 50 API tests including isolated PostgreSQL integration (535 assertions), API build, all ten main specs under strict validation, RTL detector (components/homepage CSS), launcher syntax and whitespace checks. The initial sandboxed web run could not bind its temporary loopback server; the same suite passed with local access. Frontend production compilation and TypeScript passed, then page-data collection failed for `/groups/[id]` with the established Bun CommonJS function-wrapper error. This commit pass did not repeat the browser acceptance recorded above.
+
+## Homepage card refinement — October 11, 2026
+
+Implemented instructor summaries, scoped pale-blue «مشاهده دوره» actions, natural-height clamped titles, aligned provider/footer layout and price-associated observation-date tooltips. The date describes retained source information, not current provider pricing. Details retain their visible date/source caveat and noninteractive price renderer.
+
+- `bun test apps/web/tests`: 12 passed, 154 assertions. The sandboxed run could not bind the deadline test's temporary loopback server; the same suite passed with local access. The final focused UI rerun passed all eight tests (112 assertions). Happy DOM emits existing Next Image zero-layout warnings; it does not verify CSS geometry.
+- Workspace `bun run lint` and `bun run typecheck`: passed after correcting the new interaction fixture's Happy DOM event-target typing.
+- `bun run build`: compilation and TypeScript passed; page-data collection for `/design-system` failed with the existing Bun CommonJS function-wrapper error. No production build acceptance is claimed.
+- RTL detector: both touched component/style files passed with zero errors/warnings. Whitespace checks and strict validation of `refine-homepage-course-cards` passed.
+- Chrome retry completed browser acceptance at 320px, 390px and 1280px using an isolated temporary route with explicitly synthetic courses, without modifying catalog records. Compared the supplied preview at mobile and desktop widths. Short titles use one line; long Persian/Latin titles clamp to two lines; instructor summaries ellipsize with Persian remaining-name counts. DOM measurements at 1280px confirmed a 4px title/instructor gap, 44px action height and 72px footer height across all six real cards, with no horizontal overflow.
+- Free, discounted, subscription and unknown price tooltips showed distinct per-course Jalali dates. Edge-card tooltips remained inside the viewport at the reviewed widths, above the price, while thumbnails retained clipped corners and cards allowed visible tooltip overflow. Hover opening and pointer transfer onto the tooltip worked. Mobile emulation verified tap opening, second-tap and outside dismissal; keyboard focus opening, blur and Escape dismissal worked, with Escape retaining price focus and no immediate reopening.
+- The real details action opened the existing dialog with the full long title and all four instructors; Escape closed it and returned focus to the originating action. Sample-card and shared outlined-button appearance remained unchanged in mobile/desktop review. Backend-off thumbnail failures in the synthetic route were expected; image-service acceptance was outside this change. The temporary route was removed and its preview server stopped after review. Tasks 1.2, 2.3 and 3.2 are now verified.
+
+Implementation and browser acceptance made no new branch, commits, merges, collection or backend changes. The owner subsequently authorized sync, archive and a scoped commit on the existing branch. The change is archived at `openspec/changes/archive/2026-10-11-refine-homepage-course-cards/`; all five delta requirement blocks match the main homepage catalog spec, and all ten main specs pass strict validation.
+
+## Remaining-provider migration foundation — October 12, 2026
+
+At the foundation checkpoint, tasks 1.1–1.4 of `migrate-remaining-providers-v3` were implemented. All 123 utility
+tests, utility lint/type checking and `git diff --check` pass. Checks include
+native rich/sparse validation, async supplementary enrichment/failure/denial/
+cancellation, each new-provider CLI identity and recovery, saved-limit conflicts,
+lost-response/crash replay and image-only resume. Existing Maktabkhooneh native,
+legacy, CLI and journal tests ran unchanged. No live collection/browser acceptance
+had been attempted at that checkpoint; final acceptance is recorded below.
+
+Workspace lint/type checking and the API production build also pass. The web
+build compiles and passes TypeScript, then fails during page-data collection with
+the already documented Bun 1.3.8 `Expected CommonJS module to have a function
+wrapper` error (this run reports `/icon.svg`). The lockfile is unchanged.
+
+Owner clarification resolves task 1.5: keep the pure `aggregateCourses` helper
+for the unchanged Maktabkhooneh test, remove its executable CLI, dashboard commands,
+HTTP server and browser assets. Existing local output/data is preserved. See the
+[foundation interface](../apps/utils/README.md#shared-migration-interface-foundation).
+
+## Remaining-provider migration acceptance — October 12, 2026
+
+`migrate-remaining-providers-v3` completes native v3-only TopLearn/Sabzlearn/Roocket collection, controlled supplementary feedback, configured 10-page/500-item defaults, durable settings/recovery, new explicit ingestion commands and dashboard/aggregation CLI retirement. The owner approved retaining the pure aggregation helper used by the protected Maktabkhooneh regression. Maktabkhooneh command definitions, collector/legacy adapter, converter, fixtures/tests and local outputs are unchanged. No dependencies or lockfile edits, database/schema changes, fixture insertion, editorial assignment, automatic collection or AI were added.
+
+- `bun run test:utils`: 134 passed, zero failed; unchanged Maktabkhooneh native/legacy/CLI/journal recovery checks included. Provider focused counts: TopLearn 20, Sabzlearn 13, Roocket 20. Large-curriculum/feedback tests preserve independent facts with explicit evidence/payload limits.
+- `bun test packages/core/tests apps/web/tests`: 15 passed, 197 assertions. Local loopback access was required by the deadline test; expected Happy DOM zero-layout Next Image warnings do not establish browser geometry.
+- `bun run test:api`: 32 passed, 18 database integration tests skipped by default, zero failed. No API implementation changed; actual ingestion/thumbnail/public reads additionally exercised the existing local API/database.
+- Workspace `bun run lint` and `bun run typecheck`: passed. `bun run build:api`: passed (353 bundled modules).
+- `bun run build`: compilation and TypeScript passed; page-data collection failed for `/icon.svg` with the existing Bun 1.3.8 `Expected CommonJS module to have a function wrapper` error. Full production web build success is not claimed.
+- Strict OpenSpec validation, `git diff --check` and RTL detector on both changed public-course components (zero errors/warnings): passed. Migrated collectors construct native v3 sections without v2 records/conversion. Retired scripts are absent, new CLI help works, protected scripts and lockfile match HEAD.
+
+All six actual representative courses (paid/free per provider) have accepted snapshots, ready hosted WebP images (HTTP 200), and matching management/current public identities. Exact URLs, submission/snapshot IDs, ordered contents, instructors, prices, feedback counts and source gaps are in the [TopLearn](provider-audits/toplearn.md), [Sabzlearn](provider-audits/sabzlearn.md) and [Roocket](provider-audits/roocket.md) audits. Fresh checkpoints created fresh IDs; coordinator repeated all three completed refresh/refined resumes, with no recollection/new acceptance or duplicate history. Checkpoints and reports remain private/ignored.
+
+Provider agents and coordinator checked the actual homepage `#courses` cards/details at desktop and Chrome responsive 390×844, Persian RTL/mixed Latin wrapping, paid/free offers, instructors, source links, ordered contents, Enter opening, initial close focus, Tab/source link, Escape closing and focus return. Coordinator reproduced combined unfiltered discovery and detail opening for all three providers, including free Roocket desktop detail. Native Chrome interference/blank captures were recovered using a fresh local tab; no workaround or frontend redesign was added.
+
+Authentic Sabzlearn/Roocket assets and existing map entries are added with attribution. Temporarily moving both assets produced HTTP 404, confirmed in Chrome Network; provider names, real cards and actions remained present. Assets were restored. The owner additionally requested whole-minute duration display: cards/details now use one Persian formatter rounding to nearest whole minute (682.123→۶۸۲, 1200.5→۱٬۲۰۱, zero→۰, null remains «مدت ثبت نشده»). Real Roocket cards and paid detail show rounded values; stored observations retain exact source numbers. Only these requested display edits and logos affect frontend code.
+
+Known source gaps remain explicit: TopLearn's disclosed comments route returns unrecognized/404 HTML, so feedback is unknown; Sabzlearn’s raw score lacks evidenced scale/vote count, so aggregate rating is unknown; mixed thread totals never become feedback/rating totals. Roocket’s explicit rating/votes remain separate from bounded anonymous comments. Limits, ordinary failures and question/reply/staff exclusions never imply complete coverage. No full-catalog crawl, branch or push occurred. The owner subsequently requested spec sync, archival and a commit. Both behavior contracts are synced and verified, all ten main specs pass strict validation, and the change is [archived](../openspec/changes/archive/2026-10-12-migrate-remaining-providers-v3/).
+
+Commit verification on October 12 reran workspace lint/type checking, 134 utility tests, 15 core/web tests (with local loopback access), 32 API tests (18 integration tests skipped by default), API production build and both changed-component RTL checks successfully. The web production build compiled and passed TypeScript, then hit the same Bun CommonJS runtime error during `/groups/[id]` page-data collection. Existing live/browser evidence above was reviewed; no new provider run was started for this commit.
+
+## Course-group administration — October 16, 2026
+
+`add-course-group-admin` implements the local Persian group panel, immutable system
+suggestions, pair-level versioned review, provenance/history, explicit publication
+and manual membership overrides. Rejection persists until explicit reopening, as
+approved by the owner at implementation start. Authentication, runtime AI judging,
+production deployment and public fixture-group replacement remain deferred.
+
+| Check | Result |
+| --- | --- |
+| Shared/API/web focused tests | Passed: contracts, replay/error/OpenAPI routes, Origin/Host authority checks, fixed forwarding paths, response/input bounds, timeout, safe errors, retained input, uncertain-create reconciliation, review refresh/conflicts and transport-free showcase interactions. The combined relevant suite had 34 passes plus one sandbox socket-listen failure; rerunning the affected existing HTTP deadline file with socket access passed all four tests. Subsequent changed-contract/UI focused runs pass. |
+| Isolated PostgreSQL | Passed: ten focused migration/catalog/suggestion/public-catalog tests across four files. Three updated suggestion tests also pass after strengthening concurrent-first-submission, approval rollback after membership insertion, simultaneous review conflict, manual/submission concurrency and separate-pool reconnection assertions. Additive migration reruns preserve legacy assignments/publication and seed manual provenance without fabricated suggestions/confidence. |
+| Local database preservation | Migration applied explicitly after capturing ordered hashes of courses, groups, memberships and snapshots. Hashes were identical afterward; acceptance used a separate temporary schema, without publishing or changing the existing seven drafts. Cleanup preservation is recorded below. |
+| Integrated local browser flow | Passed in Codex in-app browser using temporary records: empty Persian draft creation, three attributed submissions ordered 94/94/72, approvals, publication with one member still ineligible, two-member eligibility, manual override with manual provenance, management-only course inspection, and a second tab's stale approval rejected after the first tab's rejection. Filtered navigation finds a draft beyond the first unfiltered page. |
+| Temporary HTTP smoke | Passed: exact/conflicting replay, approved-pair reject conflict, rejected-pair approval conflict, explicit reopening, rejection, manual removal/re-add, retained history, unpublish/republish and public eligibility. No AI provider/job was used. |
+| Persian/RTL/accessibility | Detector: seven admin component files, four admin route files and the changed design-system page report zero errors/warnings. Desktop (1280px) and mobile (390px) checks cover long Persian titles, mixed Latin IDs/names, Persian confidence/numerals, Jalali dates, labelled controls and visible keyboard focus. Mobile page width was 375px at a 390px viewport; inspection dialog width 324px. Escape closes the dialog and returns focus. Showcase mobile width is 341px with no page overflow; keyboard focus remains visible on its review buttons. |
+| Browser fixes | Real browser acceptance exposed Next dev's internal URL host mismatch: mutation checks now compare Origin with the request Host authority/protocol, with foreign/missing Origin still rejected. The list also normalizes empty native-form filters before its initial query; forms preserve draft inputs across background refreshes. |
+| Lint / types / API build | `bun run lint`, `bun run typecheck`, `bun run build:api` pass. The loopback launcher passes `bash -n run.sh`. |
+| Web production build | `bun run build` compiles and passes TypeScript, then fails during page-data collection with the existing Bun 1.3.8 `Expected CommonJS module to have a function wrapper` error (this run reports `/api/admin/courses/[courseId]`). This is not a successful production build; browser acceptance uses development mode. |
+| Scope | No dependency or lockfile changes, live collection, AI execution, authentication, commit, push, branch or publication of existing drafts. Management search currently scans the small retained reference/group set within one repeatable-read transaction before pagination, matching the existing public search approach; SQL search indexing can be selected separately if needed. |
+
+Screenshots of the temporary acceptance state were captured at
+`/tmp/dorob-admin-desktop.jpg`, `/tmp/dorob-admin-mobile.jpg` and
+`/tmp/dorob-admin-showcase-mobile.jpg`; they are local temporary evidence rather
+than committed catalog assets. Browser automation was performed through the
+available in-app browser; Chrome was unavailable in this session.
+
+Acceptance cleanup completed: the temporary schema was removed and the original
+courses/groups/memberships/snapshots fingerprints still matched. The normal
+`./run.sh` launcher was then started for owner review against the preserved catalog,
+with both app listeners on loopback. Strict OpenSpec validation and `git diff --check`
+pass. The change is now archived with its three behavior contracts synced; owner
+product review remains separate, and the production build limitation is still open.
+
+Normal-catalog readback shows exactly seven preserved draft groups with their
+original member counts (17 memberships total). The running owner-review panel is
+[local administration](http://127.0.0.1:3000/admin/groups).
+
+Admin dropdown spacing refinement — October 16: native selects now use a shared
+chevron inset 16px from the logical end edge, with room reserved for text and a
+native-appearance fallback in forced-colors mode. The local panel was visually
+checked; RTL detector, workspace lint and type checking pass. The production build
+again compiles/types successfully and hits the existing Bun CommonJS page-data
+error (this run at `/_not-found`). No catalog records were changed.
+
+Admin state-color refinement — October 16: shared gold/blue/green/slate state badges,
+icons, eligibility indicators, restrained list-row accents, review tabs and approval
+buttons now give publication/review states distinct visual treatments. Existing
+success/warning surface colors are exposed as shared semantic tokens. The showcase
+includes draft, published-but-ineligible and eligible examples alongside all review
+states; equal-specificity badge overrides were corrected after visual inspection.
+Desktop (1280px) and mobile (390px) browser checks pass, with no horizontal page
+overflow at 390px and visible keyboard focus. Existing four admin UI tests, workspace
+lint/types and the RTL detector pass. Production compilation/types pass, followed by
+the unchanged Bun CommonJS page-data blocker at `/api/admin/courses/[courseId]`.
+No memberships/publication flags were changed. Preview: `/tmp/dorob-state-showcase.jpg`.
+
+Group detail visual refinement — October 16: membership removal/unpublishing now
+use a shared red danger button with explicit icons, pale-red idle and solid-red hover
+states, backed by semantic danger tokens. A status overview, colored shared section
+headings, green-accented member cards and a separate publication area clarify the
+editing/curation hierarchy. The showcase demonstrates enabled/disabled danger buttons
+with local sample-only interaction and the shared member heading. Existing four admin
+UI tests, workspace lint/types and RTL checks pass. Read-only browser inspection of
+the A1 group at desktop/mobile widths confirms red removal buttons, visible keyboard
+focus and no horizontal overflow at 390px; its two memberships and draft state were
+not changed. Production compilation/types pass; the existing Bun CommonJS page-data
+error remains (this run at `/api/admin/courses`). Screenshot:
+`/tmp/dorob-group-detail-actions.jpg`.
+
+Commit verification — October 16: workspace lint/type checking, API production
+build, launcher syntax and the RTL detector pass. The shared/web/API suite reports
+57 passes, 21 opt-in integration skips and one sandbox loopback-listen failure;
+the affected HTTP deadline file passes all four tests when local socket access is
+allowed. The ten focused PostgreSQL migration/catalog/suggestion/public-catalog
+tests pass using isolated temporary schemas. All 12 main specs pass strict
+validation and every archived delta is verified against its main spec. The web
+production build compiles, then Bun 1.3.8 crashes with a segmentation fault during
+the TypeScript stage; standalone workspace type checking passes. Production build
+completion remains blocked. The owner authorized this commit; no push is requested.
+
+## Thumbnail association recovery — October 16, 2026
+
+Owner-requested recovery repaired the empty homepage without re-ingestion. Before
+repair, all 1,495 references remained stored, but current thumbnails were 1,493
+`asset_unavailable`, one `download_failed`, and one `input_limit`. The unavailable
+rows were timestamped October 12, 12:17:39–40 UTC; the original triggering process
+has not been established.
+
+The October 12 11:59:28 UTC backup was checksum-verified and restored into a separate
+`dorob_thumbnail_recovery_20261016` database. It retained 1,713 ready historical
+snapshot associations. All 1,489 retained image files matched their recorded SHA-256
+and byte size. A fresh full current-database backup was taken before repair:
+`apps/api/storage/backups/before-thumbnail-recovery-20261016.dump`, SHA-256
+`90b1cecc3c3c8eb517df20d70f726a59fcdfb0be024bc33156dd30b0d37eefa1`.
+Its archive listing is readable. Both backups remain ignored local recovery assets.
+
+The API was stopped before a locked transaction restored only failed
+`asset_unavailable` rows with matching snapshot/course identities, request/fact hashes,
+and existing asset identity/hash/key/size. Exactly 1,493 rows were repaired. Sorted
+full-row fingerprints of every other public table matched before/after, including
+courses, observations, groups, memberships, suggestions, review history, migration
+ledger, assets and uploads. No publication/curation or source data was rolled back.
+The verification record is retained beside the backups as
+`thumbnail-recovery-20261016.verification.json`.
+
+After normal launcher restart, both `/api/v1/courses?limit=1` on the API and
+`/api/courses?limit=1` on the web app return HTTP 200, total 1,493 and one item.
+A restored hosted image returns HTTP 200 `image/webp`. Browser readback shows
+1,493 courses and populated cards/images, including retained pagination. The two
+pre-existing download/input failures remain unchanged. The temporary recovery
+database was removed after verification; the backups are retained. No application
+code was changed for this operational recovery and no live image downloads occurred.
+
+## Embedding laboratory — October 16, 2026
+
+`add-local-embedding-suggestions` implements the separate `apps/embedding-lab`
+workspace and explicit commands. No production API/admin source, database schema,
+Compose or `run.sh` changes are included. The lockfile adds only the local workspace
+and references already installed dependency versions. Nothing was committed,
+branched or pushed.
+
+- Focused lab tests: **25 pass, 0 fail**. Coverage includes immutable/checksummed
+  storage, symlinks/traversal, corrupted records, interrupted temporary files,
+  stale/live locks, feedback replay/history, paginated capture/rechecks, incomplete
+  selection, input normalization/UTF-8 bounds/negation, cache reuse, model failures,
+  bounded chunked responses, exact matching, overlap/bridge coherence, suppression,
+  centroid/member distinction, run reuse/concurrency/cancellation, comparison,
+  evidence integrity/reimport and local Host/Origin isolation.
+- `bun run lint:lab`, `bun run typecheck:lab`, `bun run build:lab` pass. The built
+  lab starts independently on loopback, without main service startup or inference.
+  Initial dependency linking needed sandbox escalation for Bun's temporary-directory
+  access; installation used the local cache, with no package-version changes.
+- Existing `bun run lint` and `bun run typecheck` pass. `bun run build` compiles and
+  completes TypeScript, then fails during page-data collection with the existing
+  Bun 1.3.8 `Expected CommonJS module to have a function wrapper` error. The standalone
+  lab production build does not use Next and passes.
+- RTL detector on the three lab UI files: **0 errors, 0 warnings**. Built browser
+  inspection covered 1280px desktop, 390px and 320px mobile, long Persian source
+  titles/descriptions, Latin URLs/hashes, Jalali dates, visible keyboard focus,
+  inspector focus and return, group result filtering, overlap links and comparison
+  details. Main content had no unintended horizontal overflow; local scope lists
+  and saved-run shelves scroll within their own bounds.
+- Real browser flows inspected matching/source/input provenance, 15 overlapping
+  tighter-discovery sets, source text as React text, optional manual title,
+  uncertain feedback persistence and comparison of the two real discovery runs.
+  Feedback notes explicitly identify agent persistence demonstrations, not owner
+  suitability approval. Reviewed-sample determinate denominators remain zero.
+- Full-dataset matching with only 70 selected-demo vectors fails explicitly on
+  missing vectors without inference. Missing model/runtime and digest/dimension
+  failures are tested with fake transports; cached experiments require no transport.
+  Opening reimported results does not contact either application API or Ollama.
+- Real cancellation was checked in an independent reimport store. A bounded first
+  generation completed six additional course vectors plus 19 group vectors before
+  cancellation was attempted. A second six-course generation was immediately
+  cancelled through the workbench. Its attempt is `cancelled`, the earlier 25 valid
+  vectors remain, all three imported completed runs and both review events remain,
+  and no cancelled attempt creates a completed run. Main demonstration evidence
+  remains separate with its original 70 vectors.
+- Real capture, model digest, 51-course/19-group sample, one matching and two
+  discovery runs, weak matches, overlap/member changes and validated three-run
+  export/reimport are recorded in [the walkthrough](embedding-lab.md).
+  All 1,495 source observations were captured without drift/failures; the owner's
+  test group was excluded by ID. No catalog mutation client exists in the lab.
+- A seeded **synthetic** 10,000-course/100-group/1,024-dimension capacity test
+  completed on Apple M4 / 16 GiB / Bun 1.3.8: matching 11.863 s, discovery 35.437 s,
+  peak native process RSS 133,267,456 bytes (~127.1 MiB), k=20, candidate cap=10,000,
+  all seeds covered. It makes no real-catalog quality claim. `/usr/bin/time -l`
+  reported 47.49 s wall time but its remaining instrumentation was denied access
+  to `kern.clockrate`; no independent external peak-RSS result is claimed.
+- Strict OpenSpec validation and final whitespace/scope checks pass. Evidence,
+  benchmark reports, datasets and vectors remain ignored under lab `output/`.
+
+Software acceptance is separate from owner model-quality review. Loose similarity
+produces clear scope errors and broad ambiguous reconciliation; no precision,
+recall, calibrated confidence, production policy or integration approval is claimed.
+Authentication/deployment, generative judging/naming, automatic submission,
+pgvector and scheduling remain outside this change.
+
+## Catalog embedding integration — October 17, 2026
+
+All 24 OpenSpec tasks are implemented and verified. The earlier custom-build
+missing-clang failure was resolved by the owner's selected bundled pgvector image.
+Migrations 004–006 are active. All 18 original data-table fingerprints match the
+restore-tested backup; 1,495 courses, 20 groups, 17 memberships, review history and
+the protected group are preserved.
+
+- Real PostgreSQL API suite: 63 passed, zero failures/skips, 678 assertions.
+- Core/engine/worker/frontend/utility suites: 181 passed, zero failures, 445 assertions.
+  An initial sandbox run could not open the frontend test's loopback listener;
+  the authorized local-network rerun passed without source changes.
+- Workspace lint/type checking, engine lint/types/build, worker lint/types/build
+  and API production build pass. Source and built CLI help do no work.
+- Final built worker over actual HTTP reuses all four real vectors with the model
+  endpoint deliberately unavailable; 36 embedding endpoint paths appear in Swagger.
+- Isolated real BGE-M3 generation, reuse, retained forced revisions, matching,
+  discovery, cancellation/resume, candidate review, one draft/all-member suggestions,
+  idempotent delivery and ordinary approval/rejection/stale withholding pass.
+- Preferred-policy synthetic capacity: 10,000 courses/100 groups/1024 dimensions,
+  210.019 seconds end to end, peak combined backend/worker RSS 403.92 MiB.
+  Actual HTTP, pgvector storage, suppression/reconciliation and delivery are included;
+  synthetic inference is not model throughput or catalog-quality evidence.
+- Original migrations 001–003 and frontend source remain unchanged; application
+  code imports no lab runtime or evidence. No daemon, worker Compose service,
+  scheduled/startup inference, real[] fallback or approximate index is introduced.
+- Strict OpenSpec change validation and documentation link/scope checks pass.
+
+`bun run build` compiles and typechecks, then retains the existing Bun CommonJS
+page-data error (`Expected CommonJS module to have a function wrapper`) for
+`/_not-found`. This frontend production limitation remains unresolved and separate
+from the backend/worker builds. Existing UI confidence wording is also retained;
+exact raw score semantics are documented without a calibrated-quality claim.
+See [workflow](catalog-embeddings.md), [actual results and artifacts](embedding-results.md)
+and [backup recovery](pgvector-migration.md). No commit, deployment or publication
+was performed.
+
+## Bundled pgvector image migration — October 17, 2026
+
+Completed the owner-authorized move to upstream `pgvector/pgvector:0.8.7-pg17-bookworm`
+with pinned manifest digest. Actual ARM64 server: PostgreSQL 17.11, pgvector 0.8.7.
+Complete backups of both databases and roles restored into a separate fresh volume.
+Both schemas and all 19 user-table fingerprints matched before cutover. After
+migration 004 and normal restart, all 18 data-table fingerprints still match; the
+migration ledger has its expected fourth row. Preserved: 1,495 courses, 20 groups,
+17 memberships, original test schema, protected group and all source/review facts.
+Original Alpine volume remains retained; hosted image files are unchanged.
+
+Real PostgreSQL API suite: 55 pass, zero skip/fail, 587 assertions. API lint,
+typecheck and build pass; Compose validation and health/restart pass. Temporary
+vector(1024) storage/cosine smoke passes. Actual HTTP readiness/course/group reads
+return 200 with 1,493 eligible public courses and 20 management groups. Check process
+stopped afterward. No inference, placement or publication occurred.
+
+Image download stalled, then a retry had a TLS handshake timeout; pulling by the
+verified digest succeeded. Migration without standalone DATABASE_URL failed safely;
+the explicit documented local connection succeeded. These issues are resolved.
+Exact image pin, archive checksums, isolated/schema fingerprints, local metadata,
+known adopted-volume label warning and recovery limits are in the
+[migration report](pgvector-migration.md). The earlier missing-clang custom-build
+failure no longer blocks database migration. Frontend production build retains
+its previously documented Bun CommonJS limitation; no frontend changes were made.
+
+
+## Embedding worker startup diagnostics — October 17, 2026
+
+After an owner run exposed a generic connection error, model/backend transport
+failures now name the service, configured origin and recovery action. Ollama
+connection failures explicitly recommend `ollama serve`; backend connection
+failures recommend `./run.sh`. Timeouts, Ollama HTTP failures and malformed
+responses are distinguished without printing upstream response bodies. Explicit
+cancellation keeps its original signal. Both human and JSON executable output
+are tested against an unavailable model endpoint. Worker suite: seven tests pass
+(36 assertions), including three diagnostics tests; worker lint/types/build pass.
+
+## Embedding archive and commit verification — October 17, 2026
+
+Both embedding changes are archived with 44/44 tasks complete. All seven delta
+capabilities were verified against the synced main specs, preserving existing
+purposes and unrelated requirements. All 16 main specs pass strict validation;
+OpenSpec lists no active changes.
+
+The final verification passed 63 API tests (678 assertions) with real PostgreSQL
+and 209 lab/engine/core/worker/frontend/utility tests (559 assertions), in separate
+processes. A combined-process run caused a thumbnail HTTP test to return 422
+instead of 413 after browser tests changed globals; the documented standalone API
+suite passes without source changes. The initial sandbox-only run could not bind
+the frontend deadline test's loopback socket; the local-access rerun passes.
+Workspace and lab/worker/engine lint and type checks pass. API, lab, worker and
+engine production builds pass. The lab RTL detector reports zero errors/warnings.
+The frontend production build still fails collecting `/_not-found` page data with
+the previously documented Bun CommonJS wrapper error after compilation/type checks.
+No application source changed during this archive/commit review. Generated output,
+local evidence and database backups remain ignored; no push is authorized.
+# Discovered group review — October 17, 2026
+
+- Recovery contracts: `bun test packages/core/tests/embeddings.test.ts`: 8 pass,
+  57 assertions. Isolated PostgreSQL acceptance: 2 pass, 26 assertions.
+- Transport and existing admin transport: 5 pass, 90 assertions. Shared discovery
+  components: 2 pass, 15 assertions. API type checking passes.
+- `/design-system` inspected in the in-app Chromium browser at 1280×900 and
+  360×800. Long Persian titles, Latin provider/IDs, missing fields, distinct
+  textual statuses, Persian decimal scores and a Jalali date render correctly.
+  At 360px the document width is exactly 360px (no horizontal overflow).
+  Keyboard Tab from approval reaches dismissal with a visible 3px primary outline.
+  The reduced-motion media rule disables transitions/animation; no ambient motion
+  is introduced. This verifies the rule, not OS-level motion preference switching.
+  Local screenshot evidence: `/private/tmp/dorob-discovery-review/specimens-mobile.png`
+  and `/private/tmp/dorob-discovery-review/specimens-desktop.png` (not committed).
+- RTL detector: discovery components, showcase and CSS each pass with zero findings.
+  Final panel verification and full application checks are recorded below.
+
+Final acceptance for discovered-group review:
+
+| Check | Result |
+| --- | --- |
+| `bun run lint` | Pass: web, utils and API; no warnings |
+| `bun run typecheck` | Pass: web, utils and API |
+| `bun apps/web/node_modules/typescript/bin/tsc -p apps/web/tsconfig.integration.json` | Pass: isolated browser/API fixture, ES2023 server scope |
+| `bun test packages/core/tests apps/web/tests` | 47 pass, 0 fail, 483 assertions |
+| `API_INTEGRATION=1 bun test apps/web/acceptance/discovery-review.test.tsx` | 1 pass, 0 fail, 21 assertions |
+| `API_INTEGRATION=1 bun run test:api` | 63 pass, 0 fail, 685 assertions |
+| `bun run build:api` | Pass; both API and raster-worker entry points bundled |
+| `bun run build` | Compilation and TypeScript pass; production page-data collection fails with the existing Bun CommonJS wrapper error |
+| `openspec validate add-discovered-group-review --strict` | Pass |
+
+The current web build error is `Expected CommonJS module to have a function
+wrapper` while loading `next/dist/compiled/next-server/app-page-turbo.runtime.prod.js`;
+the final attempt reports failure collecting page data for
+`/api/admin/embeddings/configurations/[id]`. Production output is therefore not
+reported as successful. Earlier test type errors were corrected; they are not the
+remaining build failure. The existing Happy DOM tests for public-card `fill`
+images emit CSS-size warnings in their layout-free environment; all assertions pass.
+
+Database acceptance uses disposable, uniquely named schemas and drops them in
+`finally`. It exercises real repositories/Elysia through the same-origin transport
+and mounted browser components: saved results, approval without group/membership,
+one draft despite a lost response, reload readback, explicit delivery, cumulative
+counts and the group-management link. Membership remains zero and publication false;
+the operation count stays at the single fixture operation. No real editorial
+records or installed-model inference are touched. Existing inbox/provenance and
+migration-preservation regressions pass. PostgreSQL and local-socket tests required
+execution outside the network sandbox; no dependency installation was needed.
+
+Final visual acceptance: `/admin/discoveries` and `/design-system` were reviewed at
+1280×900 and 360×800 using Chromium. The real panel's four selected course images
+loaded through `/api/thumbnails/:id`, with no source URL forwarding. Queue covers,
+compact course metadata and Persian provider names replace repeated technical text.
+Optional notes, experimental scores, readable pairwise evidence, comparisons,
+overlap, history and technical IDs remain inspectable through disclosures. Both
+mobile pages have document width exactly 360px. Browser back/forward preserves the
+candidate URL; mobile return restores focus to the selected queue link. Tab reaches
+the decision controls with a visible 3px primary outline. Exact Persian decimal
+samples `۰٫۸۲۳۴۵` / `۰٫۷۰۱۲۳`, Jalali dates and isolated Latin identifiers were
+verified. Reduced-motion styling disables animation/transitions (OS preference
+switching was not exercised). Shared thumbnail/compact/full/status/busy/disabled/
+missing/evidence and group-field variants have production-export specimens.
+
+Screenshot evidence (local, not committed):
+`/private/tmp/dorob-discovery-review/panel-desktop.png`,
+`/private/tmp/dorob-discovery-review/panel-mobile.png`,
+`/private/tmp/dorob-discovery-review/specimens-desktop.png`,
+`/private/tmp/dorob-discovery-review/specimens-mobile.png`.
+The final RTL detector scans every touched web source file (31 files), with zero
+errors or warnings. Local administration remains unauthenticated and loopback-only;
+no browser generation, automatic membership or publication is introduced.
+
+### Run-wide discovery sorting extension — October 17, 2026
+
+The completed change has 23 tasks, including shared allowlisted `id`, `similarity`
+and `course-count` contracts, SQL ordering before pagination, browser URL state,
+and the shared `DiscoverySortControl` specimen. Existing omitted-sort ID order
+is preserved; highest mean and most-course choices use descending numeric values
+with ascending candidate ID ties. Retained/suppressed and run filters apply first.
+Unknown/repeated sort values are rejected from the original query string, including
+at the API boundary (the framework otherwise normalizes duplicate query keys).
+No migration, inference, discovery-algorithm or editorial-record changes occur.
+
+Final extension checks:
+
+- `bun run lint`: pass for web, utils and API, no warnings.
+- `bun run typecheck`: pass for web, utils and API.
+- Separate `tsconfig.integration.json` type checking: pass.
+- `bun test packages/core/tests apps/web/tests`: 50 pass, 0 fail, 519 assertions.
+- `API_INTEGRATION=1 bun run test:api`: 64 pass, 0 fail, 714 assertions.
+- `API_INTEGRATION=1 bun test apps/web/acceptance/discovery-review.test.tsx`:
+  1 pass, 0 fail, 21 assertions; existing promotion/recovery flow remains valid.
+- `bun run build:api`: pass; both entry points bundled.
+- `bun run build`: compilation and TypeScript pass; existing Bun CommonJS-wrapper
+  failure during page-data collection remains, reported this time for
+  `/api/admin/courses/[courseId]`. No successful production output is claimed.
+- Strict OpenSpec validation and whitespace checks pass.
+- RTL detector: all five touched web implementation files pass with zero findings.
+
+Isolated database fixtures cover both sorts across multiple pages, stable score/count
+ties, default compatibility, another run, retained/suppressed separation, malformed
+queries and unchanged records. Frontend tests cover forwarding/validation, first-page
+and candidate reset on sorting, candidate-link persistence, type/history/reload
+state and isolated no-network showcase interactions. New sorting uses a fixed SQL
+expression allowlist, preserving response guards, no-store and existing boundaries.
+
+Chromium acceptance at 1280×900 and 360×800 verifies both options, 13-course
+collections at the front of course-count order, selection reset, reload, browser
+back/forward and keyboard focus. Tab from the select reaches the queue with a
+visible 3px primary outline. The 360px document remains exactly 360px wide in both
+the panel and showcase. The isolated specimen updates its local order caption.
+Only saved-result browsing was performed against real records; mutations remain
+confined to disposable test schemas. Local screenshot evidence (not committed):
+`/private/tmp/dorob-discovery-review/sorting-desktop.png`,
+`/private/tmp/dorob-discovery-review/sorting-mobile.png`,
+`/private/tmp/dorob-discovery-review/sorting-showcase-mobile.png`.
+
+
+### Discovery review archive and commit checks — October 18, 2026
+
+`add-discovered-group-review` is archived under
+`openspec/changes/archive/2026-10-18-add-discovered-group-review/` with all 23 tasks
+complete. All ten added requirements were verified against the administration and
+discovery main specs, preserving existing requirements and Purpose sections.
+Strict validation passed for all 16 main specs, the selected change before its
+move, and all 13 archived changes afterward.
+
+Pre-commit checks passed: root lint and type checking, the separate web integration
+type check, 50 web/core tests (519 assertions), 64 API tests with PostgreSQL
+integration (714 assertions), one isolated browser/API acceptance test (21
+assertions), and the API production build. Local-socket and PostgreSQL tests passed
+outside the network sandbox; their disposable schemas were cleaned up. The initial
+sandboxed web/core run could not bind its local test server.
+
+The frontend production build again compiled and passed TypeScript, then failed
+collecting page data for `/api/admin/embeddings/discoveries/[id]/promotion` with
+the existing Bun error `Expected CommonJS module to have a function wrapper`.
+A preliminary attempt overlapped route-type generation and encountered a generated
+`.next/types` directory cleanup error; the sequential retry reached the documented
+Bun failure above. No successful frontend production build is claimed. Existing
+Happy DOM image-layout warnings persist; all assertions pass. Prior desktop/mobile,
+keyboard and mixed-direction visual acceptance remains recorded above; this
+archive/commit step does not change UI behavior.
+
+
+### Python group page refinement — October 18, 2026
+
+Root `bun run lint`, `bun run typecheck`, the route RTL detector (zero errors or
+warnings), and `git diff --check` passed during the page refinement. Production
+compilation and build TypeScript passed; page-data collection again failed with
+Bun's existing `Expected CommonJS module to have a function wrapper` error.
+
+The in-app browser verified the final desktop layout, balanced red/green panels,
+removed labels/metadata/disclosures, automatic slideshow advancement, next-slide
+navigation and clickable dot selection. Earlier iterations were inspected at
+667px; the final desktop view was inspected at 1063px. Final phone-width,
+reduced-motion, touch and full screen-reader acceptance were not rerun. Hover/focus
+pause, hidden-tab/reduced-motion guards, touch-visible arrows and RTL keyboard
+navigation are implemented; no production AI or course-order calculation is added.
+
+
+### Python assessment badge previews — October 18, 2026
+
+Root lint and type checking, the route/global CSS RTL detector (zero findings),
+and diff checks passed. In-app desktop screenshots confirmed the rose filled-heart
+popular badge and amber wallet expensive badge on their assigned mock courses.
+No new badge eligibility calculation or backend integration is claimed. The final
+pre-commit build compiled and passed TypeScript, then failed collecting
+`/_not-found` with the existing Bun CommonJS function-wrapper error.
+
+## Course-group judgment backend — October 18, 2026
+
+`add-course-group-judgments` is implemented with browser-safe schemas/examples,
+revision-bound retained evidence, immutable storage, seven local management
+operations and Swagger examples. Verification uses synthetic observations and
+explicitly isolated PostgreSQL schemas; no judge, provider requests or live
+collection are required.
+
+| Check | Result |
+| --- | --- |
+| `bun run lint` | Pass: web, utilities and API |
+| `bun run typecheck` | Pass: web route generation/types, utilities and API, including shared core imports |
+| `bun run test:api` | Pass: 43 tests, 34 intentional integration skips, 0 failures; 659 assertions across 27 files |
+| `API_INTEGRATION=1 bun run test:api` | Pass: 77 tests, 0 failures; 1,112 assertions across 27 files, 25.56 seconds |
+| `bun run build:api` | Pass: 372 modules bundled; API and raster-worker entry points |
+| `openspec validate add-course-group-judgments --strict` | Pass |
+| `openspec validate --all --strict` | Pass: active change plus all 16 main specs (17 items) |
+| Final scope/diff review | Backend, shared contracts, synthetic examples, tests, tracking and documentation only; no frontend, dependency or lockfile changes. `git diff --check` passes. |
+
+New boundary tests reject missing/extra/forbidden properties, invalid versions,
+null arrays, repeated/unknown tags, duplicate/noncanonical courses, blank/oversized
+text, controls and HTML/Markdown. Latin technical labels and Persian/ZWNJ prose
+remain valid. Both decoded JSON bytes and streaming bodies over 8 MiB return 413
+before repository work. Swagger examples validate against shared and runtime
+schemas; all seven method/path operations have request/response contracts.
+The historical suggestion Swagger assertion now checks coexistence with separate
+judgment routes instead of requiring their absence.
+
+Source tests preserve null/missing/failed coverage, all saved offers, hostile text
+as data and the original observation. Explicit recursive projection excludes raw
+HTML sections, providerData, feedback identities/locators and ingestion diagnostics.
+Comments-only and mixed feedback, null versus empty items, partial collection and
+135 retained items verify all-page traversal without extra text truncation.
+
+PostgreSQL tests cover additive migration/rerun, foreign keys, hash/object checks,
+immutable UPDATE/DELETE rejection, transaction rollback, 106-member paging,
+reference-only members and opaque Unicode/slash IDs. Definition, reference,
+membership and price/comment-only snapshot dependencies affect revision validity.
+Concurrent identical submissions retain one winner; sorted object keys replay,
+array-order and cross-group key changes conflict, accepted retries still recover
+after refresh or loss of minimum membership. Fresh database connections preserve
+exact content and manifests; equal-time history ties use ascending IDs.
+
+HTTP-to-PostgreSQL acceptance discovers a draft, traverses one revision, submits an
+expensive-first result, replays it, refreshes feedback, rejects a stale new submit
+and retrieves stale immutable history. Full row fingerprints of all existing
+catalog tables and existing public responses match before/after judgment acceptance.
+Safe missing/stale/invalid/oversized/unavailable responses and no-store reads pass.
+Local database access initially hit sandbox socket restrictions; the completed
+integration runs used authorized local access and cleaned their disposable schemas.
+
+The working catalog was not migrated or populated by this change. Migration 007
+remains available through the normal explicit migration command. No model runs,
+frontend/public judgment rendering, approval/publication or deployment were added.
+The existing unrelated frontend production-build limitation remains documented;
+this backend-only change was verified with its production API build. No commit,
+branch, push or archive was performed.
+
+### Judgment spec sync and archive — October 19, 2026
+
+All 14 added requirements and every scenario were compared verbatim with the new
+`openspec/specs/course-group-judgments/spec.md`. Its Purpose is copied verbatim
+from the delta, with canonical main-spec headings and no delta-operation headers.
+`openspec validate --specs --strict` passed all 17 main specs; strict validation
+of the completed change passed before archival. All artifacts and 20/20 tasks
+were complete. The change is archived at
+`openspec/changes/archive/2026-10-19-add-course-group-judgments/`, preserving
+`.openspec.yaml`. Documentation links/status were updated. No application code,
+working database, commit, branch or push was changed by this archival operation.
+
+### Judgment pre-commit verification — October 19, 2026
+
+After explicit commit authorization, Plan, README and affected documentation were
+reviewed and updated for the archived backend standard and explicit migration
+boundary. Fresh `bun run lint`, `bun run typecheck`, `bun run build:api` and
+`openspec validate --specs --strict` all passed. The fresh full
+`API_INTEGRATION=1 bun run test:api` run passed 77 tests, zero failures and
+1,112 assertions across 27 files in 26.58 seconds, using disposable local
+PostgreSQL schemas. All 17 main specs passed. No required check was unavailable.
+A trailing space in the archived design artifact was removed during diff review.
+No working-catalog migration, model run, frontend change or publication is included.
+
+### AI judge guide and local migration — October 19, 2026
+
+The standalone `docs/ai-judge.md` role prompt was checked against the current
+shared judgment contracts and route definitions. Its synthetic request passes
+`parseJudgmentSubmission`, preserving an expensive-first order and a course with
+empty weaknesses. Checks cover all four tag labels, all five hero field limits
+and all seven judge operations. Manual protocol review covered complete member
+and feedback pagination, reference-only members, stale revisions, lost-response
+exact replay, key conflicts and stale readback. Persian copy guidance and examples
+were reviewed for concrete learner consequences, natural topic/level hero text,
+honest abstention and the absence of forced criticism or missing-data page copy.
+Local Markdown link targets and whitespace checks pass.
+
+The owner's trial produced ten saved requests covering 26 distinct courses.
+All ten passed the shared validator and matched their saved revision/member sets.
+Every course had two or three strengths; ten had supported weaknesses. This is a
+bounded review of saved outputs, not a factual quality certification. Initial
+delivery returned the generic 503 message because migration 007 had not been
+applied; no successful receipt was confirmed in that trial's recovery report.
+Private trial evidence and requests remain outside Git under
+`/private/tmp/dorob-judge-20261019/`.
+
+The owner then explicitly authorized the reviewed additive migration. A full
+custom-format PostgreSQL backup was saved at
+`apps/api/storage/backups/judgments-20261019/before-007.dump` (23,014,610 bytes;
+SHA-256 `ea3b69e34dc5229f73a7ae9761241e26e6edec610f41e87dc2ad0f41262e0caa`).
+Its archive listing was verified readable; a restore test was not performed in
+this operation. `bun run db:migrate` applied migration 007. Before/after row counts
+and content fingerprints matched for all 30 pre-existing data tables. The new
+empty judgment table, history index and immutability trigger were verified;
+the pending group's history GET returned an empty successful response.
+No pending judgment was replayed by this migration operation. Backup and local
+verification files remain ignored.
+
+All 11 guide tasks are complete. Strict change validation and all 17 main-spec
+validations passed before archiving to
+`openspec/changes/archive/2026-10-19-add-ai-judge-guide/`. There are no delta specs
+to sync (`skip_specs: true`). Pre-commit checks review the staged documentation
+and archive only. Application lint, type checking and builds are not applicable
+to these Markdown-only changes; no application source or dependencies changed.
+
+## Public judged-group integration — October 19, 2026
+
+`connect-public-group-judgments` connects the homepage and canonical group pages to
+retained current judgments and current provider observations. No working-catalog
+publication, membership, source or judgment submission was performed by this change.
+No schema migration is required.
+
+- Shared/query validation, safe web boundaries, route/metadata/redirect behavior,
+  actual facts and assessments, empty bullets, image fallback, gallery keyboard/timer
+  pauses and superseded-request guards have focused automated coverage.
+- Full PostgreSQL/API acceptance: `API_INTEGRATION=1 bun run test:api` passed
+  **80 tests**, including the new isolated group comparison acceptance. Tests use
+  temporary isolated schemas, real local image storage and synthetic observations.
+  They cover eligibility-before-paging, draft/small/unjudged groups, sources and
+  membership/reference changes, publish-after-judge staleness, older matching
+  revisions beyond 100 history rows, stable timestamp ties, pinned-page conflicts,
+  expensive-first ordering, optional ratings, pricing states, private-field exclusion
+  and absence of thumbnail invalidation writes. The final focused repository/routes
+  rerun passed **3 tests / 72 assertions** after batching/projection refinements.
+- `bun test packages/core/tests apps/web/tests` passed **59 tests / 615 assertions**
+  in the final run. Separate route acceptance passed **1 test / 11 assertions**. The route acceptance file lives
+  under `apps/web/acceptance/group-page.test.tsx` and can run separately with
+  `bun test apps/web/acceptance/group-page.test.tsx`, avoiding existing global
+  `next/navigation` mocks in discovery tests.
+- Default `bun run test:api`, root lint and root type checking pass. The API
+  production bundle builds. Strict OpenSpec validation and whitespace checks pass.
+  The RTL detector reports zero errors/warnings on all changed product UI files.
+- `bun run build` compiles and completes TypeScript checking, then fails collecting
+  page data for `/_not-found` with Bun 1.3.8's previously documented
+  `Expected CommonJS module to have a function wrapper` error. Production startup
+  is therefore not verified; this is still the existing runtime limitation.
+- Initial sandboxed loopback tests could not open sockets. The same tests passed
+  with approved local-network execution; no installation or VPN was needed.
+  DOM-only image tests emit the existing Next Image layout warnings because
+  happy-dom does not load CSS; actual browser images were verified independently.
+
+Read-only live acceptance found **eight** eligible groups: English A1 (2 courses),
+Excel (2), n8n (3), negotiation (2), Photoshop (2), PowerPoint (5), Python
+visualization (3), and starting Python (3). Every public hero and assessment array
+was compared to its selected private judgment, every course snapshot to its retained
+manifest, and provider/title/source URL/image/instructors/duration/price/offers to
+public course readback. Every canonical group page server-rendered its expected
+hero and course identities. This count is an observation, not a fixed expectation.
+
+Browser review verified the eight homepage cards and Python card-to-page navigation.
+The Python page preserves Sabzlearn → Roocket → Maktabkhooneh order, retains the
+expensive first result and omits the last course's empty weakness section. At 320px,
+390px and 1280px the document width matches the viewport, with no horizontal
+scroll overflow. Hosted images load; Persian/Latin titles, localized Jalali dates,
+provider ratings/scales and four tags remain legible. Keyboard gallery focus has a
+visible outline; RTL arrow navigation changes the selected slide. A limit=1 course
+page preserves the selected judgment in next-page links, displays absolute rank 2
+for Roocket, and back/forward restores the appropriate course page. Automated
+checks additionally cover reduced motion and focus/hidden-tab slideshow guards.
+
+Limits: eligibility scans are appropriate to the local catalog, not a production
+scale claim. Any current snapshot or publication change can hide a group until
+explicit rejudging. A missing member asset hides the entire comparison without
+mutating thumbnail associations. Files can disappear after eligibility checks;
+client fallbacks remain necessary. Already rendered pages retain their data until
+refresh/navigation. Structural judgment acceptance is not editorial certification.
+
+## Public judged-group pre-commit verification — October 20, 2026
+
+Owner-authorized commit review covers the public judged-group API, shared contracts,
+homepage/group integration, focused tests, synced main specs and completed archive.
+README fixture descriptions were reconciled with the delivered real-group behavior;
+Plan and catalog documentation record the current selection and archive boundaries.
+
+- `bun run lint` and `bun run typecheck` pass.
+- `bun test packages/core/tests apps/web/tests`: 59 passed, 615 assertions.
+- `bun test apps/web/acceptance/group-page.test.tsx`: 1 passed, 11 assertions.
+- Default `bun run test:api`: 45 passed, 35 integration tests skipped, 673 assertions.
+- `API_INTEGRATION=1 bun run test:api`: 80 passed, 1,184 assertions, using temporary
+  isolated PostgreSQL schemas and local image fixtures with cleanup.
+- `bun run build:api` passes. `bun run build` compiles and checks TypeScript, then
+  fails collecting `/_not-found` page data with the existing Bun 1.3.8
+  `Expected CommonJS module to have a function wrapper` limitation; production
+  startup remains unverified.
+- RTL detector: zero errors/warnings across all nine changed product UI files.
+  Browser acceptance at 320px, 390px and desktop remains the October 19 evidence
+  above; this commit review does not claim a new visual browser pass.
+- All 18 main specs pass strict OpenSpec validation. Both delta capabilities match
+  their main specs; the six change files were archived unchanged, including metadata.
+  No active OpenSpec changes remain.
+
+The first sandboxed core/web run could not open its loopback deadline-test server;
+the local-network rerun passed. Existing happy-dom Next Image layout warnings remain.
+No working-catalog publication, inference, migrations or source changes were performed.
+
+## Shared course-group catalogue — October 20, 2026
+
+`add-course-group-catalog` implements `/groups`, search/category filtering before
+pagination, URL-backed browsing, homepage category links and a three-group
+showcase. No provider filter, migration, retained-catalogue mutation or model run
+is included.
+
+Checks:
+
+- `bun test packages/core/tests apps/web/tests`: 68 passed, zero failed, 710
+  assertions. The initial sandbox run could not bind the existing temporary HTTP
+  timeout-test listener; the socket-enabled rerun passed. After adding explicit
+  modal Tab wrap, the focused catalogue/category/group tests passed 12 tests,
+  119 assertions, including both focus-wrap directions.
+- `bun test apps/web/acceptance/group-catalog.test.tsx apps/web/acceptance/group-page.test.tsx`:
+  2 passed, zero failed, 23 assertions. Covers list-query forwarding, server page
+  state, invalid selections without upstream reads, out-of-range/zero-result page
+  recovery, retryable outage state and existing detail/legacy route behavior.
+- `bun run test:api`: 46 passed, 35 integration skips, zero failed, 681 assertions.
+- `API_INTEGRATION=1 bun run test:api`: 81 passed, zero failed, 1,200 assertions
+  using isolated PostgreSQL schemas. The extended repository test includes fourteen
+  added eligible groups, catalogue-wide filtering, stable traversal, category
+  combinations, ineligible matches, freshness and complete-membership regression.
+- `bun run lint`, `bun run typecheck`, `bun run build:api`: pass. Lint/type checks
+  were repeated after the final focus-handler change.
+- `bun run build`: compilation and TypeScript pass; page-data collection fails
+  with the previously documented Bun `Expected CommonJS module to have a function
+  wrapper` error, reported for `/api/admin/courses`. This remains an unresolved
+  environment/runtime production-build limitation; production startup is not verified.
+- Touched-file RTL detector: nine UI/query files checked, zero errors or warnings.
+- Strict OpenSpec validation and scoped whitespace/diff review: pass.
+
+Live browser acceptance used the ChatGPT in-app browser. Its initial connection
+failed; resetting the browser runtime restored it. The existing app on port 3000
+showed eight real groups, the homepage showed exactly three, all six homepage
+category links targeted `/groups?category=<id>`, and no homepage group pager
+remained. Programming category plus Persian search returned one group; removing
+category retained the search and returned two. Clear-all, reload, Back/Forward,
+category-specific heading, stored-slug comparison navigation and invalid-category
+recovery were verified. An out-of-range page retained conditions and resolved to
+page one. No provider filter appeared.
+
+To exercise real multi-page navigation without altering retained user data, a
+second API used a temporary PostgreSQL schema with fifteen synthetic judged
+groups and temporary assets. A temporary copy of the web source on port 3100
+pointed to this isolated API on 3101. Searching `Python` with category `code`
+returned fourteen groups: twelve on page one and two on page two, with the URL,
+matching total and result-heading focus preserved. Changing category to `design`
+from page two reset page one, retained search and showed one matching group.
+These fixtures are acceptance-only, not public provider claims. Temporary servers
+were stopped after review; their schema/assets were cleaned up.
+
+Responsive checks used 1280px desktop, 390px and 320px mobile widths, real and
+synthetic long Persian/Latin titles, and keyboard focus. Document client/scroll
+widths matched at both mobile sizes (375/375 and 305/305 CSS px after the visible
+scrollbar). Mobile categories opened as a native modal; Shift+Tab wrapped from
+close to the last category, Escape dismissed it and restored trigger focus.
+Existing cycling-card reduced-motion/hover/focus regression tests remain passing.
+Temporary viewport overrides were reset. The retained real catalogue remains open
+in the app browser.
+
+Review screenshots (local session artifacts, not repository output):
+
+- `/tmp/dorob-catalog-mobile.png` — 390px real programming/search result.
+- `/tmp/dorob-catalog-320.png` — 320px real programming/search result.
+- `/tmp/dorob-catalog-pagination.png` — isolated second page with both filters.
+- `/Users/mahdi/.codex/visualizations/2026/10/20/01a159a9-0a65-79a1-9d35-791075825e89/group-catalog.png`
+  — final real category catalogue at desktop width.
+
+Catalogue search-width correction — October 20, 2026: removed the 760px search
+width cap after owner review. The search now spans the full content container.
+In-app browser measurements matched search/main widths at desktop (1160/1160px)
+and mobile (343/343px), without desktop horizontal overflow. Web lint, typecheck
+and the touched CSS RTL audit pass. Production build still fails at page-data
+collection with the existing Bun CommonJS-wrapper runtime issue. The final desktop
+catalogue screenshot above was refreshed to show the correction.
+
+Homepage all-groups action refinement — October 20, 2026: owner-requested plain
+brand-blue text link with a direction-aware left arrow replaces the secondary
+button, including the loading state. The existing `/groups` destination and
+keyboard focus outline are retained. In-app browser review at the annotated
+753px width confirmed transparent background, zero border and the arrow icon.
+Touched-file RTL audit, web lint and typecheck pass. Web production build still
+fails during page-data collection with the documented Bun module-wrapper error.
+
+## Course-group catalogue archive and commit review — October 21, 2026
+
+Owner-authorized scope is only `add-course-group-catalog`, its implementation,
+review refinements, documentation, four synced main capabilities and archive.
+`improve-scraper-field-extraction` remains active and excluded from staging.
+The real-group hero experiment was reverted; no hero sample changes are included.
+
+Current verification:
+
+- `bun run lint` and `bun run typecheck`: pass.
+- `bun test packages/core/tests apps/web/tests`: 68 passed, zero failures,
+  712 assertions.
+- `bun test apps/web/acceptance/group-catalog.test.tsx apps/web/acceptance/group-page.test.tsx`:
+  2 passed, zero failures, 23 assertions. These route checks run separately from
+  the ordinary UI suite to isolate their existing `next/navigation` module mocks;
+  a combined invocation failed on conflicting mocked exports, then both documented
+  separate invocations passed.
+- `bun run test:api`: 46 passed, 35 integration skips, zero failures,
+  681 assertions.
+- `API_INTEGRATION=1 bun test apps/api/tests/public-group-judgments.integration.test.ts`:
+  1 passed, zero failures, 66 assertions, with temporary schema/storage cleanup.
+- `bun run build:api`: pass.
+- `bun run build`: compilation and TypeScript pass; page-data collection fails
+  for `/api/admin/courses` with the documented Bun CommonJS-wrapper error.
+  Production startup remains unverified.
+- All four delta capabilities were merged and compared against their main specs.
+  Existing titles, Purpose sections and unmentioned requirements/scenarios remain
+  intact. `openspec validate --specs` passes all 19 capabilities with one warning:
+  `homepage-course-catalog`'s preservation requirement is 506 characters, exceeding
+  the recommended 500. Strict main-spec validation consequently reports this one
+  warning as failure. The full modified requirement is retained as required by
+  the sync workflow; it was not shortened merely to meet the threshold.
+- The change passed strict validation before archiving. All eight archive files,
+  including `.openspec.yaml`, match their pre-move hashes. Archive location:
+  `openspec/changes/archive/2026-10-21-add-course-group-catalog/`.
+
+### Real-group homepage hero restoration — October 21, 2026
+
+- Core and web suite: 70 passed, zero failures, 727 assertions. New shelf tests
+  cover three-course order, saved prices, comparison anchors, minimum size and
+  unavailable states without fixture substitution.
+- Web lint and type checking pass. RTL detector reports no errors or warnings
+  on the changed UI files; the final shelf component was checked again after
+  separating its routing wrapper for test isolation. `git diff --check` passes.
+- In-app browser confirms the selected Python group displays three real courses.
+  The Roocket link reaches its matching comparison card via the encoded anchor.
+  Keyboard navigation gives a visible 3px focus outline. At 390px and 320px,
+  document width matches viewport width; the existing compact hero hides the
+  shelf on mobile. The existing five-provider strip remains intact.
+- Production build still fails during page-data collection with the previously
+  documented Bun CommonJS-wrapper error, now reported for
+  `/api/admin/embeddings/discoveries/[id]/promote`. Production startup is unverified.
+
+
+### Frontend detail refinements — October 21, 2026
+
+Shared breadcrumbs, category parent links, the native hero `#groups` jump,
+five-provider strip and mobile logo/name wheel were reviewed in the in-app browser.
+The native anchor was verified by the visible scroll result, including a repeated
+`#groups` click. Wheel names appear to the visual left of their logos; its removed
+pause control and the strip's removed hover pause follow owner instructions.
+Lint, type checking and touched-file RTL/whitespace checks pass. Production
+compilation and types succeed, but page-data collection retains the documented
+Bun CommonJS-wrapper failure. Final pre-commit checks for the complete frontend checkpoint are recorded below.
+The owner explicitly included the real-group hero integration in this commit.
+
+
+Final pre-commit verification for the complete frontend checkpoint:
+
+- Root `bun run lint` and `bun run typecheck` pass.
+- Web/core test files run in isolated processes: 70 tests pass. The course API
+  deadline test initially could not bind its temporary loopback server in the
+  sandbox; its complete four-test file passes with local networking permitted.
+- RTL audit passes for every changed UI file; `git diff --check` passes.
+- `bun run build` compiles and checks types, then fails during page-data
+  collection for `/api/admin/courses` with the existing Bun CommonJS-wrapper
+  error. A successful production build/start remains unverified.
+- `/design-system` is retained; the proposed frontend cleanup has not begun.
+
+## Direct provider course links — October 21, 2026
+
+Owner follow-up replaces public titles and «مشاهده دوره» with native links to
+the exact retained provider source URL, opening a new tab with
+`noopener noreferrer` and an accessible new-window notice. The retired public
+course modal and all its selection wiring are removed; the detail API remains
+available. This supersedes modal-specific frontend behavior in the preceding
+catalogue checkpoint. Independent fixture previews are unchanged.
+
+- Card regression suite: 7 tests / 104 assertions pass; catalogue interaction
+  suite: 8 tests / 45 assertions pass. They verify exact source URLs, new-tab
+  attributes, absence of detail fetches/modals, and retained price provenance.
+- Workspace lint and type checking pass. RTL scans of all five affected card/UI
+  files report zero errors or warnings; whitespace and strict OpenSpec checks pass.
+- Live catalogue links resolve to the retained TopLearn course URL on both title
+  and action, with no local course dialog. At 390px, keyboard Tab reaches the
+  provider action with a visible solid outline; document width equals viewport.
+- Production compilation and TypeScript pass; page-data collection still hits the
+  previously recorded Bun CommonJS function-wrapper error. No backend behavior,
+  dependencies, source data or database schema changed in this follow-up.
+
+## Catalogue heading and search direction — October 21, 2026
+
+The course results use a compact total without repeating the page title; their
+accessible heading and mobile filter trigger remain. Both catalogue search fields
+now explicitly use `dir="rtl"`: `dir="auto"` had resolved empty fields to LTR,
+so `text-align: start` placed Persian placeholders on the left despite their RTL
+pseudo-element direction.
+
+Live browser checks at the owner's 799px viewport confirm right-aligned
+placeholders on `/courses` and `/groups`; computed input/placeholder direction is
+RTL with logical start alignment. The redundant course heading is no longer
+visible. Existing catalogue suites pass (8 course tests, 4 group tests), web lint
+and types pass, and all three touched UI files pass the RTL detector. Production
+compilation/types pass; page-data collection remains blocked by the documented
+Bun CommonJS function-wrapper error. No commit was made.
+
+## Course catalogue archival — October 21, 2026
+
+`add-course-catalog-page` is archived at
+`openspec/changes/archive/2026-10-21-add-course-catalog-page/` with all four
+planning artifacts and 20/20 tracked tasks complete. Three deltas are synced:
+`course-catalog` (new, eight requirements), `homepage-course-catalog` (seven
+modified requirements), and `public-course-catalog` (three added requirements and
+one modified). A post-sync comparison verified every changed requirement and
+scenario, preserved established purpose sections and untouched requirements, and
+confirmed canonical main-spec structure without delta headers. All 20 main specs
+pass strict validation. Archival preserves `.openspec.yaml` and leaves the
+independent scraper extraction change active. Prior implementation checks and the
+known Bun build limitation remain as recorded above. No commit or push occurred.
+
+## Course catalogue pre-commit verification — October 21, 2026
+
+The owner explicitly requested committing this completed scope after archival.
+`Plan.md`, `README.md` and affected frontend/API documentation were reviewed;
+the remaining stale README modal sentence now describes direct provider links.
+Final reruns passed workspace lint and types, 83 core/web tests across 22 isolated
+processes (including both catalogue route acceptance files), two focused course
+API tests with PostgreSQL (82 assertions), API build, all touched-file RTL checks
+and strict validation of all 20 main specs. The earlier complete API run remains
+81 passing tests. Production compilation/types pass; page-data collection still
+fails at `/_not-found` with the existing Bun CommonJS function-wrapper error.
+A successful production build/start remains unverified. Staging is restricted to
+the course catalogue implementation, its tests/docs, synced specs and archived
+change; no scraper proposal, generated output, dependency or lockfile is included.
+
+## Frontend refactor — October 21, 2026
+
+`refactor-frontend-components` preserves the apply-time working tree, including
+the newer six-course horizontal shelf, simplified real hero rows, category/group
+card edits and app icon. No branch, stash, commit, archive, backend/data mutation
+or scraper change is part of this implementation. Concurrent unrelated utility,
+curation and OpenSpec edits are left untouched. Ownership, retained exceptions and
+removal evidence are recorded in [frontend-refactor.md](frontend-refactor.md).
+
+- Root `bun run lint` and `bun run typecheck`: pass.
+- All 23 applicable web/core test files (including course route acceptance) run
+  in isolated `bun test <file>` processes: 89 tests pass after the catalogue modal
+  fix and focused reruns of both catalogue suites. Coverage includes public byte
+  bounds/cancellation/deadlines, validation/status mapping and judgment pins;
+  native modal focus, course paging focus, chips/history, providers/prices,
+  admin/discovery forms/conflicts and persisted exact promotion replay.
+- The apply-time featured-hero test's stale «اطلاعات» assertion is reconciled
+  with the protected simplified hero. Real order, links, duration/price and
+  unavailable/retry remain covered. The native transport deadline test requires
+  loopback server access outside the restricted sandbox and passes there.
+- Touched-source RTL audit: 53 files, zero errors/warnings; changed modal rechecked
+  after its final fix. Persian text, Latin isolation and logical CSS reviewed.
+- `git diff --check`: pass after removing trailing blank lines.
+- `bun run build`: compilation and TypeScript pass; page-data collection retains
+  the pre-existing Bun `Expected CommonJS module to have a function wrapper`
+  failure (observed on an admin embedding route). Production startup is unverified.
+
+Built-in browser review covers `/`, `/groups`, `/courses`, a real n8n comparison
+and `/design-system` at 1280, 659, 390 and 320 CSS pixels. Loaded public/reference
+pages have document width equal to viewport width. The category/course shelves
+retain their intentional local horizontal scrolling. Long Persian/Latin search,
+URL/history restoration, mobile modal Escape, visible focus return, reference
+modal selection/dismissal and repeated already-present `#groups` jumps work.
+Provider wheel/desktop strip rendering is retained; reduced-motion CSS/handlers
+and absence of pause controls/hover-pause rules were reviewed against the baseline.
+Judgment ordering is covered by fixtures and real comparison rendering.
+Screenshots and detailed check logs are retained locally in
+`/tmp/dorob-refactor-baseline/`.
+
+During acceptance, the live Python starter group changed eligibility and returned
+404 directly from the API; the homepage correctly showed its unavailable state.
+The n8n comparison was used for loaded responsive review. This is not a fixture
+fallback or a refactor write to the catalogue. Public detail endpoints remain.
+
+### Category artwork correction — October 21, 2026
+
+Owner review found a missed visual regression: `CourseArtwork`'s `--art-*` paint
+variables and base rules had remained in reference-only `preview.css`. Homepage
+SVGs therefore resolved their backgrounds to `fill: none` and lost illustration
+parts. The earlier no-overflow checks did not establish visual equivalence.
+
+The six shared artwork rules now live in `components/course-artwork.css`, imported
+by the artwork component itself; reference-only layout rules remain separate.
+A fresh built-in-browser homepage load confirms all six subject palettes have
+nonempty resolved variables and painted backgrounds at desktop and 390px, with
+76px/48px artwork sizing preserved. Screenshot:
+`/tmp/dorob-category-artwork-fixed.png`. Category navigation and shared-presentation
+suites pass (five tests), as do root lint/types and both touched-file RTL audits.
+Production compilation/types still succeed before the existing Bun page-data
+wrapper error. This correction adds no data, route or catalogue behavior change.
+
+### Business category illustration — October 21, 2026
+
+Owner review identified a trend line extending above the business chart panel
+with an arrowhead misaligned to the final segment. Updated the shared SVG path
+so its full stroked line/head stays inside the panel and the arrowhead follows
+the segment direction. Verified in the built-in browser at the reported 799px
+viewport; screenshot: `/tmp/dorob-business-chart-fixed.png`. Category navigation,
+root lint/types and the touched-file RTL audit pass. Production compilation/types
+retain the existing Bun page-data error. No card layout or navigation changed.
+
+### Hero provider-logo framing — October 21, 2026
+
+The tall Roocket SVG inherited automatic image height, making its 36px-wide image
+53.375px tall inside a 48px hero frame. Hero logo images now use an explicit
+36px square box with `object-fit: contain`; the existing 28px mobile sizing stays
+in force. Browser measurements at the reported 799px viewport confirm all three
+hero logos are 36×36 inside their 48×48 frames and retain source proportions.
+Screenshot: `/tmp/dorob-hero-logo-fixed.png`. The two featured-shelf tests, root
+lint/types, touched-file RTL audit and whitespace checks pass. The production
+build retains the documented Bun page-data wrapper error.
+
+### Frontend refactor archival — October 22, 2026
+
+Verified all four planning artifacts and 17/17 tracked tasks complete. Synced
+the one modified requirement to `homepage-course-catalog`, preserving main-spec
+title/Purpose and unrelated blocks; all six delta scenarios match the main spec.
+All 20 main specs and the change pass strict OpenSpec validation. Archived under
+`openspec/changes/archive/2026-10-22-refactor-frontend-components/`, preserving
+`.openspec.yaml`. The change no longer appears in the active CLI list.
+Documentation links and `git diff --check` pass. Application checks are unchanged
+by this documentation/spec-only archival; the Bun build limitation remains.
+
+### Frontend pre-commit review — October 22, 2026
+
+The owner requested removal of the visible redundant group-results heading and a
+commit of frontend work plus the archived refactor. The heading now uses the
+shared visually-hidden primitive, retaining its section label and paging focus
+target. Browser review at the reported catalogue viewport confirms only the
+compact count remains visible above cards. Root lint/types, 89 tests across all
+23 isolated web/core suites (including course route acceptance), touched-heading
+RTL audit, strict validation of all 20 main specs and whitespace checks pass.
+Production compilation/types pass before the existing Bun CommonJS-wrapper
+page-data error on an admin embedding handler. No production-startup claim.
+Commit scope includes `apps/web`, affected frontend docs, the archived refactor
+and its synced homepage spec. Scraper edits, curation data/report and other
+active OpenSpec changes remain excluded. No push or branch creation is included.
+
+## Unified public catalogue controls — October 22, 2026
+
+Implemented `unify-public-catalog-controls` across `/groups` and `/courses`.
+The two callers share results presentation, component-owned catalogue CSS and
+navigation/focus mechanics. No backend, ingestion, data mutation or lockfile
+changes are part of this work; unrelated scraper/curation changes were preserved.
+
+- Workspace `bun run lint` and `bun run typecheck` pass after the final source edits.
+- 28 isolated core/web/route-acceptance suites cover 98 passing tests. The native
+  deadline test in `apps/web/tests/course-api.test.ts` initially could not bind a
+  socket in the sandbox; all five tests passed when rerun with local binding
+  available. The six affected presentation/interaction/catalogue/route suites were
+  rerun after the final modal-focus change: 21 tests pass. Existing happy-dom
+  image-layout/React act warnings remain non-failing diagnostics.
+- Shared tests cover both toolbar label variants, status placement, retained cards
+  during a controlled pending transition, failure without numeric totals, both
+  paging directions, initial direct-page rendering, same-page filter changes,
+  later-page filter resets, close-before-navigation and delayed native close-event
+  focus precedence. Existing domain tests retain URL/card/filter/page-size checks.
+- RTL detector is clean on every touched UI file. Strict change validation and
+  `git diff --check` pass.
+- `bun run build` compiles successfully and completes TypeScript, then retains the
+  pre-existing Bun `Expected CommonJS module to have a function wrapper` error
+  during page-data collection (reported for `/api/admin/courses`). A complete
+  production build remains unavailable; this change does not bypass that blocker.
+
+Browser acceptance used an isolated temporary copy of the current frontend and a
+loopback fixture API, leaving the running catalogue/backend unchanged. Schema-valid
+fixtures supply 13 groups and 19 courses for pagination; a 2.2-second delay and
+503 mode exercise pending/failure states without altering retained provider data.
+This harness checks presentation and interaction, not backend filter correctness.
+
+Both routes were inspected at 320, 390, 760, 761 and 1280 CSS pixels in unfiltered,
+long Persian/Latin filtered, pending and failure states (40 route/state/width
+combinations). No page overflow occurred. Mobile toolbars have a 44px height with
+the count at the right and trigger at the left; desktop toolbars have a 22.8px
+count row with the trigger hidden. Sidebar/trigger visibility switches at the
+760/761 boundary on both routes. The toolbar bottom gap and non-empty chip bottom
+gap are each 20px. Checks caught and corrected a general-button CSS ordering
+conflict by giving the shared filter-trigger selector explicit toolbar scope.
+Search styling also uses explicit shared search scope to avoid import-order drift.
+
+Pending checks retain all twelve/eighteen committed cards with localized status
+and `aria-busy=true` at every width. Failure checks show retry, no numeric total
+and no overflow at every width. Browser keyboard checks cover modal Tab containment,
+Escape, close-button and backdrop dismissal with trigger focus return; selections
+close the panel, and committed paging/reset focuses the results heading and
+scrolls the visible results region. Direct later-page loads do not take focus.
+The API-independent design-system example renders and switches pending/error
+states without catalogue requests. Final live `/groups` and `/courses` review at
+390px confirms the same toolbar arrangement with real retained data.
+
+Local evidence: `/tmp/dorob-catalog-browser-evidence.json`,
+`/tmp/dorob-groups-controls.png`, `/tmp/dorob-courses-controls.png`, and
+`/tmp/dorob-catalog-{suites,final-focused,lint,types,build}.log`.
+
+### Catalogue controls sync and archive — October 22, 2026
+
+All four planning artifacts and ten implementation tasks are complete. The five
+ADDED requirements and their scenarios are synced to
+`openspec/specs/public-catalog-controls/spec.md`; the delta Purpose is preserved
+verbatim and the main spec contains only canonical Requirements formatting.
+Content comparison confirms nothing remains to sync. All 21 main specifications
+pass strict validation. The change is archived at
+`openspec/changes/archive/2026-10-22-unify-public-catalog-controls/`, including its
+`.openspec.yaml`. No implementation changes, commit, push or branch are included
+in this archival operation; the existing production-build limitation remains.
+
+
+## Retained public comparison editions — October 22, 2026
+
+`retain-published-group-comparisons` implements immutable comparison editions from
+retained judgments, group/member manifests and exact same-course snapshots. No
+migration, inference, scraping, membership change or judgment generation was run
+against the working catalogue. Existing authoring revision checks and private
+freshness remain strict. The seven modified and two added requirements are synced to the main spec; the
+change is archived at `openspec/changes/archive/2026-10-22-retain-published-group-comparisons/`
+with all 13 tasks complete.
+
+Checks:
+
+- `bun run lint`, `bun run typecheck`, and `bun run build:api`: passed. API lint,
+  type checking and build were also rerun after exact asset-hash verification.
+- `API_INTEGRATION=1 bun run test:api`: **87 passed**, zero skipped/failed,
+  including isolated database-backed tests. The final focused edition/public-group/
+  thumbnail suite passed **16 tests** after adding same-size asset-corruption checks.
+- `bun test packages/core/tests apps/web/tests`: **95 passed**, zero failed.
+  The first sandboxed invocation could not run the local-socket deadline test;
+  rerunning with local network access passed the full suite.
+- `API_INTEGRATION=1 bun test apps/web/acceptance/retained-comparison.test.tsx`:
+  passed, **31 assertions**, using actual isolated API responses and public
+  components for homepage cards, featured shelf, catalogue, comparison, breadcrumbs,
+  metadata, source links, original Persian dates and absent waiting-course copy.
+- `bun apps/web/node_modules/typescript/bin/tsc -p apps/web/tsconfig.integration.json`:
+  passed, including the new acceptance test. RTL detector on that file: zero errors
+  or warnings. Strict OpenSpec validation and whitespace checks passed.
+- `bun run build`: production compilation and TypeScript passed. Page-data
+  collection still fails with the previously documented Bun error
+  `Expected CommonJS module to have a function wrapper`, encountered in the admin
+  discovery promotion route. This is not a passing production build.
+
+Database regressions cover fourth-course suggestion approval without public change,
+all evaluated fact identities/values, newer failed/pending images, unchanged pins,
+strict stale submissions, complete ready replacement, shared courses assessed from
+different snapshots, retained categories after editorial edits, 102 newer incomplete
+judgments, deterministic ties, withdrawal without historical fallback, draft
+publication, safe corruption/integrity errors and read-only storage failures.
+
+Browser acceptance used a disposable isolated schema and temporary thumbnail
+storage at loopback API port 3011, plus an isolated copy of the frontend at port
+3012 (Next development with webpack). The working app at ports 3000/3001 was left
+running. A fourth synthetic course was approved through suggestion/review HTTP,
+then source data was refreshed. Working membership became four while the entire
+public three-course response remained identical. An unready replacement waited;
+processing its exact images switched all four courses and new facts together.
+The old pin returned 409. Removing a waiting member preserved the edition;
+removing an assessed member returned unpinned 404/pinned 409 without falling back.
+A complete replacement excluding that member restored the three-course comparison;
+unpublishing returned 404. Test schemas/assets and temporary listeners were cleaned
+up after acceptance, without changing the working Python group.
+
+Visual checks at 1280px desktop and 390px/320px mobile confirmed `lang=fa`, RTL,
+readable mixed Persian/Latin text, actual historical dates, coherent counts/rows,
+visible 2px solid keyboard focus and no horizontal overflow. Existing UI components
+needed no presentation changes. Read-only inspection also confirmed the working
+Python comparison is available again with its retained three assessed courses;
+the newly approved Jadi course waits for the next complete judgment.
+
+Operational limits: historical comparison prices/URLs can age; preserve visible
+source/judgment dates. Individual-course browsing can show newer values. Back up
+retained snapshots and hosted assets together. Read-only comparison asset checks
+now hash bounded files to detect same-size corruption, with at most four concurrent
+checks. This remains a local-catalogue scan; public histories and manual edition
+publication/revocation are not introduced. Rollback restores strict current-only
+visibility without rewriting retained data.
+
+
+## Public frontend polish — October 22, 2026
+
+Hero browser inspection passed at 320, 390, 430, 520, 521, 700 and 701 CSS px.
+Computed grid placement spans description/action across both columns through
+520px; the wheel/strip switch remains at 700/701px. No horizontal page overflow
+was measured. Native action href remains `#groups`; the compact reduced-motion
+media rule was moved with the layout. Source geometry verifies all five static
+provider tiles fit (5 × 26px + 4 × 7px = 158px within a 164px stage); browser
+media emulation is unavailable, so reduced-motion coverage here combines source
+inspection with the existing fallback rather than an emulated screenshot.
+Matched 430px hero before/after captures were saved outside Git with the requested
+review images. Completed checks are recorded below.
+
+Comparison computed-style checks passed at 320, 390, 430 and 1280px: bullets
+13px/24.7px line-height, instructors/metadata 12px, no page overflow. The real
+Aparat comparison retained its absent weakness section and underlying offer data.
+The isolated `bun test apps/web/tests/group-ui.test.tsx` suite passed, covering
+retained facts/order, sparse assessments, safe text, gallery selection and
+provider navigation. A matched 390px row screenshot records the larger prose.
+
+Header inspection passed on `/`, `/groups`, `/courses` and the Aparat comparison
+at 320, 390, 430 and 1280px: settled computed labels are 13px and link heights
+44px, with no page overflow. Current-catalog underline and a single accessible
+current link persist on group category/page and course provider/page URLs.
+Keyboard Tab exposes the 3px catalog focus ring; keyboard activation of the
+comparison header opens `/groups`. The new focused header/category regression
+assertion passes in the group suite (7 tests). Existing unrelated happy-dom
+image geometry and React act warnings remain non-failing.
+Matched header and destination screenshots distinguish the visible selection
+change from the behavior change (homepage section before, group catalog after).
+
+Course-card checks passed at 320, 390, 430 and 1280px: provider/duration,
+discounted original amount and currency text all compute to 12px; no price-trigger
+clipping or page overflow was measured. The first desktop row's footers share
+the same top coordinate. The homepage retains six cards with the same public
+overrides. `/design-system` fixture cards retain 11px providers and 9px currency
+text. Paid/discounted/free real cards were inspected in the browser; subscription,
+unknown-price, sparse-fact and long mixed-direction variants pass in the isolated
+course suite (7 tests), together with retained source URLs and hover/touch/keyboard
+provenance behavior. Browser focus opens provenance, Escape closes it while
+retaining focus, and repeated activation toggles its pinned state.
+
+Integrated checks: `bun run lint` and `bun run typecheck` pass across the
+workspace. All five focused UI suites pass in separate processes: group UI,
+course UI, catalog interactions, group catalog UI and course catalog UI. The RTL
+detector reports zero errors and zero warnings for each of the five touched
+application UI files. Strict OpenSpec validation and `git diff --check` pass.
+
+`bun run build` compiles and completes TypeScript, then fails during page-data
+collection for `/api/admin/courses` with the previously documented Bun error:
+`Expected CommonJS module to have a function wrapper`. A successful full
+production build is not claimed; no dependencies or build configuration changed.
+
+The five delivered image pairs cover the 430px hero, 390px comparison row, catalog
+header, old/new group-link destinations and 390px real course card. Routing
+images show the old homepage-section target and new catalog target after loading.
+Original browser JPEGs and labelled side-by-side sheets are saved outside the
+repository under the chat's visualization directory (`frontend-polish/`).
+Screenshots, generated output, database changes and unrelated scraper work are
+not included in Git. Archival verification is recorded below.
+
+Purchase-disclosure follow-up: the English A1 comparison renders zero article
+disclosures with both price summaries and provider links preserved. The shared
+row removes this UI for all courses, independent of offer count. Workspace
+lint/types, seven group UI tests, touched-file RTL checks, strict OpenSpec and
+whitespace checks pass. The production build again compiles and completes types
+before the existing Bun CommonJS-wrapper failure during page-data collection
+(this run reports `/_not-found`). The selected browser page was refreshed and
+a screenshot saved outside Git.
+
+Archive verification: the seven added delta requirements were compared against
+all three merged main specs before the change was moved to
+`openspec/changes/archive/2026-10-22-polish-public-frontend/`. Existing spec titles,
+purposes and requirement content are preserved; no delta operation headers remain
+in main specs. All 21 main specs pass strict validation. All four artifacts and
+12 tracked tasks were complete, and `.openspec.yaml` was preserved in the archive.
+
+## MVP admin token access — October 22, 2026
+
+`add-admin-token-auth` protects every backend management route before dispatch or
+body parsing and authorizes browser pages/handlers before privileged forwarding.
+Shared operator identity does not verify caller-supplied system attribution.
+Explicit dev bypass is independent of framework development mode. The UI uses an
+in-field Eye/EyeOff icon, Persian copy, masked LTR token entry and existing tokens.
+
+Verification:
+
+- Workspace lint and type checking pass; embedding-worker lint/types pass. The
+  server-only helper is included through API/web TypeScript imports.
+- Auth-state/API guard suites: **12 passed, 174 assertions**. Coverage includes
+  concurrent process initialization, retained restart state, malformed/unsafe and
+  symlink state rejection, live-service rotation refusal, failed rotation keeping
+  prior credentials, cookie expiry/tampering and every documented management method.
+- Web auth transport/session suite: **3 passed**; login/logout cookie flags,
+  foreign-origin refusal, direct handler authorization, mismatch and rotation.
+  Login UI suite: **2 passed**; exact LTR input/reveal behavior and 401 recovery
+  retaining unsaved edits without automatic mutation replay.
+- All **22 web test files** pass when run in isolated processes. The first pass
+  encountered the known sandbox socket restriction in `course-api.test.ts`; its
+  local-socket rerun passed all five tests. Transport tests explicitly inject test
+  auth rather than depending on a production bypass.
+- Default API suite with explicit test-only dev mode: **51 passed, 42 opt-in
+  skips, zero failures**. The protected real PostgreSQL curation test separately
+  passed against a temporary schema which was removed afterward; unauthorized
+  writes, persisted authorized records, restart reads and duplicate conflicts pass.
+- Utility suite: **136 passed**. Embedding-worker suite: **8 passed**. Tests cover
+  header-only backend credentials, non-transient 401 and no model-header leakage;
+  existing scraper extraction/worker recovery checks remain intact.
+- Actual HTTP acceptance used a copied frontend on loopback :3027, a database-free
+  API fixture on :3031 and private disposable auth state. Protected deep-link
+  redirect, direct handler 401, valid token login, authenticated page reload,
+  expired-session rejection, logout and both CLI 401 paths pass. The API printed
+  its token exactly once at successful startup; test output did not echo it.
+- Offline lifecycle acceptance stopped both fixtures, confirmed retained-token
+  restart and rotation refusal with a live service, rotated only disposable state,
+  restarted and verified old token/session rejection, new-token acceptance and
+  explicit dev-bypass startup notice. Working credentials were not rotated.
+- Browser review at desktop and **390 x 844** confirms visible keyboard focus,
+  in-field icon reveal/conceal, `lang=fa`, RTL layout, Persian errors and no horizontal
+  overflow. All four new UI files pass the RTL detector with zero findings. The
+  isolated copy used webpack because Turbopack refuses dependency symlinks outside
+  that temporary project; the maintained app's production build still uses its
+  existing configuration.
+- Non-mutating guide walkthrough: each AI role asks the operator for absent
+  protected-mode credentials before its first GET, attaches bearer headers to
+  every management read/write, pauses on 401, and preserves saved body/revision/
+  replay identity with credentials excluded. Existing loopback destination,
+  publication and editorial boundaries remain unchanged.
+- API production bundle builds. Frontend production compilation and TypeScript
+  checking pass, then page-data collection retains the known Bun 1.3.8
+  `Expected CommonJS module to have a function wrapper` failure (final run reported
+  `/api/admin/embeddings/configurations/[id]`). Dynamic auth-filesystem calls are excluded from tracing;
+  the final run added no tracing warnings. Production startup remains unverified.
+- Launcher syntax, strict change validation and whitespace checks pass. No working-database schema
+  migration, working-catalogue write, token rotation, Docker deployment, commit or
+  push was performed during acceptance.
+
+Operational limitations: startup-log readers can recover the operator token by
+owner request. Browser logout clears that browser's cookie; a copied cookie lasts
+until its eight-hour expiry or global token rotation. Lifecycle locks left by a
+crash require operator inspection before removal. See [admin access](admin-access.md)
+for setup, private storage, trusted origin, rotation and rollback precautions.
+
+
+## Admin-token pre-commit verification — October 22, 2026
+
+The owner authorized committing completed work while excluding the unstarted
+`dockerize-single-container-app` proposal. Admin authentication is archived with
+20/20 tasks; all three capability deltas were compared against main specs.
+All 22 main specs pass strict validation.
+
+Fresh pre-commit checks: workspace and embedding-worker lint/types pass; default
+API tests pass with explicit test-only `DOROB_DEV_MODE=true` (opt-in database/process
+tests remain skipped). All 136 utility tests, eight embedding-worker tests and
+seven shared auth tests pass. All 22 web test files pass in isolated processes;
+the socket-dependent course API test passed outside the sandbox after its initial
+sandbox bind failure. The four new auth UI files pass the RTL detector with zero
+findings, and launcher syntax passes. Existing desktop/mobile browser acceptance
+is recorded above; this commit check did not repeat browser or live PostgreSQL
+acceptance. README now shows test-only dev mode for API test commands, and the
+catalog guide clarifies authentication for management examples.
+
+The API production bundle builds. The documented Bun frontend build compiles and
+passes TypeScript, then fails during page-data collection with the existing
+`Expected CommonJS module to have a function wrapper` error for
+`/api/admin/embeddings/configurations/[id]`. This remains a production-build
+limitation. No working credential rotation, migration, catalog write or deployment
+was performed by these checks.
+
+
+## Single-container packaging apply — October 22, 2026
+
+The Linux AMD64 production image builds successfully as `dorob:acceptance`, using
+Node 26.12.1, Bun 1.3.8 and PostgreSQL 17.11/pgvector 0.8.7. All runtimes are
+manifest-pinned. Frozen installation passes with 790 packages. The web explicitly
+declares Bun test types; Node production compilation/types/page generation pass
+with the catalogue unavailable. Admin pages render per request, avoiding a static
+build-time unauthenticated redirect. Bun-only historical build failures do not
+apply to this Node production path.
+
+Actual image checks pass for public pages, Persian/RTL markup, static assets,
+protected login/session/admin pages/handlers, bearer operations, migrations,
+Swagger assets and native Sharp/WebP processing. A desktop browser rendered the
+restored Persian comparison and hosted images. Additional mobile/keyboard browser
+acceptance was not completed; its task remains unchecked after the owner requested
+no more unnecessary testing. Presentation markup/styles/copy were not changed.
+
+Storage tests cover missing/unprepared mounts, permissions/symlinks, PostgreSQL and
+volume incompatibility, incomplete imports, retained standalone-host registrations
+and concurrent startup/initialization/all maintenance modes under a live lease.
+Lifecycle acceptance verifies exact retained synthetic records/assets/token across
+replacement and hard interruption, reused-PID/stale-lock recovery, every essential
+child failure, offline rotation, migration checksum failure and clean SIGTERM.
+A never-ready API hits the total startup deadline and shuts PostgreSQL down cleanly.
+The separate Compose runner uses one image/disk/public port; real API/database
+outages and unreadable storage produce bounded generic readiness failure while
+liveness remains available. Actual child UIDs and loopback-only private listeners
+were inspected. A confidentiality sentinel check passes for context/image layer/
+logs while retaining product login API source.
+
+The write-fenced synthetic export includes all 32 user tables, three courses,
+four observations, two judgments, four vector revisions, seven migration records,
+two permanent images and one staged upload. Fresh-target restore matches every
+table count/row fingerprint, catalog-definition schema identity, ledger, vector
+round-trip and asset hash. Both container and legacy Compose-style sources were
+exported. Initial dump-order-based schema comparison correctly refused completion;
+it was replaced by canonical catalog definitions and rehearsed on another fresh
+disk. Failed targets remained incomplete. Original synthetic archives were retained.
+Corrupt database/assets, traversal with updated outer checksums and incompatible
+extensions are rejected before destination writes. An interrupted actual import
+blocks normal startup and retry. Data-only import generates a fresh token;
+separate private credential recovery retains the saved token without stale service
+registrations. The private synthetic report is retained outside Git at
+`/private/tmp/dorob-transfer-acceptance-20261022-v2/verification.json`.
+
+Workspace lint/types and local Node production build pass. Offline API tests pass
+51 with 42 opt-in database cases skipped; actual image/database acceptance above
+provides the deployment checks. All seven host-auth tests and the bounded archive
+security test pass. Strict OpenSpec validation and whitespace/diff review pass.
+OpenSpec tracks 16/17 tasks complete; extended browser/mobile acceptance remains
+unchecked. No additional broad tests were started after the owner's
+request to stop unnecessary testing.
+
+Runbook and acceptance helper commands are in [container deployment](container-deployment.md).
+The working catalogue/credentials and existing development volumes were untouched.
+Synthetic acceptance containers/volumes are disposable and cleaned at handoff;
+private original archives/reports remain outside Git. Darkub account/filesystem,
+architecture, resources, single-replica/recreate behavior, probes, HTTPS origin and
+termination grace require operator preflight. No image publication, provisioning,
+live export/import/cutover, commit or push occurred.
+
+
+## Dockerization archive and commit review — October 22, 2026
+
+The owner approved syncing, archival with the one remaining browser-check task,
+and committing the Dockerization scope. Both new main specs preserve all 15
+added requirements and their authored purposes. Strict validation passes for
+all 24 main specs and the change before archival. The archive preserves the
+unchecked task; this does not claim completion of mobile/keyboard acceptance.
+Existing application/image/lifecycle/transfer results above were reused; no
+additional broad application tests or production image rebuild were run during
+archive/commit review. Hosting preflight and real-data transfer remain unperformed.

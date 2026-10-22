@@ -4,8 +4,10 @@ import { useState } from "react";
 import Image from "next/image";
 import { Clock } from "lucide-react";
 import { CourseArtwork } from "./course-artwork";
-import { categories, CoursePrice } from "./discovery-showcase";
+import {categories} from "@/lib/category-presentation";
+import {CoursePrice} from "./fixture-price";
 import { courseDuration, type HomepageCourse } from "./provider-homepage-data";
+import {ProviderMark} from "./provider-mark";
 import styles from "./course-card.module.css";
 
 /** An individual offering whose primary action opens course details. */
@@ -15,7 +17,6 @@ export function CourseCard({ course, onDetails, headingLevel = 3 }: {
   headingLevel?: 3 | 4;
 }) {
   const [failedImage, setFailedImage] = useState<string | null>(null);
-  const [failedLogo, setFailedLogo] = useState<string | null>(null);
   const Heading = headingLevel === 3 ? "h3" : "h4";
   const category = categories.find(item => item.id === course.category);
   return <article className={styles.card}>
@@ -29,7 +30,7 @@ export function CourseCard({ course, onDetails, headingLevel = 3 }: {
       <Heading className={styles.heading}><button className={styles.title} dir="auto" onClick={onDetails}>{course.title}</button></Heading>
       <div className={styles.info}>
       <div className={styles.provider}>
-        {course.providerLogo && failedLogo !== course.providerLogo.src && <Image src={course.providerLogo.src} alt="" width={32} height={32} className={styles.logo} onError={() => setFailedLogo(course.providerLogo!.src)} />}
+        <ProviderMark src={course.providerLogo?.src} className={styles.logo}/>
         <span dir="auto">{course.provider}</span>
       </div>
       <div className={styles.metadata}><Clock size={15} aria-hidden="true" /><span>{courseDuration(course)}</span></div>

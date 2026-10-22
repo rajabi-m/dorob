@@ -1,0 +1,14 @@
+.course-filters { display: grid; gap: 24px; }
+.course-filters fieldset { border: 0; min-inline-size: 0; padding: 0; margin: 0; }
+.course-filters legend { padding: 0; font-size: 13px; font-weight: 700; margin-block-end: 8px; }
+.course-filter-choice { display: flex; align-items: center; gap: 10px; min-block-size: 42px; padding-block: 6px; color: var(--ds-muted); cursor: pointer; font-size: 13px; line-height: 1.9; }
+.course-filter-choice input { flex-shrink: 0; inline-size: 16px; block-size: 16px; accent-color: var(--ds-primary); }
+.course-filter-choice:has(input:checked) { color: var(--ds-primary); font-weight: 700; }
+.course-filter-choice span { overflow-wrap: anywhere; }
+.course-catalog-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.course-filter-showcase { padding: 28px; border-block-start: 1px solid var(--ds-border); }
+.course-filter-showcase .course-filters { grid-template-columns: repeat(3,minmax(0,1fr)); margin-block-start: 24px; }
+@media (max-width: 1150px) { .course-catalog-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 600px) {
+ .course-catalog-grid, .course-filter-showcase .course-filters { grid-template-columns: minmax(0,1fr); }
+}

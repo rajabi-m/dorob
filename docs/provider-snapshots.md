@@ -1,10 +1,10 @@
 # Provider snapshots and collection provenance
 
-These are dated, browser-safe fixtures for the completed phase 2 milestone, separate from the scraper contract. Milestone 5 fixture mode projects eight selected saved courses into three editorial groups with explicit sample labeling. Its Python card/detail route has the same three members. Backend mode uses approved publications exclusively. The retained, unrouted historical Python prototype uses eight saved Python offerings; see [frontend behavior](frontend.md#python-course-group-prototype). Most design-system samples remain fictional. Collection checks below are historical, not fresh provider verification.
+These are dated, browser-safe fixtures for the completed phase 2 milestone, separate from the scraper contract. Public pages use the retained API catalogue and judgments. The maintained design-system cards use selected records from the 18-course provider fixture. The retired eight-course Python prototype and its separate JSON fixture were removed by the [frontend refactor](frontend-refactor.md). Most design-system samples remain fictional. Collection checks below are historical, not fresh provider verification.
 
 ## Snapshot fields and source assets
 
-`apps/web/src/data/provider-courses.json` contains 18 real course samples: six each from [Maktabkhooneh](https://maktabkhooneh.org/), [TopLearn](https://toplearn.com/), and [Quera College](https://quera.org/college). Collected on October 1, 2026 from public listings and course-page HTML, including embedded page data. This is a one-time fixture for phase 2, with no runtime collection, refresh job, or live integration. The homepage consumes this snapshot through `provider-homepage-data.ts`; homepage groups use editorial subsets of the snapshot; the Python route uses an additional curated fixture. Most design-system examples remain fictional.
+`apps/web/src/data/provider-courses.json` contains 18 real course samples: six each from [Maktabkhooneh](https://maktabkhooneh.org/), [TopLearn](https://toplearn.com/), and [Quera College](https://quera.org/college). Collected on October 1, 2026 from public listings and course-page HTML, including embedded page data. This is a one-time fixture for phase 2, with no runtime collection, refresh job, or live integration. Independent design-system cards consume this snapshot through the explicit `provider-homepage-data.ts` fixture adapter; public routes do not import it. Most design-system examples remain fictional.
 
 Import the JSON when needed:
 
@@ -56,6 +56,8 @@ Provider marks are local, unmodified copies of assets linked by the official sit
 - [Maktabkhooneh mark](https://statics.maktabkhooneh.org/front/images/maktabkhooneh/new-logo-mobile.svg) → `apps/web/public/providers/maktabkhooneh.svg`
 - [TopLearn mark](https://toplearn.com/Site/images/logo.svg?v=2) → `apps/web/public/providers/toplearn.svg`
 - [Quera mark](https://quera.org/static/images/logo/logo-q.svg) → `apps/web/public/providers/quera.svg`
+- [Sabzlearn mark](https://sabzlearn.ir/logo.svg) → `apps/web/public/providers/sabzlearn.svg` (public homepage header; October 12, 2026)
+- [Roocket mark](https://roocket.ir/img/logo-mark.svg) → `apps/web/public/providers/roocket.svg` (public homepage header; October 12, 2026)
 
 Provider names remain visible if a logo fails. Remote course covers fall back to decorative artwork. The design-system examples use the same component as the homepage; snapshot dates and AI-summary labels remain visible.
 
@@ -179,6 +181,3 @@ The retained deliverables are:
 Extraction scripts and downloaded HTML lived under `/tmp`; they were not added to the repository and are not a maintained, reproducible scraper. This report describes the actual procedure, but recollecting the data would require recreating or retaining those scripts and checking current page structures. No automated retry/backoff system, catalog pagination, refresh policy, or provider adapter was implemented. Provider robots/access-policy review was not performed as part of this collection; phase 3 ingestion planning still requires that review.
 
 Prices, discounts, counts, ongoing-course lengths, and remote images can change. Signed CDN links can expire. Consumers should show the snapshot date, identify generated summaries, handle missing information and images, and avoid presenting the data as live provider information. Full descriptions, full syllabi, student profiles, reviews, and course media were not included in the JSON.
-
-
-Milestone 5 does not recollect these samples or convert their editorial grouping/order into backend review. Fixture group level is unknown; original provider level labels, dated source prices and URLs remain. Backend DTOs retain full original currency/offer/access facts from immutable version-2 revisions. The snapshot-to-fixture mapping is separate from ingestion; see [data modes and boundaries](frontend-integration.md).

@@ -1,0 +1,29 @@
+{
+  "systemId": "local-course-judge",
+  "submissionId": "synthetic-run-001",
+  "inputRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "content": {
+    "schemaVersion": 1,
+    "hero": {
+      "title": "پایتون چیست؟",
+      "subtitle": "اولین قدم برای دنیایی از ساختن.",
+      "description": "دوره‌های پایتون را با توجه به مسیر یادگیری، تمرین‌ها و هزینه بررسی کن.",
+      "topicLabel": "Python",
+      "levelSummary": "از مقدماتی تا پیشرفته"
+    },
+    "courses": [
+      {
+        "courseId": "provider-a:python-complete",
+        "tags": ["project_based", "popular", "expensive"],
+        "strengths": ["پروژه‌های عملی در طول مسیر یادگیری"],
+        "weaknesses": ["برای مرور سریع مبانی، مسیر طولانی دارد"]
+      },
+      {
+        "courseId": "provider-b:python-intro",
+        "tags": [],
+        "strengths": ["تمرین‌های مرحله‌ای برای مفاهیم پایه"],
+        "weaknesses": []
+      }
+    ]
+  }
+}

@@ -1,1 +1,0 @@
-ALTER TABLE "group_memberships" ADD COLUMN "approved_definition_revision" integer DEFAULT 1 NOT NULL;
