@@ -7,22 +7,38 @@ Expose retained current course facts through a stable, read-only website contrac
 ## Requirements
 
 ### Requirement: Automatic current-course eligibility
-Public course reads SHALL expose a course only when its current accepted observation is presentation-ready under the existing thumbnail contract. Eligibility SHALL be independent of group membership and SHALL NOT introduce course publication flags. Minimal references and unready current observations SHALL remain management-only.
+Public course reads SHALL expose courses with a valid accepted current observation and its required accountable pricing section, independently of thumbnail readiness or file availability. Eligibility SHALL be independent of group membership and SHALL NOT introduce course publication flags. Minimal references without a current accepted observation SHALL remain management-only.
 
 #### Scenario: Ready ungrouped course
-- **WHEN** a course has a presentation-ready current observation and no editorial group membership
-- **THEN** it appears in the public list and its public detail resolves
+- **WHEN** a course has a valid accepted current observation and no editorial group membership
+- **THEN** it appears in the public list and its public detail resolves, with its current hosted thumbnail when recorded
 
 #### Scenario: Unready refresh
-- **WHEN** a new current observation has a pending or failed thumbnail while an older observation is ready
-- **THEN** the course is absent from public lists and public detail returns 404 without falling back to historical facts or images
+- **WHEN** a new accepted current observation has a pending, missing or failed thumbnail while an older observation has a ready image
+- **THEN** the course remains visible using the new observation's facts and no thumbnail, without borrowing historical facts or images
+
+#### Scenario: Lost image file
+- **WHEN** a recorded hosted image is deleted, unreadable or corrupt
+- **THEN** the otherwise eligible course remains in discovery and detail, and image loss alone does not change matching totals or order
+
+#### Scenario: Minimal reference
+- **WHEN** a course has only a reference record and no accepted current observation
+- **THEN** it remains absent from public lists and public detail returns 404
 
 ### Requirement: Public course presentation contract
-Public list items SHALL include stable course identity, title, provider identity, source URL, observation identity/time, hosted thumbnail, accountable price summary, and available level/duration/instructors. Public details SHALL additionally expose available description, syllabus, and purchase offers from the same current observation. Responses SHALL omit raw evidence, request hashes, submission IDs, history, and processing diagnostics.
+Public list items SHALL include course identity, title, provider, source URL, observation identity/time, nullable thumbnail metadata, accountable price summary, and available level/duration/instructors. Details SHALL add description, syllabus and purchase offers from that observation. Responses SHALL omit raw evidence, request hashes, submission IDs, history and processing diagnostics. Missing image metadata SHALL be null, without fabricated asset identifiers.
 
 #### Scenario: Source facts without management payload
 - **WHEN** a visitor requests an eligible course
 - **THEN** its public facts belong to its current observation and missing fields stay explicit without exposing raw HTML, locators, or private ingestion metadata
+
+#### Scenario: No current hosted image
+- **WHEN** the current observation has no ready hosted-image association
+- **THEN** list and detail return thumbnail=null and preserve all otherwise available facts
+
+#### Scenario: Recorded image cannot load
+- **WHEN** a ready image association exists but its file is unavailable
+- **THEN** metadata reads may return the recorded current image reference without inspecting its bytes or substituting another observation's image, and the website handles the failed asset request with a fallback
 
 ### Requirement: Accountable public pricing
 Public pricing SHALL distinguish free, paid, subscription, and unknown. It SHALL retain available purchase options and currency meaning without guessing normalized amounts. A list price summary SHALL identify its selected offer or explicitly represent unavailable pricing. Zero SHALL denote free only with explicit free status; unknown pricing SHALL NOT prevent otherwise-ready visibility.
@@ -62,15 +78,15 @@ Search SHALL match title, provider identity/name, and available instructor names
 - **THEN** it remains available in unfiltered discovery but is excluded from that category's results
 
 ### Requirement: Documented safe public reads
-GET `/api/v1/courses/:courseId` SHALL accept canonically encoded course IDs. Public routes SHALL document request/response schemas in OpenAPI, return 422 for invalid inputs, 404 for missing or ineligible details, and 503 for unavailable database or required storage. Errors SHALL exclude credentials, SQL, filesystem paths, and raw internal diagnostics. Existing management and public group APIs SHALL retain their behavior.
+Public course detail SHALL accept canonically encoded course IDs. Public routes SHALL document schemas in OpenAPI and return safe 422 for invalid inputs, 404 for missing or ineligible details, and 503 for unavailable database or incomplete query preparation. Metadata reads SHALL not depend on thumbnail storage availability. Asset reads SHALL retain safe storage errors. Errors SHALL exclude internal diagnostics; management and public group contracts SHALL remain intact.
 
 #### Scenario: Validate requests and storage outage
-- **WHEN** a client submits an invalid category or pagination value, or required storage is unavailable
-- **THEN** a documented safe 422 or 503 response is returned respectively
+- **WHEN** a caller submits invalid category/pagination, the database is unavailable, or thumbnail storage is unavailable
+- **THEN** invalid metadata requests return 422, database failures return 503, and image-storage failure affects asset requests without hiding accepted courses or failing otherwise valid metadata reads
 
 #### Scenario: Encoded identity and compatibility
 - **WHEN** a valid encoded course ID is used for public detail and existing management/group endpoints are exercised
-- **THEN** detail resolves the stable identity and existing endpoint contracts remain unchanged
+- **THEN** detail resolves the stable identity and existing endpoint contracts remain unchanged, including stricter retained-group image eligibility
 
 ### Requirement: Provider and pricing-status course filters
 Optional `provider` SHALL accept one of `maktabkhooneh`, `toplearn`, `quera`, `sabzlearn`, or `roocket` and match the course provider ID. Optional `priceStatus` SHALL accept `free`, `paid`, `subscription`, or `unknown` and match the public price summary status. Omitted filters SHALL impose no restriction. All supplied conditions SHALL combine with AND before matching totals and pagination.
@@ -116,3 +132,37 @@ Unsupported or repeated provider, priceStatus or duration values SHALL return sa
 #### Scenario: Web proxy preserves conditions
 - **WHEN** valid new filters are sent through `/api/courses`
 - **THEN** the backend receives the same conditions with existing bounded validated responses, finite deadlines and a server-only API origin
+
+### Requirement: Bounded individual-course discovery reads
+Course list reads SHALL filter, count and paginate in the database before hydrating public cards. They SHALL NOT load or present every full observation to return a page, inspect thumbnail files, mutate thumbnail readiness, or initiate repair. Matching totals and items SHALL use one consistent database view. Empty and beyond-last-page responses SHALL retain the exact matching total.
+
+#### Scenario: First-page request in a larger catalogue
+- **WHEN** eighteen results are requested from a larger catalogue
+- **THEN** the API hydrates at most eighteen course records and performs no course-image filesystem operations while counting all database-eligible matches
+
+#### Scenario: Empty or excessive offset
+- **WHEN** no courses match or the requested offset exceeds the matching count
+- **THEN** the API returns an empty item list and the correct matching total rather than losing the count with an empty page
+
+#### Scenario: Combined filters preserve results
+- **WHEN** callers combine Persian-normalized literal search, provider, price, duration and optional category filters
+- **THEN** conditions apply before paging with existing price-selection semantics, exact duration boundaries, acceptance-time ordering and stable course-ID ties
+
+#### Scenario: Concurrent observation or editorial change
+- **WHEN** ingestion or group membership changes while count and page queries execute
+- **THEN** the returned total and items describe one consistent database view without mixing observation identities
+
+### Requirement: Coherent prepared course facts
+Search/filter preparation SHALL be derived from accepted observations without altering source facts. Newly accepted observations SHALL become queryable atomically with their current identity; image-state changes SHALL not exclude them. Existing records SHALL be prepared through explicit upgrade tooling before readiness. Interrupted preparation SHALL be resumable without silently serving a partial catalogue.
+
+#### Scenario: Existing deployment upgrade
+- **WHEN** the release upgrades an existing catalogue on its retained disk
+- **THEN** existing eligible records are prepared without re-ingestion or image processing and the completed preparation survives restart
+
+#### Scenario: Failed or interrupted preparation
+- **WHEN** preparing existing query records is interrupted
+- **THEN** startup does not claim catalogue readiness and an explicit retry safely completes preparation without overwriting accepted history
+
+#### Scenario: Ingestion transaction failure
+- **WHEN** deriving query facts fails during acceptance of a new observation
+- **THEN** neither the new current identity nor partially prepared query facts become visible

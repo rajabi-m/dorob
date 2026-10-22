@@ -7,7 +7,7 @@ import type { CourseSnapshot, PublicCourseDetail } from '@dorob/core';
 const health={ ready:async()=>true,close:async()=>{} };
 const payload=rich();payload.providerCourseId='opaque/آموزش:1';
 const assetId=crypto.randomUUID();
-const c=presentCourse({ id:crypto.randomUUID(),courseId:`example:${payload.providerCourseId}`,payload,thumbnail:{ asset:{ id:assetId,url:`/assets/thumbnails/${assetId}`,width:128,height:64 } } } as CourseSnapshot,[]);
+const c=presentCourse({ id:crypto.randomUUID(),courseId:`example:${payload.providerCourseId}`,payload,thumbnail:{ status:'ready',asset:{ id:assetId,url:`/assets/thumbnails/${assetId}`,width:128,height:64 } } } as CourseSnapshot,[]);
 const { description,syllabus,offers,...item }=c;void description;void syllabus;void offers;
 test('public encoded IDs, safe input/missing/unavailable responses and OpenAPI',async()=> {
   const app=createApp(health,undefined,{ publicCourses:{ list:async q=>({ items:[item],total:1,limit:q.limit,offset:q.offset }),detail:async id=>{ if(id===c.id)return c;throw new CatalogError(404); } } });
@@ -18,4 +18,15 @@ test('public encoded IDs, safe input/missing/unavailable responses and OpenAPI',
   const unavailable=createApp(health,undefined,{ publicCourses:{ list:async()=>{throw new Error('SQL password private-secret');},detail:async()=>({raw:'private-secret'} as unknown as PublicCourseDetail) } });
   for(const path of ['/api/v1/courses','/api/v1/courses/example:bad']) {const r=await unavailable.handle(new Request('http://localhost'+path));expect(r.status).toBe(503);expect(await r.text()).not.toMatch(/SQL|private-secret/);}
   const spec=await (await call('/docs/json')).json();for(const path of ['/api/v1/courses','/api/v1/courses/{courseId}'])for(const code of ['200','404','422','503'])expect(spec.paths[path].get.responses[code]).toBeDefined();
+});
+
+test('nullable individual thumbnails are accepted by API response schemas and OpenAPI',async()=>{
+ const course={...c,thumbnail:null};const {description,syllabus,offers,...card}=course;void description;void syllabus;void offers;
+ const app=createApp(health,undefined,{publicCourses:{list:async q=>({items:[card],total:1,limit:q.limit,offset:0}),detail:async()=>course}});
+ for(const path of ['/api/v1/courses','/api/v1/courses/'+encodeURIComponent(c.id)]) {
+  const r=await app.handle(new Request('http://localhost'+path));expect(r.status).toBe(200);
+  const body=await r.json();expect(body.items?body.items[0].thumbnail:body.thumbnail).toBeNull();
+ }
+ const spec=await (await app.handle(new Request('http://localhost/docs/json'))).json();
+ expect(JSON.stringify(spec.paths['/api/v1/courses/{courseId}'].get.responses['200'])).toContain('null');
 });

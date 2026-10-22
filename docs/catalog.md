@@ -324,7 +324,7 @@ See root README and validation for setup and acceptance results.
 The additive browser-safe `PublicCourse`, `PublicCourseDetail`, `PriceSummary`,
 `PublicOffer`, and `CourseQuery` contracts live in `packages/core`. List items
 contain stable `id`, current `snapshotId`, provider identity/name, source URL,
-`checkedAt`, hosted thumbnail identity/path/dimensions/alt, nullable level,
+`checkedAt`, nullable hosted thumbnail identity/path/dimensions/alt, nullable level,
 content minutes and instructors, editorial category IDs, and a price summary.
 Details add nullable description, syllabus and purchase offers from that same
 observation. `null` means unavailable; an empty list means a confirmed empty
@@ -367,26 +367,34 @@ is 18 (1–100), default offset 0 (0–2147483647); both must be integers. `q` i
 at most 200 characters, `category` uses the six fixed IDs, and `freeOnly` is
 `true` or `false`. Unknown/repeated query keys are rejected. Details require a
 canonical encoded ID. Invalid inputs return safe 422; missing/ineligible detail
-returns 404; unavailable database or required image storage returns 503.
+returns 404; unavailable database or incomplete query preparation returns 503.
+Image-storage failures affect asset retrieval, not individual metadata reads.
 
-A current accepted observation with a ready hosted thumbnail is automatically
-eligible, including ungrouped courses and unknown prices. Minimal references,
-pending/missing/failed current images are excluded. Old ready snapshots never
-replace an unready current one. Bounded metadata-only image checks reconcile
-missing files before counting or slicing results; reads never process images.
-A race after the check can still produce an image placeholder in the browser.
+A valid accepted current observation with its accountable pricing section is
+automatically eligible, including ungrouped courses and unknown prices. Minimal
+references remain private. Missing/pending/failed current images return
+`thumbnail=null`; ready associations return recorded metadata without inspecting
+files. Deleted/corrupt assets can fail on retrieval while courses and matching
+counts remain available. Old images never replace a current missing image.
+Metadata reads never inspect files, invalidate image state, collect or repair.
+Management presentation readiness and retained-group evaluated-image rules remain
+strict and separate.
 
 Search uses literal normalized substrings across title, provider ID/name and
 instructors: NFKC, Arabic yeh/kaf to Persian equivalents, ZWNJ to space, collapsed
-whitespace and case folding. `%` and `_` retain literal meaning. This local slice
-reads a consistent view of current candidates and editorial memberships, then
-filters normalized text in memory, avoiding SQL wildcard interpretation. It
-inspects at most four files concurrently and does not load their image bytes.
-This is suitable for the small local catalog, not a large-catalog search index.
+whitespace and case folding. `%`, `_` and backslash retain literal meaning.
+Shared deterministic facts are synchronously maintained with each new accepted
+current pointer, without changing historical replay behavior. Parameterized SQL
+filters/counts/pages compact entries before hydrating only selected cards; it
+uses `strpos` rather than wildcard matching. Count and page share one
+repeatable-read view, including exact totals on empty/excessive-offset pages.
+Detail hydrates just one current observation. Explicit additive migration 008 and
+bounded resumable preparation must complete before API startup; see
+[preparation/version/rebuild commands](course-query-preparation.md).
 
 Categories derive exclusively from published editorial groups with at least two
 members. Duplicate group memberships do not duplicate courses/categories. A
-ready course with no such assignment appears unfiltered and can match search;
+accepted course with no such assignment appears unfiltered and can match search;
 selecting a category may honestly return zero results until curation exists.
 Order is current acceptance time descending, then canonical course ID with `C`
 collation. On unchanged data offset pages are stable; concurrent ingestion can

@@ -3,6 +3,8 @@ import type { CourseIngestion, CourseSnapshot, CourseReference, IngestedCourseDe
 import { CatalogError, transaction, type Pagination } from "./catalog";
 import { factHash, requestHash, validateIngestion } from "./ingestion-validation";
 
+import { COURSE_QUERY_LOCK, writeCourseQueryEntry } from "./course-query-preparation";
+
 export interface StoredAsset extends ThumbnailAsset { storageKey: string }
 export interface UploadRecord { id: string; stagingKey: string; hash: string; profile: string; width: number; height: number; byteSize: number; expiresAt: string; consumedSnapshotId: string | null }
 export interface IngestionRepository {
@@ -43,6 +45,7 @@ export function createIngestionRepository(sql: SQL): IngestionRepository {
       const value = validateIngestion(input); const id = `${value.providerId}:${value.providerCourseId}`;
       const request = requestHash(value), facts = factHash(value);
       return transaction(sql, false, async tx => {
+        await tx`SELECT pg_advisory_xact_lock_shared(${COURSE_QUERY_LOCK})`;
         await tx`INSERT INTO courses(id,provider_id,provider_course_id,title,source_url) VALUES (${id},${value.providerId},${value.providerCourseId},${value.title},${value.sourceUrl}) ON CONFLICT (provider_id,provider_course_id) DO NOTHING`;
         await tx`SELECT id FROM courses WHERE id=${id} FOR UPDATE`;
         const previous = await tx`SELECT id,request_hash FROM course_snapshots WHERE course_id=${id} AND submission_id=${value.submissionId}`;
@@ -61,6 +64,7 @@ export function createIngestionRepository(sql: SQL): IngestionRepository {
         await tx`INSERT INTO thumbnail_attempts(snapshot_id,status) VALUES (${row.id},${thumbnail ? "pending" : "missing"})`;
         if (thumbnail?.kind === "upload") await tx`UPDATE thumbnail_uploads SET consumed_snapshot_id=${row.id} WHERE id=${thumbnail.uploadId}`;
         await tx`UPDATE courses SET current_snapshot_id=${row.id},title=${value.title},source_url=${value.sourceUrl},updated_at=now() WHERE id=${id}`;
+        await writeCourseQueryEntry(tx,id,row.id,value);
         return { snapshot: await readSnapshot(tx, id, row.id), created: true };
       });
     },

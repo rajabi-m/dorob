@@ -32,3 +32,9 @@ test('additive course filters validate choices and preserve legacy query default
   for(const status of ['free','paid','subscription','unknown']) expect(parseCourseQuery(new URLSearchParams('priceStatus='+status)).priceStatus).toBe(status);
   for(const duration of ['under-3h','3-to-10h','10h-plus']) expect(parseCourseQuery(new URLSearchParams('duration='+duration)).duration).toBe(duration);
 });
+
+test('individual thumbnails may be null without fabricated asset metadata',()=>{
+ const c={...example(),thumbnail:null};expect(isPublicCourseDetail(c)).toBe(true);
+ const {description,syllabus,offers,...item}=c;void description;void syllabus;void offers;
+ expect(isPublicCoursePage({items:[item],total:1,limit:18,offset:0})).toBe(true);
+});

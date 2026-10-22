@@ -342,3 +342,63 @@ are synced to main specs (15 requirements); all 24 main specs pass strict
 validation. The Dockerization implementation and archive are included in the
 owner-authorized commit. Hosting preflight, live catalogue transfer and cutover
 remain separate operator work. No image publication, deployment or push is included.
+
+## Course-query optimization release on the existing Darkub disk
+
+This release coordinates nullable individual-course images with new query facts.
+No production operation is performed by implementation. Retained group comparisons
+still require their evaluated assets; their queries are not optimized here.
+
+1. Build/review the Linux AMD64 image and a compatible rollback artifact before
+   release. Capture and verify a complete off-disk database/assets export plus a
+   separate private auth backup using the procedures above. Keep the previous
+   image, original disk identity and existing database password. A backup solely
+   on `/data` does not satisfy this step.
+2. Stop the sole app replica and every remote/old ingestion, embedding, editorial
+   and direct database writer. Use recreate updates, never overlapping old/new
+   replicas. Keep the same `/data` disk and password; do not initialize, re-import,
+   reprocess images or restore an archive over the working disk.
+3. Explicit offline preparation is available before normal startup:
+
+   ```sh
+   docker run --rm --platform linux/amd64 \
+     --env-file /absolute/private/container.env \
+     --mount type=volume,src=YOUR_EXISTING_DATA_VOLUME,dst=/data \
+     -e DOROB_WRITERS_STOPPED=yes \
+     YOUR_REVIEWED_NEW_IMAGE prepare-course-queries
+   ```
+
+   This holds the existing exclusive disk lease, starts only private PostgreSQL,
+   applies pending additive migrations and prepares bounded committed batches.
+   It starts no API/web listener. `DOROB_PREPARATION_SECONDS` defaults to 3600,
+   accepts 1–86400 and bounds this offline operation. Normal startup retains its
+   existing 30-second migration subprocess deadline and total startup budget.
+   If any preparation fails/times out, keep writers stopped and rerun to resume;
+   earlier SQL migrations and batches may already be committed. Never mark the
+   catalogue ready manually or erase migration history to retry.
+4. Start the new image normally. Verify ready health, first/selective/later pages,
+   exact totals under image-independent eligibility, null/failed-image fallback,
+   provider links and normal retained-group comparisons. Additional accepted
+   courses without ready images are intentional. Resume writers only afterward.
+   External consumers must upgrade for nullable individual thumbnails at cutover.
+5. For rollback, stop all writers/app first. Keep additive tables/history and use
+   a **compatible** previous application image. The raw pre-change image's
+   checksum runner refuses a newer ledger: prepare a rollback artifact containing
+   its previous binaries plus the exact unchanged migration 008 in
+   `/app/api/migrations/`. Do not delete the ledger row or edit SQL checksums.
+   For example, build a reviewed temporary Dockerfile with `FROM` pointing to the
+   pinned previous image and `COPY 008_course_catalog_entries.sql
+   /app/api/migrations/008_course_catalog_entries.sql`. Test this artifact on a
+   restored disposable disk before release. Rollback restores stricter individual
+   image visibility; old binaries do not maintain the query projection.
+6. Before any re-upgrade after rollback, keep writers stopped and run the new
+   image with `rebuild-course-queries` in place of `prepare-course-queries` above.
+   It explicitly invalidates completion, creates a fresh generation and rebuilds
+   current accepted facts. Interrupted rebuilds resume with `prepare-course-queries`
+   (repeating `rebuild-course-queries` deliberately starts another generation).
+   The deferred database guard also invalidates completion on old-writer pointer
+   changes; a retained marker cannot silently authorize stale reads. Then repeat
+   the readiness/catalogue checks before resuming writers.
+
+See [projection semantics and commands](course-query-preparation.md) and
+[measured validation](validation.md#course-query-optimization--october-22-2026).

@@ -67,7 +67,8 @@ export function createPublicGroupJudgmentRepository(sql:SQL,thumbnails:Pick<Thum
    const courses=judgment.content.courses.map(({courseId,...assessment})=>{
     const snapshot=snapshotRow(state.sources.get(dependencies.get(courseId)!)!);
     const {description,syllabus,...course}=presentCourse(snapshot,[categoryId]);void description;void syllabus;
-    return {course:{...course,rating:snapshot.payload.feedback?.data?.rating??null},assessment} satisfies AssessedCourse;
+    if(!course.thumbnail) throw new Error('Evaluated image unavailable.');
+    return {course:{...course,thumbnail:course.thumbnail,rating:snapshot.payload.feedback?.data?.rating??null},assessment} satisfies AssessedCourse;
    });
    const providers=[...new Map(courses.map(({course})=>[course.provider.id,course.provider])).values()];
    const summary:PublicJudgedGroup={id:group.id,slug:group.slug,categoryId,hero:judgment.content.hero,courseCount:courses.length,providers,judgmentId:judgment.id,judgedAt:new Date(judgment.receivedAt).toISOString(),covers:courses.slice(0,3).map(({course})=>({courseId:course.id,title:course.title,thumbnail:course.thumbnail}))};

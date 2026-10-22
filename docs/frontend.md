@@ -491,3 +491,20 @@ Owner follow-up: all public comparison rows omit the «گزینه‌های خر�
 including courses with multiple offers. The retained price summary and provider
 link remain visible; offer records remain available through the existing data
 contracts and provider destination.
+
+### Image-independent individual-course cards — October 22, 2026
+
+The shared course card immediately shows «تصویر در دسترس نیست» for null image
+metadata, without requesting an invented asset. A failed image affects only its
+fixed 16:9 image area. Changing the image ID remounts image state and attempts the
+new current reference. The catalogue and six-course homepage shelf retain their
+facts, order, count, provider links and layout. Retained group comparisons keep
+strict evaluated-image eligibility. The fallback uses a compact 32px symbol.
+
+Focused card/catalogue tests verify null/error/new-image transitions, direct
+provider links, and unchanged bounded shelf behavior. A 390px browser pass on the
+isolated restored catalogue shows readable Persian cards, `lang=fa`/`dir=rtl`, no
+horizontal overflow, identical 341×191.8125px image/fallback rectangles, and 3px
+visible keyboard focus through price and provider action. Provider links retain
+`target=_blank`, their exact source URL and Persian new-window notice. The RTL
+detector reports no errors/warnings for the changed card/styles.

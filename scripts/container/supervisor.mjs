@@ -9,8 +9,10 @@ const base = {PATH:'/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 const children = new Map();
 let stopping = false, shutdownPromise;
 let shutdownEscalated=false;
-const maintenance=['export','import'].includes(mode);
-const startupSeconds = Number(maintenance ? process.env.DOROB_TRANSFER_SECONDS ?? '3600' : process.env.DOROB_STARTUP_SECONDS ?? '120');
+const preparation=['prepare-course-queries','rebuild-course-queries'].includes(mode);
+const transfer=['export','import'].includes(mode);
+const maintenance=transfer||preparation;
+const startupSeconds = Number(maintenance ? (preparation ? process.env.DOROB_PREPARATION_SECONDS : process.env.DOROB_TRANSFER_SECONDS) ?? '3600' : process.env.DOROB_STARTUP_SECONDS ?? '120');
 const deadline = Date.now() + startupSeconds * 1000;
 const stateFile = '/run/dorob/ready.json';
 function mark(ready) { writeFileSync(stateFile, JSON.stringify({ready}), {mode:0o644}); }
@@ -97,7 +99,7 @@ function reconcileAuth() {
 }
 async function main() {
   if(mode==='init-volume'){initializeVolume();console.log('Persistent volume prepared.');return;}
-  if(!['start','rotate-auth','backup-auth','restore-auth','export','import'].includes(mode))fail('Unknown container mode.');
+  if(!['start','rotate-auth','backup-auth','restore-auth','export','import','prepare-course-queries','rebuild-course-queries'].includes(mode))fail('Unknown container mode.');
   if(!Number.isInteger(startupSeconds)||startupSeconds<1||startupSeconds>(maintenance?86400:1800))fail('Invalid startup or maintenance deadline.');
   if(process.env.DOROB_DEV_MODE && process.env.DOROB_DEV_MODE!=='false')fail('Development authentication bypass is forbidden in this image.');
   if(process.env.DOROB_EXPOSE_API && !['true','false'].includes(process.env.DOROB_EXPOSE_API))fail('DOROB_EXPOSE_API must be true or false.');
@@ -105,7 +107,7 @@ async function main() {
   if(mode==='start'||maintenance){
     if(!password||password.length<16||password.includes('\0'))fail('Configure a database secret of at least 16 characters.');
   }
-  if(mode==='export'&&process.env.DOROB_WRITERS_STOPPED!=='yes')fail('Stop all writers and acknowledge DOROB_WRITERS_STOPPED=yes before export.');
+  if((mode==='export'||preparation)&&process.env.DOROB_WRITERS_STOPPED!=='yes')fail('Stop all writers and acknowledge DOROB_WRITERS_STOPPED=yes before offline export/preparation.');
   if(mode==='start'){let u;try{u=new URL(origin);}catch{fail('Configure an explicit trusted web origin.');}
     if(u.origin!==origin||!(u.protocol==='https:'||(u.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(u.hostname))))fail('Configure an HTTPS web origin, or loopback HTTP for local acceptance.');}
   mkdirSync('/run/dorob',{recursive:true,mode:0o755});
@@ -149,7 +151,7 @@ async function main() {
   }
   const pgEnv={PGDATA:DATA+'/postgres',PGHOST:'/run/dorob/postgres',PGUSER:'postgres',PGDATABASE:'postgres'};
   const fresh=!existsSync(DATA+'/postgres/PG_VERSION');
-  if(mode==='export'&&fresh)fail('Export requires an existing application database.');
+  if((mode==='export'||preparation)&&fresh)fail('Offline export/preparation requires an existing application database.');
   if(fresh)await run('initdb','/usr/lib/postgresql/17/bin/initdb',['-D',pgEnv.PGDATA,'--encoding=UTF8','--locale=C.UTF-8','--auth-local=trust','--auth-host=scram-sha-256'],{uid:999,env:pgEnv});
   service('postgres','/usr/lib/postgresql/17/bin/postgres',['-D',pgEnv.PGDATA,'-c','listen_addresses=127.0.0.1','-c','unix_socket_directories=/run/dorob/postgres','-c','log_statement=none','-c','log_min_error_statement=panic'],{uid:999,env:pgEnv,essential:true});
   await waitUntil(async()=> (await run('query','psql',['-XAt','-v','ON_ERROR_STOP=1','-c','SELECT 1'],{uid:999,env:pgEnv})).trim()==='1');
@@ -162,9 +164,13 @@ async function main() {
   await run('vector-extension','psql',['-X','-v','ON_ERROR_STOP=1','-d','dorob','-c','CREATE EXTENSION IF NOT EXISTS vector'],{uid:999,env:pgEnv});
   const db=new URL('postgresql://dorob@127.0.0.1:5432/dorob');db.password=password;
   const appEnv={...authEnv,DATABASE_URL:db.href,THUMBNAIL_ASSET_DIR:DATA+'/thumbnails',THUMBNAIL_STAGING_DIR:DATA+'/staging',TMPDIR:'/run/dorob/app'};
-  if(maintenance){
+  if(transfer){
     await run('transfer','node',['/app/container/transfer.mjs',mode==='import'?'restore':'export'],{uid:0,env:{...transferEnv,DATABASE_URL:db.href},timeoutMs:startupSeconds*1000});
     console.log('Offline maintenance completed.');await shutdown(0);return;
+  }
+  if(preparation){
+    await run('course-query-preparation','bun',['/app/api/dist/migrate.js',...(mode==='rebuild-course-queries'?['--rebuild-course-queries']:[])],{env:appEnv,timeoutMs:startupSeconds*1000});
+    console.log('Offline migrations/course query preparation complete.');await shutdown(0);return;
   }
   await run('migrations','bun',['/app/api/dist/migrate.js'],{env:appEnv});
   console.log('Explicit migrations complete.');

@@ -105,3 +105,18 @@ test('shared provider marks hide failed logos while keeping provider identity te
  expect(document.body.textContent).toContain('سبزلرن');
  expect(document.querySelector('img[src*="/providers/"]')).toBeNull();
 });
+
+test('null images render no request, preserve keyboard links, and changed references reset failed state',async()=>{
+ const course={...item,thumbnail:null,title:'استانداردسازی زیرساخت‌های بین‌المللی با Python'};
+ await mounted({ok:true,data:{items:[course],total:1,limit:18,offset:0}});
+ expect(document.querySelector('img[src*="/api/thumbnails/"]')).toBeNull();
+ expect(document.body.textContent).toContain('تصویر در دسترس نیست');
+ const link=document.querySelector<HTMLAnchorElement>('article a')!;link.focus();expect(document.activeElement).toBe(link);expect(link.href).toBe(course.sourceUrl);
+ await act(async()=>root!.render(<PublicCourseCard course={item}/>));
+ const image=document.querySelector('img[src*="/api/thumbnails/"]')!;expect(image).not.toBeNull();
+ await act(async()=>image.dispatchEvent(new window.Event('error') as unknown as Event));
+ expect(document.querySelector('img[src*="/api/thumbnails/"]')).toBeNull();
+ const next={...item,thumbnail:{...item.thumbnail!,id:crypto.randomUUID()}};
+ await act(async()=>root!.render(<PublicCourseCard course={next}/>));
+ expect(new URL(document.querySelector('img[src*="/api/thumbnails/"]')!.getAttribute('src')!,'http://localhost:3000').pathname).toBe('/api/thumbnails/'+next.thumbnail.id);
+});

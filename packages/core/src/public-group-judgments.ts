@@ -2,13 +2,13 @@
 import { categoryRegistry, type CategoryId } from './categories';
 import type { Page } from './index';
 import { conformsJudgmentSchema, judgmentContentSchema, type JudgmentContentV1, type JudgmentSchema } from './group-judgments';
-import { publicCourseDetailSchema, isPublicCourseDetail, uuidPattern, type PublicCourse, type PublicOffer } from './public-courses';
+import { publicCourseDetailSchema, publicCourseThumbnailSchema, isPublicCourseDetail, uuidPattern, type PublicCourse, type PublicOffer } from './public-courses';
 export type GroupPageQuery = { limit:number; offset:number; judgmentId?:string };
 export type GroupListQuery = { limit:number; offset:number; q?:string; category?:CategoryId };
-export type AssessedCourse = { course:PublicCourse & {offers:PublicOffer[]|null;rating:{value:number;scale:number;count:number|null}|null}; assessment:Omit<JudgmentContentV1['courses'][number],'courseId'> };
+export type AssessedCourse = { course:PublicCourse & {thumbnail:NonNullable<PublicCourse['thumbnail']>;offers:PublicOffer[]|null;rating:{value:number;scale:number;count:number|null}|null}; assessment:Omit<JudgmentContentV1['courses'][number],'courseId'> };
 export interface PublicJudgedGroup {
  id:string;slug:string;categoryId:CategoryId;hero:JudgmentContentV1['hero'];courseCount:number;
- providers:PublicCourse['provider'][];covers:{courseId:string;title:string;thumbnail:PublicCourse['thumbnail']}[];
+ providers:PublicCourse['provider'][];covers:{courseId:string;title:string;thumbnail:NonNullable<PublicCourse['thumbnail']>}[];
  judgmentId:string;judgedAt:string;
 }
 export interface PublicJudgedGroupDetail extends Omit<PublicJudgedGroup,'covers'> { courses:Page<AssessedCourse> }
@@ -44,11 +44,11 @@ const int=(minimum=0,maximum=Number.MAX_SAFE_INTEGER):JudgmentSchema=>({type:'in
 const nullable=(s:JudgmentSchema):JudgmentSchema=>({anyOf:[s,{type:'null'}]});
 const page=(s:JudgmentSchema)=>object({items:array(s),total:int(),limit:int(1,100),offset:int(0,2147483647)});
 const fields={id:uuid,slug:{...str,maxLength:100,pattern:'^[a-z0-9]+(?:-[a-z0-9]+)*$'},categoryId:{enum:categoryRegistry.map(c=>c.id)},hero:judgmentContentSchema.properties!.hero,courseCount:int(2),providers:array(publicCourseDetailSchema.properties!.provider),judgmentId:uuid,judgedAt:str};
-export const publicJudgedGroupSchema=object({...fields,covers:array(object({courseId:publicCourseDetailSchema.properties!.id,title:publicCourseDetailSchema.properties!.title,thumbnail:publicCourseDetailSchema.properties!.thumbnail}),3)});
+export const publicJudgedGroupSchema=object({...fields,covers:array(object({courseId:publicCourseDetailSchema.properties!.id,title:publicCourseDetailSchema.properties!.title,thumbnail:publicCourseThumbnailSchema}),3)});
 const {description:_description,syllabus:_syllabus,...courseFields}=publicCourseDetailSchema.properties!;void _description;void _syllabus;
 const rating=nullable(object({value:{type:'number',minimum:0},scale:{type:'number',minimum:0},count:nullable(int())}));
 const assessmentProperties={...judgmentContentSchema.properties!.courses.items!.properties!};delete assessmentProperties.courseId;
-export const assessedCourseSchema=object({course:object({...courseFields,rating}),assessment:object(assessmentProperties)});
+export const assessedCourseSchema=object({course:object({...courseFields,thumbnail:publicCourseThumbnailSchema,rating}),assessment:object(assessmentProperties)});
 export const publicJudgedGroupPageSchema=page(publicJudgedGroupSchema);
 export const publicJudgedGroupDetailSchema=object({...fields,courses:page(assessedCourseSchema)});
 const date=(v:string)=>/^\d{4}-\d\d-\d\dT/.test(v)&&Number.isFinite(Date.parse(v));

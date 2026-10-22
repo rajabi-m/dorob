@@ -1,3 +1,4 @@
+import { prepareCourseQueries } from '../src/course-query-preparation';
 import type {SQL} from 'bun';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -16,7 +17,7 @@ import {createRasterProcessor} from '../src/raster';
 import {rich} from '../src/ingestion-examples';
 import {createApp} from '../src/app';
 export async function createRetainedComparisonFixture(sql:SQL){
- await migrate(sql,await readMigrations());
+ await migrate(sql,await readMigrations());await prepareCourseQueries(sql);
  const directory=await mkdtemp(join(tmpdir(),'dorob-edition-')),raster=createRasterProcessor();
  const c=createCatalogRepository(sql),i=createIngestionRepository(sql),j=createJudgmentRepository(sql);
  const store=createAssetStore({assetDirectory:join(directory,'assets'),stagingDirectory:join(directory,'stage')});

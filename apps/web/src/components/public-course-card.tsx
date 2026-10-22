@@ -38,10 +38,13 @@ function PriceProvenance({ course }: { course:PublicCourse }) {
     </div>
   </div>;
 }
-export function PublicCourseCard({ course }: { course:PublicCourse }) {
+function CourseImage({image}:{image:PublicCourse['thumbnail']}) {
   const [failed,setFailed]=useState(false);
+  return !image || failed ? <div className="catalog-image-placeholder"><ImageOff aria-hidden="true" /><span>تصویر در دسترس نیست</span></div> : <Image src={'/api/thumbnails/'+image.id} alt={image.alt} fill unoptimized sizes="(max-width: 700px) 100vw, (max-width: 1000px) 50vw, 33vw" onError={()=>setFailed(true)} />;
+}
+export function PublicCourseCard({ course }: { course:PublicCourse }) {
   return <article className={`${styles.card} ${styles.realCard}`}>
-    <div className={styles.thumbnail}>{failed ? <div className="catalog-image-placeholder"><ImageOff aria-hidden="true" /><span>تصویر در دسترس نیست</span></div> : <Image src={'/api/thumbnails/'+course.thumbnail.id} alt={course.thumbnail.alt} fill unoptimized sizes="(max-width: 700px) 100vw, (max-width: 1000px) 50vw, 33vw" onError={()=>setFailed(true)} />}
+    <div className={styles.thumbnail}><CourseImage key={course.thumbnail?.id ?? 'missing'} image={course.thumbnail}/>
       <span className={`ds-badge ${styles.level}`} dir="auto">{course.level ?? 'سطح ثبت نشده'}</span></div>
     <div className={styles.body}>
       <div className={styles.textGroup}>

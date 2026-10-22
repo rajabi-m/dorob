@@ -1,5 +1,20 @@
 # Dorob — Project Plan
 
+October 22, 2026 — `optimize-course-catalog-queries` adds prepared PostgreSQL
+filtering/counting/paging and page-only card hydration. Accepted individual courses
+remain visible without ready images; API thumbnails are nullable and the shared
+card uses its Persian fallback. Retained groups keep strict evaluated-image rules.
+Explicit migration/preparation and rebuild tooling gates startup, resumes committed
+batches and detects old-writer drift. See [preparation](docs/course-query-preparation.md),
+[existing-disk release/rollback](docs/container-deployment.md#course-query-optimization-release-on-the-existing-darkub-disk)
+and [actual checks/timings](docs/validation.md#course-query-optimization--october-22-2026).
+All 10 tasks and planning artifacts are complete. The change is
+[archived](openspec/changes/archive/2026-10-22-optimize-course-catalog-queries/)
+with four added and four modified requirements synced across three main specs;
+all 24 main specs pass strict validation. The owner-authorized commit covers this
+implementation, synced specs, archive and documentation. Production migration
+and deployment remain separate operations.
+
 Created: September 30, 2026
 
 October 22, 2026 — Owner-requested remote laptop workers add opt-in container

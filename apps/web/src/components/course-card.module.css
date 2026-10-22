@@ -52,3 +52,5 @@
 .footer :global(.catalog-price) > span { margin-block-end: 2px; }
 .priceTooltip { position: absolute; inset-block-end: 100%; inset-inline-start: 0; inline-size: max-content; max-inline-size: min(240px, calc(100vw - 64px)); padding: 8px 10px; border: 1px solid var(--ds-border); border-radius: 8px; background: var(--ds-surface); color: var(--ds-ink); box-shadow: 0 6px 18px color-mix(in srgb, var(--ds-ink) 12%, transparent); font-size: 11px; line-height: 1.9; overflow-wrap: anywhere; }
 .priceTooltip[hidden] { display: none; }
+/* Keep the shared unavailable-image symbol compact inside the fixed image area. */
+.thumbnail :global(.catalog-image-placeholder) svg { inline-size: 32px; block-size: 32px; }

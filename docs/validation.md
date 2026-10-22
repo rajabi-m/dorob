@@ -1875,3 +1875,117 @@ the deployed image must be rebuilt before enabling the runtime option.
 The owner authorized committing and pushing this scope. Commit review reuses the
 focused checks above; staged whitespace and scope review exclude generated data
 and private credentials. Full remote-worker acceptance remains pending.
+
+
+## Course query optimization — October 22, 2026
+
+Pre-change baseline uses the October 19 pre-007 backup restored into a fresh
+disposable PostgreSQL/pgvector 17 container (0.5 CPU, 1 GiB RAM). No existing
+volume is mounted. Host Bun/API and existing local image files are used; the CPU
+and memory limit applies to PostgreSQL only, not the host process. There are
+1,495 accepted current courses and 1,715 historical observations; old image gating
+returns 1,493. “Cold” means first request of that query in this process, not a
+flushed PostgreSQL/OS cache. Instrumentation surrounds SQL, concurrent image
+checks and presentation separately; it does not run processing or initialization.
+
+| Request/run | SQL ms | Image checks ms | Hydration ms | Total ms | Total/items | Hydrated |
+| --- | ---: | ---: | ---: | ---: | --- | ---: |
+| First/cold | 322.00 | 15.03 | 2.80 | 346.46 | 1493/18 | 1493 |
+| First/warm | 284.50 | 15.39 | 1.99 | 305.83 | 1493/18 | 1493 |
+| Roocket/free/under-3h cold | 278.89 | 16.05 | 2.17 | 297.43 | 9/9 | 1493 |
+| Roocket/free/under-3h warm | 283.58 | 12.39 | 1.44 | 297.56 | 9/9 | 1493 |
+| Offset 1440/cold | 308.65 | 14.28 | 1.57 | 328.30 | 1493/18 | 1493 |
+| Offset 1440/warm | 269.22 | 14.16 | 1.40 | 288.07 | 1493/18 | 1493 |
+
+All requests inspect 1,493 image associations and hydrate 1,493 full observations
+before paging. Timings are local evidence, not a production SLA.
+
+Post-change uses the same restored database and resource settings. Count/page SQL
+returns only compact facts and selected card paths; the hydration observer records
+only selected records. The thumbnail service is a throwing sentinel (zero calls).
+
+| Request/run | Count ms | Page SQL ms | Hydration ms | Total ms | Total/items | Hydrated |
+| --- | ---: | ---: | ---: | ---: | --- | ---: |
+| First/cold | 7.57 | 7.75 | 0.09 | 18.81 | 1495/18 | 18 |
+| First/warm | 4.64 | 7.75 | 0.03 | 13.83 | 1495/18 | 18 |
+| Roocket/free/under-3h cold | 1.41 | 4.21 | 0.21 | 7.33 | 9/9 | 9 |
+| Roocket/free/under-3h warm | 1.25 | 51.62 | 0.03 | 54.46 | 9/9 | 9 |
+| Offset 1440/cold | 5.71 | 9.42 | 0.02 | 17.21 | 1495/18 | 18 |
+| Offset 1440/warm | 3.78 | 7.05 | 0.02 | 11.97 | 1495/18 | 18 |
+
+The series intentionally retains the warm selective outlier; a production image
+build ran concurrently. Cold/warm remain query-order labels, not cache flushing.
+The +2 overall matches are the intended image-independent visibility change;
+selective matches remain nine. No provider facts or images were refreshed.
+`apps/api/scripts/course-query-benchmark.ts` is the explicit read-only follow-up
+benchmark; it requires an explicitly selected isolated DATABASE_URL.
+
+Full Linux AMD64 image rehearsal uses a separate freshly initialized application
+volume, the previous acceptance image and the same 1,495-course backup (extension
+DDL/comment entries excluded following the existing transfer convention). No
+working/production disk is attached. Offline `prepare-course-queries` starts
+PostgreSQL at 19:26:25 UTC and finishes preparation/shutdown at 19:26:36 UTC,
+about ten seconds with the **whole container** capped at 0.5 CPU/1 GiB. This fits
+the unchanged 30-second normal migration subprocess budget on this hardware;
+the explicit bounded offline path is available for slower/larger deployments.
+Subsequent normal startup reports healthy and protected authentication readiness.
+Three internal API smoke reads return 200: first 1495/18 (390 ms), selective 9/9
+(193 ms), later 1495/18 (595 ms). These include Node fetch overhead inside the
+same capped container and are not comparable to the host-Bun timings above.
+A Docker sample reports 293.9 MiB / 1 GiB and 8.34% CPU (instantaneous, not a peak
+or sustained capacity claim). No production latency guarantee is inferred.
+
+Verification passes: workspace lint and type checking, API production build,
+Node web production build and Linux AMD64 production image build; strict change
+validation; 22 focused API/database tests and 33 core/web tests in isolated
+processes as required for web module mocks. Covered API suites: preparation,
+public courses, ingestion, thumbnail HTTP and retained comparisons. Core/web suites:
+query derivation, individual/group contracts, card/catalogue UI, transport and
+course-route acceptance. A transport test initially could not bind its local
+server under the sandbox; rerunning with local networking enabled passes. DOM-only
+image sizing/React act warnings remain test-harness warnings; actual 390px browser
+layout/focus and the changed card/style RTL audit pass.
+
+The compatible rollback image contains the previous application binaries plus
+unchanged migration 008 (the raw old checksum runner refuses unknown ledger
+entries). It becomes healthy on the same disposable disk. One authenticated old
+API ingestion returns 201 and automatically sets preparation `complete=false`.
+With all writers stopped, the new image's offline `rebuild-course-queries` runs
+from 19:28:50 to 19:29:01 UTC, then exits cleanly. New-image startup after rebuild
+is healthy; list total is 1,496 including the one explicitly synthetic rollback
+course, whose detail returns 200 with `thumbnail=null`. Completion is true with
+15 bounded batches. This is isolated acceptance data, not a working catalogue
+change. Final completion verification locks the state row against deferred
+old-writer invalidation; focused preparation and immutable-migration regressions
+pass (five tests, including three additional migration-ledger checks).
+
+The final image, including the completion-lock fix, also completes an offline
+rebuild under the same 0.5 CPU/1 GiB cap (about 12 seconds including PostgreSQL
+startup/shutdown). An actual standalone API process against the disposable
+unprepared catalogue exits 1 before opening its listener and prints the safe
+preparation diagnostic. All rehearsal containers/test disks are removed afterward;
+built review images remain local. Scoped diff review and whitespace checks find
+no private database/assets, credentials, generated outputs or lockfile changes.
+No production migration, deployment, commit, push or OpenSpec archival is performed.
+
+
+October 22 archival follow-up: all four planning artifacts and 10/10 tracked tasks
+are complete. Four added and four modified requirements are synced to
+`course-catalog`, `course-thumbnails` and `public-course-catalog`, preserving their
+titles, purposes and unrelated content. All 24 main specs pass strict validation.
+The change is archived at
+`openspec/changes/archive/2026-10-22-optimize-course-catalog-queries/`.
+No application code, commit, push or production operation is part of archival.
+
+
+Owner-authorized commit review — October 22, 2026: scope includes only the course
+query optimization, nullable individual images, preparation/rollback tooling,
+focused tests, synced specs, archive and affected documentation. Prior application
+and container checks above are reused because archival changes only specs/docs.
+The owner-requested local development launcher subsequently applied migration 008
+and preparation to the existing local database and served the catalogue for review;
+no source ingestion or production migration/deployment was performed.
+Pre-commit refresh passes workspace lint/types, strict validation of all 24 main
+specs and staged whitespace checks. Previous production API/web/image builds and
+58 focused tests remain applicable; no application code changed since verification.
+Staged-file review excludes private assets, credentials and generated output.

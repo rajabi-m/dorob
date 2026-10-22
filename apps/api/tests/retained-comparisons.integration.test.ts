@@ -43,7 +43,7 @@ describe.skipIf(process.env.API_INTEGRATION!=='1')('retained comparison editions
   expect(JSON.stringify(await p.detail('python',page))).toBe(originalBody); // Ready facts alone cannot borrow another image.
   await t.process(savedFourth.courseId,savedFourth.id);
   const next=await p.detail('python',page);expect(next.judgmentId).toBe(replacement.id);expect(next.courseCount).toBe(4);expect(next.courses.items.map(x=>x.course.id)).toEqual(['example:3','example:2','example:0','example:1']);
-  const {description,syllabus,...expectedFacts}=latest;void description;void syllabus;expect(next.courses.items.find(x=>x.course.id==='example:0')!.course).toEqual({...expectedFacts,rating:changed.feedback!.data!.rating});
+  const {description,syllabus,...expectedFacts}=latest;void description;void syllabus;expect(next.courses.items.find(x=>x.course.id==='example:0')!.course).toEqual({...expectedFacts,thumbnail:latest.thumbnail!,rating:changed.feedback!.data!.rating});
   await expect(p.detail('python',{...page,judgmentId:original.id})).rejects.toMatchObject({status:409});
   const before=JSON.stringify(await sql`SELECT * FROM course_group_judgments ORDER BY id`);
   const result=await app.handle(new Request('http://localhost/api/v1/judged-groups/python'));expect(result.status).toBe(200);expect((await result.json()).judgmentId).toBe(replacement.id);

@@ -7,10 +7,11 @@ export interface PriceSummary {
   amount: number | null; originalAmount: number | null; unit: 'toman';
   startingPrice: boolean; billingPeriod: PublicOffer['billingPeriod']; unavailableReason: 'not-established' | null;
 }
+export interface PublicCourseThumbnail { id: string; path: string; width: number; height: number; alt: string }
 export interface PublicCourse {
   id: string; snapshotId: string; checkedAt: string;
   provider: { id: string; name: string }; title: string; sourceUrl: string;
-  thumbnail: { id: string; path: string; width: number; height: number; alt: string };
+  thumbnail: PublicCourseThumbnail | null;
   level: string | null; contentMinutes: number | null; instructors: { name: string; role: string | null }[] | null;
   categoryIds: CategoryId[]; price: PriceSummary;
 }
@@ -56,10 +57,11 @@ const uuid: PublicSchema = { ...text(),pattern:uuidPattern };
 const period = nullable(values('monthly','yearly','other'));
 const offer = object({ id:text(200),type:values('full','content','subscription','free','other'),label:nullable(str()),amount:nullable(num()),originalAmount:nullable(num()),unit:values('toman'),status:values('free','paid','subscription','unknown'),billingPeriod:period,certificateIncluded:nullable(bool),accessDescription:nullable(str()),supportDescription:nullable(str()) });
 const lesson = object({ id:nullable(str()),order:int(),title:text(),description:nullable(str()),type:values('video','text','exercise','quiz','project','live','other','unknown'),providerType:nullable(str()),contentMinutes:nullable(num()) });
+export const publicCourseThumbnailSchema = object({ id:uuid,path:{ ...text(),pattern:'^/assets/thumbnails/[0-9a-fA-F-]{36}$' },width:int(1,640),height:int(1,640),alt:str() });
 const courseProperties = {
   id:{ ...text(265),pattern:'^[a-z0-9]+(?:-[a-z0-9]+)*:[^\\u0000-\\u001f]{1,200}$' },snapshotId:uuid,checkedAt:text(100),
   provider:object({ id:{ ...text(64),pattern:'^[a-z0-9]+(?:-[a-z0-9]+)*$' },name:text() }),title:text(300),sourceUrl:text(2048),
-  thumbnail:object({ id:uuid,path:{ ...text(),pattern:'^/assets/thumbnails/[0-9a-fA-F-]{36}$' },width:int(1,640),height:int(1,640),alt:str() }),
+  thumbnail:nullable(publicCourseThumbnailSchema),
   level:nullable(str()),contentMinutes:nullable(num()),instructors:nullable(array(object({ name:text(),role:nullable(str()) }))),categoryIds:array(values(...categoryRegistry.map(item => item.id))),
   price:object({ status:values('free','paid','subscription','unknown'),offerId:nullable(text(200)),amount:nullable(num()),originalAmount:nullable(num()),unit:values('toman'),startingPrice:bool,billingPeriod:period,unavailableReason:nullable(values('not-established')) }),
 };
@@ -93,7 +95,7 @@ function validPrice(p: PriceSummary | PublicOffer): boolean {
 function validCourse(c: PublicCourse): boolean {
   try {
     const url = new URL(c.sourceUrl);
-    return validCourseId(c.id) && c.id.startsWith(c.provider.id + ':') && ['http:','https:'].includes(url.protocol) && !url.username && !url.password && !/\s/.test(c.sourceUrl) && /^\d{4}-\d\d-\d\dT/.test(c.checkedAt) && Number.isFinite(Date.parse(c.checkedAt)) && c.thumbnail.path === `/assets/thumbnails/${c.thumbnail.id}` && new Set(c.categoryIds).size === c.categoryIds.length && validPrice(c.price);
+    return validCourseId(c.id) && c.id.startsWith(c.provider.id + ':') && ['http:','https:'].includes(url.protocol) && !url.username && !url.password && !/\s/.test(c.sourceUrl) && /^\d{4}-\d\d-\d\dT/.test(c.checkedAt) && Number.isFinite(Date.parse(c.checkedAt)) && (c.thumbnail === null || c.thumbnail.path === `/assets/thumbnails/${c.thumbnail.id}`) && new Set(c.categoryIds).size === c.categoryIds.length && validPrice(c.price);
   } catch { return false; }
 }
 export function isPublicCoursePage(value: unknown): value is Page<PublicCourse> {

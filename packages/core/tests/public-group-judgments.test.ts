@@ -33,3 +33,11 @@ test('group matching uses selected hero fields, normalized literal text and cate
  expect(matchesGroupSearch(g,{q:'python',category:'code'})).toBe(true);
  expect(matchesGroupSearch(g,{q:'python',category:'design'})).toBe(false);
 });
+
+test('null individual images do not weaken assessed-course or cover contracts',()=>{
+ const g=groupExample();const bad=structuredClone(g);Object.assign(bad.courses.items[0].course,{thumbnail:null});
+ expect(isPublicJudgedGroupDetail(bad)).toBe(false);
+ const {courses,...summary}=g;
+ const covers=courses.items.map(({course})=>({courseId:course.id,title:course.title,thumbnail:null}));
+ expect(isPublicJudgedGroupPage({items:[{...summary,covers}],total:1,limit:12,offset:0})).toBe(false);
+});
