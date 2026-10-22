@@ -133,6 +133,11 @@ change is [archived](openspec/changes/archive/2026-10-22-dockerize-single-contai
 with owner acceptance of the remaining browser-check task; its two capabilities
 are synced to main specs (15 requirements).
 
+For workers running on your laptop, enable `DOROB_EXPOSE_API=true`, route a
+separate HTTPS API domain to port 3001, and set the laptop’s `DOROB_BACKEND_URL`
+and private `DOROB_ADMIN_TOKEN`. PostgreSQL remains private. See
+[remote worker setup](docs/container-deployment.md#remote-laptop-workers).
+
 ## Backend development
 
 The independent `apps/api` workspace uses Bun 1.3.8 and TypeScript. Root `dev`, `build`, and `start` still run the web app. API commands run with `apps/api` as the working directory; Bun loads `apps/api/.env` automatically for development and built-output startup.

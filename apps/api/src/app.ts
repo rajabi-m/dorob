@@ -35,9 +35,9 @@ export function createApp(database: Database, catalog?: CatalogRepository, depen
         return Response.json({error:{code:'unauthorized',message:'Admin authorization required.'}},{status:401,headers:{'www-authenticate':'Bearer','cache-control':'no-store'}});
       }
     })
-    .get('/internal/admin-auth', ({request}) => {
-      const host=new URL(request.url).hostname;
-      if(!['127.0.0.1','localhost','[::1]'].includes(host))return new Response(null,{status:404});
+    .get('/internal/admin-auth', ({request,server}) => {
+      const peer=server?.requestIP(request)?.address;
+      if(!peer || !['127.0.0.1','::1','::ffff:127.0.0.1'].includes(peer))return new Response(null,{status:404});
       return Response.json({dev:auth.dev,generation:auth.generation},{headers:{'cache-control':'no-store'}});
     },{detail:{hide:true}})
     .onAfterHandle(({ path, response }) => {

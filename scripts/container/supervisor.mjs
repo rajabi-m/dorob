@@ -100,6 +100,7 @@ async function main() {
   if(!['start','rotate-auth','backup-auth','restore-auth','export','import'].includes(mode))fail('Unknown container mode.');
   if(!Number.isInteger(startupSeconds)||startupSeconds<1||startupSeconds>(maintenance?86400:1800))fail('Invalid startup or maintenance deadline.');
   if(process.env.DOROB_DEV_MODE && process.env.DOROB_DEV_MODE!=='false')fail('Development authentication bypass is forbidden in this image.');
+  if(process.env.DOROB_EXPOSE_API && !['true','false'].includes(process.env.DOROB_EXPOSE_API))fail('DOROB_EXPOSE_API must be true or false.');
   const password=process.env.DOROB_DATABASE_PASSWORD,origin=process.env.DOROB_WEB_ORIGIN;
   if(mode==='start'||maintenance){
     if(!password||password.length<16||password.includes('\0'))fail('Configure a database secret of at least 16 characters.');
@@ -167,7 +168,7 @@ async function main() {
   }
   await run('migrations','bun',['/app/api/dist/migrate.js'],{env:appEnv});
   console.log('Explicit migrations complete.');
-  service('api','bun',['/app/api/dist/index.js'],{env:{...appEnv,HOST:'127.0.0.1',PORT:'3001'},essential:true});
+  service('api','bun',['/app/api/dist/index.js'],{env:{...appEnv,HOST:process.env.DOROB_EXPOSE_API==='true'?'0.0.0.0':'127.0.0.1',PORT:'3001'},essential:true});
   await waitUntil(async()=>{
     const r=await fetch('http://127.0.0.1:3001/health/ready',{signal:AbortSignal.timeout(5000)});
     if(!r.ok)return false;

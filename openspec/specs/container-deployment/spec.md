@@ -14,11 +14,15 @@ The project SHALL build one Linux AMD64 image that runs the production Next.js w
 - **THEN** the website, API and database operate within that single container without development servers or source bind mounts
 
 ### Requirement: Private internal services
-Only the website listener SHALL accept traffic from outside the container. The API and PostgreSQL SHALL bind exclusively to loopback or private local sockets. Public reads SHALL retain existing behavior, and management SHALL retain the implemented admin-token authentication contract. Runtime configuration SHALL keep secrets out of browser assets.
+By default only the website SHALL accept external traffic. Operators MAY expose API port 3001 for remote workers through HTTPS ingress; management SHALL require bearer authentication. PostgreSQL SHALL remain on loopback or private sockets. Internal auth state SHALL require a verified loopback peer, ignoring host and forwarding headers. Public reads SHALL retain existing behavior and browser assets SHALL exclude secrets.
 
 #### Scenario: Inspect network exposure
-- **WHEN** the container is running
+- **WHEN** the container runs without explicit API exposure
 - **THEN** the public port serves the website while API and PostgreSQL ports cannot be reached through the container network interface
+
+#### Scenario: Remote worker access
+- **WHEN** the operator enables API exposure and routes an HTTPS API domain to port 3001
+- **THEN** remote workers can use management endpoints with the admin bearer token, unauthenticated management calls are refused, internal authentication state remains inaccessible to remote peers, and PostgreSQL remains private
 
 ### Requirement: Independent persistent state
 The runtime SHALL store PostgreSQL data, thumbnails, staging and private authentication state beneath the documented `/data` mount. A required volume identity SHALL distinguish persistent storage from the container filesystem. Missing, unreadable, incompatible or unwritable state SHALL fail closed without reinitializing existing data. Ordinary restart and image replacement SHALL preserve retained data and tokens.

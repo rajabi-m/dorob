@@ -69,3 +69,10 @@ standalone-host records are retained and block bootstrap for offline inspection;
 PID existence alone is never used across containers. Stop the whole container for
 `rotate-auth`. Portable catalogue exports omit credentials; explicit recovery
 copies only a separate private credential record before first normal boot.
+
+
+For remote laptop workers, the container can opt into API exposure on port 3001
+with `DOROB_EXPOSE_API=true`. Route it through HTTPS and supply the existing admin
+bearer token through the worker environment. Internal auth metadata requires an
+actual loopback socket peer; request Host and forwarding headers grant no access.
+See [remote worker setup](container-deployment.md#remote-laptop-workers).

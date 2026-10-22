@@ -46,7 +46,7 @@ COPY --from=build /runtime-auth /app/auth
 COPY scripts/container/storage.mjs scripts/container/supervisor.mjs scripts/container/health.mjs scripts/container/transfer.mjs scripts/container/archive.mjs scripts/container/entrypoint.sh /app/container/
 RUN chmod 0755 /app/container/entrypoint.sh && mkdir /data && chown -R 10001:10001 /app/web/apps/web/.next
 WORKDIR /app
-EXPOSE 3000
+EXPOSE 3000 3001
 HEALTHCHECK --interval=15s --timeout=6s --start-period=130s --retries=3 CMD ["node", "/app/container/health.mjs"]
 ENTRYPOINT ["/usr/bin/tini", "--", "/app/container/entrypoint.sh"]
 CMD ["start"]

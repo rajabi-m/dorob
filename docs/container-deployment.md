@@ -60,8 +60,9 @@ keyboard browser acceptance remains unchecked. The working catalogue is unchange
 ## Storage and local runner
 
 Use one replica, one independently mounted disk and stop-before-replace releases.
-The image exposes only website port 3000; API 3001 and PostgreSQL 5432 listen on
-loopback. A root bootstrap validates the mount and owns its kernel lease;
+By default only website port 3000 accepts external traffic; API 3001 and
+PostgreSQL 5432 listen on loopback. Set `DOROB_EXPOSE_API=true` to bind the API
+to all interfaces for remote workers. PostgreSQL stays on loopback. A root bootstrap validates the mount and owns its kernel lease;
 PostgreSQL runs as UID/GID 999 and API/web as UID/GID 10001. Do not recursively
 change ownership of an existing mounted tree. The retained layout is:
 
@@ -104,6 +105,26 @@ For raw Docker, create a named volume, run the image with that mount in
 Supply `DOROB_DATABASE_PASSWORD` privately and an exact `DOROB_WEB_ORIGIN` (HTTPS
 in hosting, no path/query/fragment). `DOROB_DEV_MODE=true` is rejected. The same
 database password is required after replacement; it is not silently reset.
+
+## Remote laptop workers
+
+For Darkub remote workers, list HTTP service ports **3000 and 3001** and set
+`DOROB_EXPOSE_API=true` in runtime environment variables. Route the website domain
+to 3000 and a separate HTTPS API domain (for example `https://api.your-domain.ir`)
+to 3001. Do not expose PostgreSQL port 5432. Keep `DOROB_WEB_ORIGIN` set to the
+website origin; the web app continues calling the API over loopback.
+
+On the laptop, set `DOROB_BACKEND_URL` to the HTTPS API origin and provide
+`DOROB_ADMIN_TOKEN` privately through the environment. Existing ingestion and
+embedding commands use those settings and send bearer authorization. The token
+has full management access. No browser CORS configuration is needed for these
+command-line workers. The internal `/internal/admin-auth` endpoint checks the
+actual socket peer and rejects remote peers even with spoofed Host or forwarding
+headers. Missing peer information is rejected as well.
+
+The image must be rebuilt from these changes before exposure will work. Dockerfile
+port declarations alone do not enable a listener. The separate local Compose
+runner still publishes only website port 3000; it does not opt into API exposure.
 
 ## Startup, probes and shutdown
 

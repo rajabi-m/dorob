@@ -1853,3 +1853,25 @@ unchecked task; this does not claim completion of mobile/keyboard acceptance.
 Existing application/image/lifecycle/transfer results above were reused; no
 additional broad application tests or production image rebuild were run during
 archive/commit review. Hosting preflight and real-data transfer remain unperformed.
+
+
+## Optional remote worker API access — October 22, 2026
+
+`DOROB_EXPOSE_API=true` enables the container API listener on all interfaces at
+port 3001. Omission/false preserves loopback-only binding; PostgreSQL is unchanged.
+The internal auth endpoint requires an actual loopback socket peer and fails
+closed when peer information is absent, ignoring Host and forwarding headers.
+API lint/type checking and production API bundling pass. All six focused API
+auth tests pass (143 assertions), including missing-peer and spoofed-header
+coverage; supervisor syntax and whitespace checks pass. The updated deployment
+spec passes strict validation. A real local listener confirms loopback internal
+access, non-loopback internal denial with spoofed headers and remote management
+401 without a bearer. Authenticated requests pass the bearer gate; a synthetic
+remote request returned domain validation 422, while a local authenticated GET
+returned the expected unavailable-database 503. No working database was used.
+A full Docker image rebuild and Darkub ingress/worker acceptance have not run;
+the deployed image must be rebuilt before enabling the runtime option.
+
+The owner authorized committing and pushing this scope. Commit review reuses the
+focused checks above; staged whitespace and scope review exclude generated data
+and private credentials. Full remote-worker acceptance remains pending.

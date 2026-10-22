@@ -2,6 +2,13 @@
 
 Created: September 30, 2026
 
+October 22, 2026 — Owner-requested remote laptop workers add opt-in container
+API exposure through `DOROB_EXPOSE_API=true` and HTTPS ingress on port 3001.
+Default loopback binding and private PostgreSQL are retained. Internal auth
+metadata requires an actual loopback peer instead of trusting the request host.
+Workers retain existing bearer-token authentication; no new worker or backend
+service is introduced. The image needs a rebuild before deployment of this change.
+
 October 22, 2026 — Owner-approved integration merges the completed
 `backend-restart` work into `main`. The merge retains the restart implementation
 and preserves the superseded backend in Git history at `a95f83f`, without
