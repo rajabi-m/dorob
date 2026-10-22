@@ -6,16 +6,18 @@ import {useRouter} from 'next/navigation';
 import {ArrowRight} from 'lucide-react';
 import type {PublicJudgedGroupDetail} from '@dorob/core';
 import type {GroupResult} from '@/lib/group-result';
+import {FeaturedCourseShelfSkeleton} from './card-skeleton';
 import {ProviderMark} from './provider-mark';
 import {PublicPrice} from './public-price';import {courseDuration} from '@/lib/persian-format';
 
 type FeaturedResult=GroupResult<PublicJudgedGroupDetail>;
-export function FeaturedGroupLoading(){return <div className="hero-course-shelf" aria-busy="true"><p role="status">در حال دریافت مجموعه منتخب…</p></div>;}
+export function FeaturedGroupLoading(){return <FeaturedCourseShelfSkeleton/>;}
 export function FeaturedGroupShelf({initial}:{initial:Promise<FeaturedResult>}) {
  const router=useRouter(),[pending,startTransition]=useTransition();
  return <FeaturedGroupContents result={use(initial)} pending={pending} onRetry={()=>startTransition(()=>router.refresh())}/>;
 }
 export function FeaturedGroupContents({result,pending=false,onRetry}:{result:FeaturedResult;pending?:boolean;onRetry?:()=>void}) {
+ if(pending&&!result.ok)return <FeaturedGroupLoading/>;
  if(!result.ok||result.data.courses.total<3||result.data.courses.offset!==0||result.data.courses.items.length<3)return <div className="hero-course-shelf hero-featured-unavailable" aria-busy={pending}>
   <h2>مجموعه دوره‌ها</h2><p role="status">{result.ok||result.error.code==='not_found'?'مجموعه‌ی منتخب فعلاً قابل نمایش نیست.':'دریافت مجموعه‌ی منتخب ممکن نشد.'}</p>
   {!result.ok&&result.error.code!=='not_found'&&<button className="ds-compare" disabled={pending} onClick={onRetry}>{pending?'در حال دریافت…':'تلاش دوباره'}</button>}

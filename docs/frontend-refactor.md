@@ -154,3 +154,16 @@ links retain route-specific styling; course filters/grid retain their own styles
 Neither route imports the other route's catalogue stylesheet. The design-system
 presentation section includes an API-independent layout example with success,
 pending, empty and failure status choices alongside the standalone modal example.
+
+### Card loading states
+
+`card-skeleton.tsx` reuses the public course/group card layout modules and shared
+color tokens. Homepage Suspense boundaries, shelf retries, the featured hero shelf
+and initial catalogue results show non-interactive skeletons with one Persian status
+announcement per list. Catalogue transitions preserve committed results; retries
+from an error show skeletons. The soft pulse stops under reduced motion. The
+maintained design-system page includes both card skeleton variants.
+
+Catalogue loading renders the same search, breadcrumb, sidebar, filter chips and
+mobile dialog as the loaded page. After URL parsing, a data Suspense boundary
+passes the selected state to that layout; skeletons occupy only its results grid.

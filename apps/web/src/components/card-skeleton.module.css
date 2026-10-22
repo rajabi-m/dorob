@@ -1,0 +1,17 @@
+.card { pointer-events: none; }
+.target { cursor: default; }
+.bone { display: block; inline-size: 100%; block-size: 14px; border-radius: 4px; background: color-mix(in srgb, var(--ds-primary) 10%, var(--ds-surface)); animation: breathe 1.8s ease-in-out infinite; }
+.cover { block-size: 100%; border-radius: inherit; }
+.lines { display: grid; gap: 12px; padding-block: 6px; }
+.short { inline-size: 68%; }
+.caption { inline-size: 48%; block-size: 12px; margin-block-start: 6px; }
+.provider { display: flex; align-items: center; gap: 6px; }
+.logo { inline-size: 24px; block-size: 24px; border-radius: 50%; }
+.name { inline-size: 64px; }
+.duration { inline-size: 60px; block-size: 12px; }
+.price { inline-size: 76px; block-size: 20px; }
+.button { inline-size: 100%; min-inline-size: 86px; block-size: 44px; }
+.groupTitle { inline-size: min(240px, 100%); block-size: 28px; }
+.target p { display: grid; gap: 12px; }
+@keyframes breathe { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .bone { animation: none; } }

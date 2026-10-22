@@ -53,3 +53,13 @@ test('mobile category panel has a modal label, close control and focus return',a
  await act(async()=>panel.querySelector('nav a:last-child')!.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true}) as unknown as Event));expect(document.activeElement).toBe(panel.querySelector('button'));
  await act(async()=>panel.querySelector<HTMLButtonElement>('button')!.click());expect(panel.hasAttribute('open')).toBe(false);expect(document.activeElement).toBe(trigger);
 });
+
+test('loading keeps active search and filters with skeletons confined to results',async()=>{
+ await mount(<CatalogLoading state={{page:2,q:'Python',category:'code'}}/>);
+ expect(document.querySelector<HTMLInputElement>('input[name=q]')!.value).toBe('Python');
+ expect(document.querySelector('.catalog-sidebar')).not.toBeNull();
+ expect(document.querySelector('.catalog-active .catalog-chip')).not.toBeNull();
+ expect(document.querySelector('.catalog-results[aria-busy="true"] .home-group-list')).not.toBeNull();
+ expect(document.querySelectorAll('.catalog-sidebar [aria-hidden="true"]').length).toBe(0);
+ expect(document.querySelector('.catalog-sidebar a[aria-current="true"]')!.textContent).toBe('برنامه‌نویسی');
+ });

@@ -1,5 +1,14 @@
 # Dorob | دورُب
 
+October 22, 2026 — Public course and group cards now have matching animated
+skeletons for initial loading and error retries, including homepage shelves and
+the featured hero. Catalogue loading preserves search, URL-selected filters and
+chips, with skeletons confined to the real results layout. Existing results remain
+visible during catalogue transitions. Reduced motion disables the pulse; both
+variants are included in `/design-system`. Web lint/types/build, RTL checks and
+16 focused catalogue/featured-shelf tests pass. See
+[loading behavior](docs/frontend-refactor.md#card-loading-states).
+
 October 22, 2026 — `optimize-course-catalog-queries` adds prepared PostgreSQL
 filtering/counting/paging and page-only card hydration. Accepted individual courses
 remain visible without ready images; API thumbnails are nullable and the shared

@@ -89,3 +89,13 @@ test('homepage submits group search and preserves unfiltered shelf during typing
  }
  expect(calls).toBe(0);expect(document.querySelectorAll('#courses article')).toHaveLength(1);
 });
+
+test('loading keeps active search and filters with skeletons confined to results',async()=>{
+ await mount(<CourseCatalogLoading state={{page:2,q:'Python',provider:'roocket',priceStatus:'free'}}/>);
+ expect(document.querySelector<HTMLInputElement>('input[name=q]')!.value).toBe('Python');
+ expect(document.querySelector('.catalog-sidebar')).not.toBeNull();
+ expect(document.querySelector('.catalog-active .catalog-chip')).not.toBeNull();
+ expect(document.querySelector('.catalog-results[aria-busy="true"] .course-catalog-grid')).not.toBeNull();
+ expect(document.querySelectorAll('.catalog-sidebar [aria-hidden="true"]').length).toBe(0);
+ expect(document.querySelector<HTMLInputElement>('input[name="desktop-provider"][value="roocket"]')!.checked).toBe(true);
+ });
