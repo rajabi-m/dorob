@@ -2,7 +2,9 @@
 .home-container { inline-size: min(1160px, calc(100% - 64px)); margin-inline: auto; }
 .home-header { background: var(--ds-surface); border-block-end: 1px solid var(--ds-border); }
 .home-header-inner { display: flex; align-items: center; gap: 24px; min-block-size: 96px; }
-.home-header nav { display: flex; gap: 20px; font-size: 12px; }
+.home-header nav { display: flex; gap: 12px; font-size: 13px; }
+.home-header nav a { display: inline-flex; align-items: center; min-block-size: 44px; padding-inline: 4px; text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 2px; text-underline-offset: 7px; }
+.home-header nav a[aria-current="page"] { color: var(--ds-primary); text-decoration-color: currentColor; }
 .home-header nav a:hover, .home-footer a:hover { color: var(--ds-primary); }
 .home-search { margin: 0; flex: 1; min-inline-size: 0; min-block-size: 52px; padding-block: 4px; }
 .home-search input { font-size: 14px; text-align: start; }
@@ -31,7 +33,7 @@
   .home-header .ds-brand { font-size: 25px; }
   .home-search { order: 5; flex-basis: 100%; }
   .home-search input { font-size: 13px; }
-  .home-header nav { margin-inline-start: auto; gap: 14px; font-size: 11px; }
+  .home-header nav { margin-inline-start: auto; gap: 6px; }
   .home-section { padding-block: 24px; }
   .home-section h2 { font-size: 20px; }
   .home-footer { flex-wrap: wrap; gap: 14px; }

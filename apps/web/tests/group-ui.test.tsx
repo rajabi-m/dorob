@@ -10,6 +10,12 @@ Object.assign(globalThis,{IntersectionObserver:class{observe(){}disconnect(){}}}
 afterEach(async()=>{if(root)await act(async()=>root?.unmount());root=undefined;document.body.innerHTML='';browserGroups.list=original;});
 const g=groupExample();const {courses,...summary}=g;const card={...summary,covers:courses.items.map(({course})=>({courseId:course.id,title:course.title,thumbnail:course.thumbnail}))};
 async function mount(component:React.ReactNode){const node=document.createElement('div');document.body.append(node);root=createRoot(node);await act(async()=>root!.render(component));return node;}
+test('comparison header returns to the catalog while category breadcrumbs stay filtered',()=>{
+ const page=document.createElement('div');page.innerHTML=renderToStaticMarkup(<JudgedGroupPage group={g}/>);
+ const headerLink=page.querySelector('header nav a');
+ expect(headerLink?.textContent).toBe('مجموعه دوره‌ها');expect(headerLink?.getAttribute('href')).toBe('/groups');
+ expect(page.querySelector(`nav[aria-label="مسیر صفحه"] a[href="/groups?category=${g.categoryId}"]`)).not.toBeNull();
+});
 test('all categories render actual hero/counts and exact assessments without fixture claims',()=>{
  for(const categoryId of ['code','design','data','business','language','tools'] as const){const html=renderToStaticMarkup(<JudgedGroupPage group={{...g,categoryId}}/>);expect(html).toContain(g.hero.title);expect(html).toContain('۲ دوره از ۱ ارائه‌دهنده');expect(html.indexOf(g.courses.items[0].course.title)).toBeGreaterThan(-1);expect(html).not.toContain('سیستم طراحی');}
  const html=renderToStaticMarkup(<JudgedCourseRow entry={g.courses.items[0]} index={21}/>);expect(html).toContain('۲۲');expect(html).toContain('پر هزینه');expect(html).not.toContain('نقاط ضعف');expect(html).toContain('noopener noreferrer');expect(html).not.toContain('effortHours');

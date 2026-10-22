@@ -614,3 +614,13 @@ with all 13 tasks complete. Its seven modified and two added public-judgment
 requirements are synced to the main spec. Verification and the existing Bun web
 production-build limitation are recorded in
 [validation](docs/validation.md#retained-public-comparison-editions--october-22-2026).
+
+
+October 22, 2026 — `polish-public-frontend` is archived at
+[`2026-10-22-polish-public-frontend`](openspec/changes/archive/2026-10-22-polish-public-frontend/)
+with all four artifacts and 12 tasks complete, including removal of all public
+purchase-option disclosures. Its seven added requirements are synced to the
+three existing main specs, and all 21 main specs pass strict validation. The
+known Bun production page-data limitation remains. See
+[validation](docs/validation.md#public-frontend-polish--october-22-2026) for
+browser coverage and checks.

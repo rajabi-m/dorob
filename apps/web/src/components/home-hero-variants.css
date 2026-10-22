@@ -86,7 +86,7 @@
   .hero-wheel-logo span { font-size: 11px; font-weight: 650; white-space: nowrap; }
   .hero-wheel-logo img { flex-shrink: 0; inline-size: 40px; block-size: 40px; object-fit: contain; }
 }
-@media (max-width: 420px) {
+@media (max-width: 520px) {
   .hero-discovery .hero-option-copy { grid-template-columns: minmax(0, 1fr) 104px; column-gap: 12px; }
   .hero-discovery .hero-option-copy h1 { font-size: clamp(25px, 7vw, 29px); }
   .hero-provider-wheel { grid-row: 1; min-block-size: 164px; }
@@ -101,7 +101,7 @@
   .hero-wheel-logo img { inline-size: 28px; block-size: 28px; }
   .hero-wheel-logo:nth-child(3) { transform: scale(1.07); }
 }
-@media (max-width: 420px) and (prefers-reduced-motion: reduce) {
+@media (max-width: 520px) and (prefers-reduced-motion: reduce) {
   .hero-wheel-stage { gap: 7px; }
   .hero-wheel-logo { inline-size: 96px; block-size: 26px; border-radius: 7px; }
   .hero-wheel-logo img { inline-size: 21px; block-size: 21px; }

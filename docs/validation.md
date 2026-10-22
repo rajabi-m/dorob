@@ -1609,3 +1609,81 @@ now hash bounded files to detect same-size corruption, with at most four concurr
 checks. This remains a local-catalogue scan; public histories and manual edition
 publication/revocation are not introduced. Rollback restores strict current-only
 visibility without rewriting retained data.
+
+
+## Public frontend polish — October 22, 2026
+
+Hero browser inspection passed at 320, 390, 430, 520, 521, 700 and 701 CSS px.
+Computed grid placement spans description/action across both columns through
+520px; the wheel/strip switch remains at 700/701px. No horizontal page overflow
+was measured. Native action href remains `#groups`; the compact reduced-motion
+media rule was moved with the layout. Source geometry verifies all five static
+provider tiles fit (5 × 26px + 4 × 7px = 158px within a 164px stage); browser
+media emulation is unavailable, so reduced-motion coverage here combines source
+inspection with the existing fallback rather than an emulated screenshot.
+Matched 430px hero before/after captures were saved outside Git with the requested
+review images. Completed checks are recorded below.
+
+Comparison computed-style checks passed at 320, 390, 430 and 1280px: bullets
+13px/24.7px line-height, instructors/metadata 12px, no page overflow. The real
+Aparat comparison retained its absent weakness section and underlying offer data.
+The isolated `bun test apps/web/tests/group-ui.test.tsx` suite passed, covering
+retained facts/order, sparse assessments, safe text, gallery selection and
+provider navigation. A matched 390px row screenshot records the larger prose.
+
+Header inspection passed on `/`, `/groups`, `/courses` and the Aparat comparison
+at 320, 390, 430 and 1280px: settled computed labels are 13px and link heights
+44px, with no page overflow. Current-catalog underline and a single accessible
+current link persist on group category/page and course provider/page URLs.
+Keyboard Tab exposes the 3px catalog focus ring; keyboard activation of the
+comparison header opens `/groups`. The new focused header/category regression
+assertion passes in the group suite (7 tests). Existing unrelated happy-dom
+image geometry and React act warnings remain non-failing.
+Matched header and destination screenshots distinguish the visible selection
+change from the behavior change (homepage section before, group catalog after).
+
+Course-card checks passed at 320, 390, 430 and 1280px: provider/duration,
+discounted original amount and currency text all compute to 12px; no price-trigger
+clipping or page overflow was measured. The first desktop row's footers share
+the same top coordinate. The homepage retains six cards with the same public
+overrides. `/design-system` fixture cards retain 11px providers and 9px currency
+text. Paid/discounted/free real cards were inspected in the browser; subscription,
+unknown-price, sparse-fact and long mixed-direction variants pass in the isolated
+course suite (7 tests), together with retained source URLs and hover/touch/keyboard
+provenance behavior. Browser focus opens provenance, Escape closes it while
+retaining focus, and repeated activation toggles its pinned state.
+
+Integrated checks: `bun run lint` and `bun run typecheck` pass across the
+workspace. All five focused UI suites pass in separate processes: group UI,
+course UI, catalog interactions, group catalog UI and course catalog UI. The RTL
+detector reports zero errors and zero warnings for each of the five touched
+application UI files. Strict OpenSpec validation and `git diff --check` pass.
+
+`bun run build` compiles and completes TypeScript, then fails during page-data
+collection for `/api/admin/courses` with the previously documented Bun error:
+`Expected CommonJS module to have a function wrapper`. A successful full
+production build is not claimed; no dependencies or build configuration changed.
+
+The five delivered image pairs cover the 430px hero, 390px comparison row, catalog
+header, old/new group-link destinations and 390px real course card. Routing
+images show the old homepage-section target and new catalog target after loading.
+Original browser JPEGs and labelled side-by-side sheets are saved outside the
+repository under the chat's visualization directory (`frontend-polish/`).
+Screenshots, generated output, database changes and unrelated scraper work are
+not included in Git. Archival verification is recorded below.
+
+Purchase-disclosure follow-up: the English A1 comparison renders zero article
+disclosures with both price summaries and provider links preserved. The shared
+row removes this UI for all courses, independent of offer count. Workspace
+lint/types, seven group UI tests, touched-file RTL checks, strict OpenSpec and
+whitespace checks pass. The production build again compiles and completes types
+before the existing Bun CommonJS-wrapper failure during page-data collection
+(this run reports `/_not-found`). The selected browser page was refreshed and
+a screenshot saved outside Git.
+
+Archive verification: the seven added delta requirements were compared against
+all three merged main specs before the change was moved to
+`openspec/changes/archive/2026-10-22-polish-public-frontend/`. Existing spec titles,
+purposes and requirement content are preserved; no delta operation headers remain
+in main specs. All 21 main specs pass strict validation. All four artifacts and
+12 tracked tasks were complete, and `.openspec.yaml` was preserved in the archive.

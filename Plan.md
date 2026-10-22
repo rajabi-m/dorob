@@ -2,6 +2,20 @@
 
 Created: September 30, 2026
 
+October 22, 2026 — `polish-public-frontend` is
+[archived](openspec/changes/archive/2026-10-22-polish-public-frontend/) with all
+four artifacts and 12 tasks complete. The compact hero extends through 520px;
+comparison and real-card supporting text is larger; public header links have
+larger targets and a current-catalog underline; comparison headers return to
+`/groups`. Owner follow-up removes purchase-option disclosures from every public
+comparison row while retaining price summaries, provider actions and offer data.
+The accepted identity, animations, hero section action and catalog behavior are
+preserved. Seven added requirements are synced to three existing main specs;
+all 21 main specs pass strict validation. Browser images and focused UI, lint,
+type and RTL checks are recorded in
+[validation](docs/validation.md#public-frontend-polish--october-22-2026). The known
+Bun production page-data failure remains after successful compilation/types.
+
 October 22, 2026 — Maktabkhooneh parsing accepts colon-delimited embedded page
 keys alongside the legacy hyphenated format. The course slug identity check is
 preserved; regression coverage verifies equivalent output and mismatched-ID

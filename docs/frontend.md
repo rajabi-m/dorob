@@ -461,3 +461,33 @@ Query serializers, URL restoration, group/course eligibility, cards and twelve/
 eighteen result page sizes are unchanged. The independent `/design-system`
 example exercises the shared layout with local success, pending, empty and error
 choices; it does not query the catalogue API.
+
+
+## Public frontend polish — October 22, 2026
+
+The compact mobile hero now extends through 520px: the small provider wheel
+shares the heading row and the description/action span both columns. The 700px
+mobile boundary, provider animations, reduced-motion fallback and native
+`#groups` action are retained. This is a presentation refinement; the existing
+real-group shelf and course counts are unchanged.
+
+Comparison assessment bullets use 13px with 1.9 line-height; instructor and
+metadata text use 12px on desktop and mobile. Empty assessments remain omitted
+and retained facts, underlying offer data and course order remain unchanged.
+
+Public header navigation uses 13px labels with 44px minimum link heights. The
+existing current catalog link is underlined through `aria-current="page"`,
+including filtered and paginated URLs. The comparison header's existing
+«مجموعه دوره‌ها» link now opens `/groups`; category breadcrumbs and the homepage
+hero's section action retain their distinct destinations. No menu items were added.
+
+Shared real course cards use 12px provider/duration text and original-price and
+currency text, on both the homepage shelf and `/courses`. These overrides apply
+only to public real cards; fixture cards and unrelated price/button consumers
+retain their independent styling. Footer alignment, price dates, instructor
+placement and direct provider source actions remain intact.
+
+Owner follow-up: all public comparison rows omit the «گزینه‌های خرید» disclosure,
+including courses with multiple offers. The retained price summary and provider
+link remain visible; offer records remain available through the existing data
+contracts and provider destination.
