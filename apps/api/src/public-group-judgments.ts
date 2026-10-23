@@ -1,5 +1,5 @@
 import type {SQL} from 'bun';
-import type {JudgmentInputManifest,JudgmentGroupContext,JudgmentContentV1,Page,PublicJudgedGroup,PublicJudgedGroupDetail,GroupPageQuery,AssessedCourse} from '@dorob/core';
+import type {JudgmentInputManifest,JudgmentGroupContext,JudgmentContentV1,Page,PublicJudgedGroup,PublicJudgedGroupDetail,GroupPageQuery,AssessedCourse,GroupSort} from '@dorob/core';
 import {matchesGroupSearch,conformsJudgmentSchema,judgmentManifestSchema,judgmentContentSchema,uuidPattern,type GroupListQuery} from '@dorob/core';
 import {CatalogError,transaction} from './catalog';
 import {canonicalJson} from './group-judgment-source';
@@ -9,6 +9,16 @@ import type {ThumbnailService} from './thumbnails';
 export interface PublicGroupJudgmentRepository {list(query:GroupListQuery):Promise<Page<PublicJudgedGroup>>;detail(slug:string,query:GroupPageQuery):Promise<PublicJudgedGroupDetail>}
 type Candidate={groupId:string;id:string;receivedAt:string;content:JudgmentContentV1;groupContext:JudgmentGroupContext;inputManifest:JudgmentInputManifest};
 type Source=SnapshotRow&{storageKey:string};
+/** Sort a copy of the projected edition before slicing; judge order breaks ties. */
+export function sortAssessedCourses(courses:AssessedCourse[],sort:GroupSort='recommended'):AssessedCourse[] {
+ if(sort==='recommended')return [...courses];
+ const bucket=(p:AssessedCourse['course']['price'])=>p.status==='free'?0:p.status==='unknown'||p.amount===null?2:p.status==='subscription'?1:0;
+ const amount=(p:AssessedCourse['course']['price'])=>p.status==='free'?0:p.amount!;
+ return courses.map((entry,index)=>({entry,index})).sort((a,b)=>{
+  const ap=a.entry.course.price,bp=b.entry.course.price,ab=bucket(ap),bb=bucket(bp);
+  return ab-bb||(ab===0?(amount(ap)-amount(bp))*(sort==='price-asc'?1:-1):0)||a.index-b.index;
+ }).map(({entry})=>entry);
+}
 export function createPublicGroupJudgmentRepository(sql:SQL,thumbnails:Pick<ThumbnailService,'inspectReadOnlyAvailability'>):PublicGroupJudgmentRepository {
  async function read(slug?:string){
   const state=await transaction(sql,true,async tx=>{
@@ -79,7 +89,7 @@ export function createPublicGroupJudgmentRepository(sql:SQL,thumbnails:Pick<Thum
  return {
   list:q=>safe(async()=>{const all=(await read()).filter(g=>matchesGroupSearch(g.summary,q));return {items:all.slice(q.offset,q.offset+q.limit).map(g=>g.summary),total:all.length,limit:q.limit,offset:q.offset};}),
   detail:(slug,q)=>safe(async()=>{const [g]=await read(slug);if(!g)throw new CatalogError(q.judgmentId?409:404);if(q.judgmentId&&q.judgmentId!==g.summary.judgmentId)throw new CatalogError(409);
-   const {covers,...summary}=g.summary;void covers;return {...summary,courses:{items:g.courses.slice(q.offset,q.offset+q.limit),total:g.courses.length,limit:q.limit,offset:q.offset}};
+   return {...g.summary,covers:g.courses.map(({course})=>({courseId:course.id,title:course.title,thumbnail:course.thumbnail})),courses:{items:sortAssessedCourses(g.courses,q.sort).slice(q.offset,q.offset+q.limit),total:g.courses.length,limit:q.limit,offset:q.offset}};
   }),
  };
 }

@@ -1,5 +1,21 @@
 # Dorob | دورُب
 
+October 23, 2026 — `add-course-group-sorting` implements public comparison sorting:
+«ارزش خرید» preserves judge order; explicit low-to-high/high-to-low price controls
+sort the entire retained edition before pagination. URL state, judgment pins,
+tie order and subscription/unknown-price buckets are preserved. Numbered
+thumbnail overlays are removed. Owner follow-ups use a unified brand-blue value
+button with gold sparkle, a visible sorting label/icon, and no info tooltip.
+Mobile uses a full-width custom sorting dropdown; desktop retains the buttons.
+The hero now uses complete canonical detail covers independently of sorted/paged
+rows. This slideshow correction is unverified at the owner’s request.
+All nine tasks are complete. The spec-driven change is [archived](openspec/changes/archive/2026-10-23-add-course-group-sorting/)
+with its one modified and nine added requirements synced to the main spec.
+See [comparison sorting validation](docs/validation.md#public-comparison-sorting--october-23-2026).
+The owner-authorized commit includes implementation, documentation, synced specs
+and archive. No migration, collection, inference, push or deployment is included.
+
+
 October 23, 2026 — Reduce Next.js page-data build concurrency to one worker and
 set `TOKIO_WORKER_THREADS=1` for the Docker web-build command after fresh hosted
 builds exhausted threads with 47 page-data workers. Earlier cached success did

@@ -1,4 +1,7 @@
-import {test,expect,afterEach} from 'bun:test';import {Window} from 'happy-dom';import {act} from 'react';import {renderToStaticMarkup} from 'react-dom/server';
+const navigations:string[]=[];
+mock.module('next/navigation',()=>({useRouter:()=>({push:(href:string)=>navigations.push(href),refresh(){}})}));
+import {test,expect,afterEach,mock} from 'bun:test';import {Window} from 'happy-dom';import {act} from 'react';import {renderToStaticMarkup} from 'react-dom/server';
+import {GroupRetry} from '../src/components/group-retry';
 import {groupExample} from '../../../packages/core/tests/public-group-fixture';
 import {JudgedGroupPage,GroupAssessment,JudgedCourseRow,GroupGallery} from '../src/components/judged-group-page';
 import {GroupResults,PublicGroupCard} from '../src/components/public-group-section';import {browserGroups} from '../src/lib/browser-groups';import {groupFailure} from '../src/lib/group-result';
@@ -18,7 +21,7 @@ test('comparison header returns to the catalog while category breadcrumbs stay f
 });
 test('all categories render actual hero/counts and exact assessments without fixture claims',()=>{
  for(const categoryId of ['code','design','data','business','language','tools'] as const){const html=renderToStaticMarkup(<JudgedGroupPage group={{...g,categoryId}}/>);expect(html).toContain(g.hero.title);expect(html).toContain('۲ دوره از ۱ ارائه‌دهنده');expect(html.indexOf(g.courses.items[0].course.title)).toBeGreaterThan(-1);expect(html).not.toContain('سیستم طراحی');}
- const html=renderToStaticMarkup(<JudgedCourseRow entry={g.courses.items[0]} index={21}/>);expect(html).toContain('۲۲');expect(html).toContain('پر هزینه');expect(html).not.toContain('نقاط ضعف');expect(html).toContain('noopener noreferrer');expect(html).not.toContain('effortHours');
+ const html=renderToStaticMarkup(<JudgedCourseRow entry={g.courses.items[0]} />);expect(html).not.toContain('aria-label="ترتیب');expect(html).toContain('پر هزینه');expect(html).not.toContain('نقاط ضعف');expect(html).toContain('noopener noreferrer');expect(html).not.toContain('effortHours');
  expect(renderToStaticMarkup(<GroupAssessment assessment={{tags:[],strengths:[],weaknesses:[]}} title="دوره"/>)).toBe('');
  const hostile=renderToStaticMarkup(<GroupAssessment assessment={{tags:[],strengths:['<script>bad</script>'],weaknesses:[]}} title="دوره"/>);expect(hostile).toContain('&lt;script&gt;');
  expect(renderToStaticMarkup(<PublicGroupCard group={card}/>)).toContain('/groups/python');
@@ -62,4 +65,59 @@ test('superseded showcase retries cannot replace the latest response',async()=>{
  await act(async()=>{retry.click();retry.click();});expect(pending).toHaveLength(2);
  await act(async()=>pending[1].resolve({ok:true,data:{items:[card],total:1,limit:3,offset:0}}));expect(document.body.textContent).toContain(g.hero.title);
  await act(async()=>pending[0].resolve(groupFailure('unavailable')));expect(document.body.textContent).not.toContain('تلاش دوباره');
+});
+
+test('sort controls navigate with pinned edition and reset offset, without thumbnail ranks',async()=>{
+ const group={...g,courses:{...g.courses,total:8,limit:2,offset:4}};
+ for(const sort of ['recommended','price-asc','price-desc'] as const){
+  const html=renderToStaticMarkup(<JudgedGroupPage group={group} sort={sort}/>);
+  expect(html).not.toContain('aria-label="ترتیب');expect(html).toContain('پر هزینه');
+  const node=document.createElement('div');node.innerHTML=html;
+  expect(node.textContent).toContain('مرتب‌سازی بر اساس');
+  const controls=node.querySelector('[aria-label="مرتب‌سازی دوره‌ها"]')!;
+  expect(controls.querySelector('[aria-pressed="true"]')?.textContent).toBe(sort==='recommended'?'ارزش خرید':sort==='price-asc'?'قیمت: کم به زیاد':'قیمت: زیاد به کم');
+  for(const link of node.querySelectorAll<HTMLAnchorElement>('.group-paging a')){const q=new URL(link.href).searchParams;expect(q.get('sort')??'recommended').toBe(sort);expect(q.get('judgmentId')).toBe(g.judgmentId);}
+ }
+ await mount(<JudgedGroupPage group={group}/>);navigations.length=0;
+ await act(async()=>{const buttons=document.querySelectorAll<HTMLButtonElement>('[aria-label="مرتب‌سازی دوره‌ها"] button[aria-pressed]');buttons[1]!.click();});
+ const url=new URL(navigations[0]!,'http://localhost');expect(url.searchParams.get('sort')).toBe('price-asc');expect(url.searchParams.get('offset')).toBe('0');expect(url.searchParams.get('limit')).toBe('2');expect(url.searchParams.get('judgmentId')).toBe(g.judgmentId);
+});
+
+test('value sort is one unified button without info or tooltip',()=>{
+ const node=document.createElement('div');node.innerHTML=renderToStaticMarkup(<JudgedGroupPage group={g}/>);
+ const controls=node.querySelector('[aria-label="مرتب‌سازی دوره‌ها"]')!;
+ expect(controls.querySelectorAll('button')).toHaveLength(3);
+ expect(controls.querySelector('[aria-pressed="true"]')?.textContent).toBe('ارزش خرید');
+ expect(controls.querySelector('[aria-pressed="true"] svg')).not.toBeNull();
+ expect(node.querySelector('[role="tooltip"]')).toBeNull();
+ expect(node.textContent).not.toContain('دربارهٔ مرتب‌سازی هوشمند');
+ expect(node.textContent).toContain('تاریخ بررسی');
+});
+
+test('restart link retains mode but drops paging and judgment pin',()=>{
+ for(const sort of ['recommended','price-asc','price-desc'] as const){
+  const node=document.createElement('div');node.innerHTML=renderToStaticMarkup(<GroupRetry message="دوباره تلاش کن" slug="python" sort={sort} restart/>);
+  const href=node.querySelector('a')!.getAttribute('href')!;const q=new URL(href,'http://localhost').searchParams;
+  expect(q.get('sort')??'recommended').toBe(sort);expect(q.has('judgmentId')).toBe(false);expect(q.has('offset')).toBe(false);
+ }
+});
+
+
+test('custom mobile sort supports selection, keyboard focus and dismissal',async()=>{
+ const group={...g,courses:{...g.courses,limit:2,offset:4,total:8}};
+ await mount(<JudgedGroupPage group={group}/>);navigations.length=0;
+ const trigger=document.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')!;
+ expect(trigger.textContent).toContain('ارزش خرید');expect(trigger.querySelectorAll('svg').length).toBe(3);
+ await act(async()=>trigger.click());
+ const menu=document.querySelector('[role="menu"]')!;
+ const options=menu.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]');
+ expect(options).toHaveLength(3);expect(options[0]!.getAttribute('aria-checked')).toBe('true');expect(document.activeElement).toBe(options[0]);
+ await act(async()=>menu.dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}) as unknown as Event));expect(document.activeElement).toBe(options[1]);
+ await act(async()=>menu.dispatchEvent(new w.KeyboardEvent('keydown',{key:'End',bubbles:true}) as unknown as Event));expect(document.activeElement).toBe(options[2]);
+ await act(async()=>menu.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}) as unknown as Event));expect(document.querySelector('[role="menu"]')).toBeNull();expect(document.activeElement).toBe(trigger);
+ await act(async()=>trigger.click());
+ await act(async()=>document.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')[2]!.click());
+ expect(document.querySelector('[role="menu"]')).toBeNull();
+ const url=new URL(navigations[0]!,'http://localhost');expect(url.searchParams.get('sort')).toBe('price-desc');expect(url.searchParams.get('offset')).toBe('0');expect(url.searchParams.get('limit')).toBe('2');expect(url.searchParams.get('judgmentId')).toBe(g.judgmentId);
+ await act(async()=>trigger.click());await act(async()=>document.body.dispatchEvent(new w.PointerEvent('pointerdown',{bubbles:true}) as unknown as Event));expect(document.querySelector('[role="menu"]')).toBeNull();
 });

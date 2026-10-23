@@ -508,3 +508,30 @@ horizontal overflow, identical 341×191.8125px image/fallback rectangles, and 3p
 visible keyboard focus through price and provider action. Provider links retain
 `target=_blank`, their exact source URL and Persian new-window notice. The RTL
 detector reports no errors/warnings for the changed card/styles.
+
+### Public comparison sorting — October 23, 2026
+
+The group course list offers «ارزش خرید», «قیمت: کم به زیاد», and «قیمت: زیاد به کم»
+under the visible «مرتب‌سازی بر اساس» label with a decorative sorting icon. The
+URL is authoritative on server rendering, reload and back/forward. Mode changes
+reset offset and preserve page size and the displayed judgment pin. Pagination
+preserves mode; conflicts restart without the invalid pin while retaining valid
+sort. Invalid sort URLs recover to recommended. Known subscriptions and unknown
+prices follow the bucket rules in `catalog.md`.
+
+«ارزش خرید» preserves exact judge order. It is a single unified button with a
+sparkle icon, soft brand-blue treatment when unselected, and brand-blue fill with
+a gold sparkle when selected, using existing semantic tokens. No info icon or
+tooltip remains. The old inline ordering sentence is removed; review date and
+course assessment attribution remain. At up to 760px, a single full-width custom dropdown replaces the desktop label
+and buttons, displays «مرتب‌سازی:» and the current mode, and uses the same URL
+navigation behavior. CSS hides the inactive variant from focus and accessibility.
+The custom mobile menu uses selected radio menu items with arrow/Home/End navigation,
+Escape focus restoration and outside/blur dismissal. «ارزش خرید» has brand-blue
+styling and a sparkle icon on both its menu option and selected trigger, without
+an AI text label. Both variants retain visible keyboard focus. Numbered thumbnail rank/position overlays are removed in
+every mode; course assessment tags remain.
+
+Hero slideshow follow-up: group detail now supplies the complete canonical cover
+list. The hero consumes it independently of sorted/paged rows and is keyed only
+by judgment ID, preserving active slide state across row-sort/page navigation.

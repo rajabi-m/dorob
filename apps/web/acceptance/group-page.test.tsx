@@ -13,3 +13,20 @@ test('dynamic page metadata, real slugs, legacy redirects and errors',async()=>{
  expect((await Page(props('python',{offset:['1','2']}))).props.restart).toBe(true);
  }finally{globalThis.fetch=original;}
 });
+
+test('server page restores URL sorting and conflict/invalid-input restarts preserve only a valid mode',async()=>{
+ const original=globalThis.fetch;const seen:string[]=[];
+ try{
+  globalThis.fetch=(async(url:RequestInfo|URL)=>{seen.push(String(url));return Response.json(groupExample());}) as typeof fetch;
+  for(const sort of ['recommended','price-asc','price-desc']){
+   const page=await Page(props('python',{sort}));expect(page.props.sort).toBe(sort);
+   expect(new URL(seen.at(-1)!).searchParams.get('sort')??'recommended').toBe(sort);
+  }
+  globalThis.fetch=(async()=>new Response('',{status:409})) as unknown as typeof fetch;
+  const conflict=await Page(props('python',{sort:'price-desc',offset:'40',judgmentId:crypto.randomUUID()}));expect(conflict.props).toMatchObject({sort:'price-desc',restart:true});
+  expect((await Page(props('python',{sort:'bad'}))).props).toMatchObject({sort:'recommended',restart:true});
+  expect((await Page(props('python',{sort:['price-asc','price-desc']}))).props).toMatchObject({sort:'recommended',restart:true});
+  globalThis.fetch=(async()=>new Response('',{status:503})) as unknown as typeof fetch;
+  expect((await Page(props('python',{sort:'price-asc'}))).props).toMatchObject({sort:'price-asc',restart:false});
+ }finally{globalThis.fetch=original;}
+});

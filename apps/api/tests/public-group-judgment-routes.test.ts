@@ -23,3 +23,16 @@ test('group list filters reach the repository and invalid list/detail filters fa
  expect(received).toEqual({q:'پایتون %_',category:'code',limit:12,offset:0});
  for(const q of ['?category=nope','?q=a&q=b','?q='+ 'a'.repeat(201),'?provider=example','/python?q=a','/python?category=code'])expect((await get(q)).status).toBe(422);
 });
+
+
+test('detail sort modes reach repository, preserve pins and reject malformed queries',async()=>{
+ let received:unknown;
+ const app=publicGroupJudgmentRoutes({list:async()=>({items:[],total:0,limit:12,offset:0}),detail:async(_slug,q)=>{received=q;if(q.judgmentId==='00000000-0000-0000-0000-000000000000')throw new CatalogError(409);return publicGroupDetailExample;}});
+ const get=(path:string)=>app.handle(new Request('http://localhost/api/v1/judged-groups'+path));
+ for(const sort of ['recommended','price-asc','price-desc']){
+  const r=await get('/python?sort='+sort);expect(r.status).toBe(200);expect(received).toMatchObject({sort,limit:20,offset:0});
+  expect((await r.json()).courses.items[0].course.price).toEqual(publicGroupDetailExample.courses.items[0]!.course.price);
+ }
+ for(const q of ['/python?sort=','/python?sort=bad','/python?sort=price-asc&sort=price-desc','?sort=recommended'])expect((await get(q)).status).toBe(422);
+ expect((await get('/python?sort=price-asc&judgmentId=00000000-0000-0000-0000-000000000000')).status).toBe(409);
+});

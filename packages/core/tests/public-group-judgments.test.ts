@@ -41,3 +41,12 @@ test('null individual images do not weaken assessed-course or cover contracts',(
  const covers=courses.items.map(({course})=>({courseId:course.id,title:course.title,thumbnail:null}));
  expect(isPublicJudgedGroupPage({items:[{...summary,covers}],total:1,limit:12,offset:0})).toBe(false);
 });
+
+
+test('detail sorting defaults and validates independently of list queries',()=>{
+ expect(parseGroupPageQuery(new URLSearchParams(),true).sort).toBe('recommended');
+ for(const sort of ['recommended','price-asc','price-desc'])expect(parseGroupPageQuery(new URLSearchParams({sort}),true).sort).toBe(sort);
+ for(const q of ['sort=','sort=unknown','sort=price-asc&sort=price-desc'])expect(()=>parseGroupPageQuery(new URLSearchParams(q),true)).toThrow();
+ expect(()=>parseGroupListQuery(new URLSearchParams('sort=recommended'))).toThrow();
+ expect(()=>parseGroupPageQuery(new URLSearchParams('sort=price-asc'))).toThrow();
+});

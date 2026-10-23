@@ -1,3 +1,4 @@
+import {prepareCourseQueries} from '../src/course-query-preparation';
 import {describe,test,expect} from 'bun:test';
 import {mkdtemp,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';import sharp from 'sharp';
 import {isolatedDatabase} from './helpers';import {migrate,readMigrations} from '../src/migrations';import {createCatalogRepository} from '../src/catalog';import {createIngestionRepository} from '../src/ingestion';import {createJudgmentRepository} from '../src/group-judgments';import {createPublicGroupJudgmentRepository} from '../src/public-group-judgments';import {createThumbnailService} from '../src/thumbnails';import {createAssetStore} from '../src/asset-store';import {createRasterProcessor} from '../src/raster';import {rich} from '../src/ingestion-examples';import {createApp} from '../src/app';import {isPublicJudgedGroupDetail,isPublicJudgedGroupPage} from '@dorob/core';
@@ -6,10 +7,10 @@ describe.skipIf(process.env.API_INTEGRATION!=='1')('public judged groups Postgre
  test('retained eligibility, selected order, paging, safe projection and HTTP compatibility',async()=>{
  const directory=await mkdtemp(join(tmpdir(),'dorob-judged-')),raster=createRasterProcessor();
  try{await isolatedDatabase(async sql=>{
-  await migrate(sql,await readMigrations());const c=createCatalogRepository(sql),i=createIngestionRepository(sql),j=createJudgmentRepository(sql);
+  await migrate(sql,await readMigrations());await prepareCourseQueries(sql);const c=createCatalogRepository(sql),i=createIngestionRepository(sql),j=createJudgmentRepository(sql);
   const store=createAssetStore({assetDirectory:join(directory,'assets'),stagingDirectory:join(directory,'stage')});const bytes=await sharp({create:{width:64,height:32,channels:3,background:'red'}}).png().toBuffer();const t=createThumbnailService(i,store,raster,async()=>bytes);await t.initialize();
   const p=createPublicGroupJudgmentRepository(sql,t);const sources=[];
-  for(let n=0;n<3;n++){const source=rich();source.providerCourseId=String(n);source.submissionId='source-'+n;sources.push(source);const s=(await i.ingest(source)).snapshot;await t.process(s.courseId,s.id);}
+  for(let n=0;n<3;n++){const source=rich();source.providerCourseId=String(n);source.submissionId='source-'+n;source.pricing.data=source.pricing.data!.filter(o=>o.type==='full').map(o=>({...o,amount:[200,50,100][n]!,sourcePrice:{...o.sourcePrice,amount:[2000,500,1000][n]!}}));sources.push(source);const s=(await i.ingest(source)).snapshot;await t.process(s.courseId,s.id);}
   const g=await c.createGroup({slug:'python',title:'پایتون',description:'شروع',categoryId:'code',targetLevel:'beginner',isPublished:false});for(let n=0;n<3;n++)await c.membership(g.id,'example:'+n,true);
   const content={schemaVersion:1 as const,hero:{title:'مسیر پایتون',subtitle:'شروع',description:'توضیح',topicLabel:'پایتون',levelSummary:'مقدماتی'},courses:[2,0,1].map((n)=>({courseId:'example:'+n,tags:n===2?['expensive' as const]:[],strengths:n===2?['تمرین']:[],weaknesses:[]}))};
   const submit=async()=> (await j.submit(g.id,{systemId:'test',submissionId:crypto.randomUUID(),inputRevision:(await j.context(g.id)).inputRevision,content})).judgment;
@@ -22,6 +23,12 @@ describe.skipIf(process.env.API_INTEGRATION!=='1')('public judged groups Postgre
   const before=JSON.stringify(await sql`SELECT * FROM course_group_judgments ORDER BY id`);const list=await p.list(q);expect(list.total).toBe(1);expect(isPublicJudgedGroupPage(list)).toBe(true);expect(list.items[0].providers).toHaveLength(1);expect(list.items[0].covers.map(c=>c.courseId)).toEqual(['example:2','example:0','example:1']);
   const detail=await p.detail('python',{limit:2,offset:0});expect(isPublicJudgedGroupDetail(detail)).toBe(true);expect(detail.courses.items.map(c=>c.course.id)).toEqual(['example:2','example:0']);expect(detail.courses.items[0].assessment.tags).toEqual(['expensive']);expect(detail.courses.items[1].assessment.weaknesses).toEqual([]);
   const second=await p.detail('python',{limit:2,offset:2,judgmentId:selectedId});expect(second.courses.items.map(c=>c.course.id)).toEqual(['example:1']);expect(isPublicJudgedGroupDetail(second)).toBe(true);
+  for(const sort of ['price-asc','price-desc'] as const){
+   const page1=await p.detail('python',{limit:2,offset:0,sort,judgmentId:selectedId});
+   const page2=await p.detail('python',{limit:2,offset:2,sort,judgmentId:selectedId});
+   expect([...page1.courses.items,...page2.courses.items].map(e=>e.course.id)).toEqual(sort==='price-asc'?['example:1','example:2','example:0']:['example:0','example:2','example:1']);
+  }
+  expect((await p.list(q)).items[0]!.covers.map(c=>c.courseId)).toEqual(['example:2','example:0','example:1']);
   const json=JSON.stringify(detail);for(const forbidden of ['inputManifest','submissionId','systemId','requestHash','sourceLocator','reviews','storageKey'])expect(json).not.toContain(forbidden);
   expect(JSON.stringify(await sql`SELECT * FROM course_group_judgments ORDER BY id`)).toBe(before);
   const newer=await submit();await expect(p.detail('python',{...q,judgmentId:accepted.id})).rejects.toMatchObject({status:409});expect((await p.detail('python',q)).judgmentId).toBe(newer.id);

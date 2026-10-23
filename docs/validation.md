@@ -1989,3 +1989,65 @@ Pre-commit refresh passes workspace lint/types, strict validation of all 24 main
 specs and staged whitespace checks. Previous production API/web/image builds and
 58 focused tests remain applicable; no application code changed since verification.
 Staged-file review excludes private assets, credentials and generated output.
+
+
+### Public comparison sorting — October 23, 2026
+
+- 28 focused tests pass: six shared query/schema tests, one price-comparator test,
+  four API route tests, four web transport tests, ten group UI tests, two server
+  page acceptance tests, and one isolated PostgreSQL/storage integration test.
+- The database integration verifies both price directions across page boundaries,
+  canonical discovery covers, retained facts and pinned conflicts. Its fixture now
+  calls the catalog preparation step required by the existing course-list API;
+  the initial run exposed that outdated fixture setup, which is corrected.
+- Root `bun run lint` and `bun run typecheck` pass. `bun run build` and
+  `bun run build:api` pass. No package installation or lockfile change was needed.
+- RTL detector passes on touched UI files with zero errors/warnings. Strict
+  OpenSpec validation and whitespace checks pass.
+- Browser verification on the running local app covers recommended/value order,
+  both price directions, page size one traversal with edition pins, reset to page
+  one on sort changes, reload and back/forward. The real displayed discounted
+  amounts reverse correctly (111,750 and 136,950 toman); no rank overlays appear.
+- Layout checks at 320, 390, 430 and 1280px show no horizontal page overflow.
+  Keyboard focus is visible, the final controls use Persian labels and existing
+  brand-blue/gold tokens, and the value choice has one uninterrupted activation
+  surface. Owner follow-ups removed the info icon and tooltip; those interactions
+  are no longer part of acceptance. The final label is «ارزش خرید».
+- Existing happy-dom Next Image layout and Link act warnings remain in the UI
+  harness; focused tests pass. The separate retained-comparison acceptance suite
+  was not enabled in the default invocation (one skipped test); this change's
+  PostgreSQL/storage integration ran successfully against an isolated schema.
+
+No commit, push, archive, production mutation or deployment was performed.
+
+Mobile dropdown follow-up: the group UI suite now has 11 passing tests, including
+all three dropdown values and navigation with offset reset, retained limit and
+judgment pin. Root lint, type checking and web production build pass again.
+RTL checks and strict OpenSpec validation pass. Browser checks at 320/390/430px
+show the full-width native select and no desktop buttons; at 1280px the original
+buttons return and the select is hidden. No horizontal overflow was observed.
+Changing the dropdown to price ascending updates the URL and actual course order.
+
+Custom mobile menu follow-up: the native control is replaced by a custom
+menu-button/radio-item interaction. The 11 group UI tests pass, now covering
+current-option focus, arrow/End movement, Escape focus restoration, outside
+pointer dismissal and pinned sorting navigation. Lint, type checking, web build,
+RTL and strict OpenSpec validation pass. Browser checks at 320/390/430px confirm
+menu bounds and no horizontal overflow; Escape closes and returns trigger focus.
+The value option and selected trigger use existing blue/gold styling and a
+sparkle icon, with no AI text label. Desktop controls remain unchanged.
+
+Hero slideshow correction: separated the canonical full-edition cover list from
+the sorted/paginated row list, updated the public detail contract/examples and
+fixture data, and removed sort/page-dependent gallery remounting. Per the owner's
+explicit request, no verification commands or browser checks were run for this
+correction; earlier passing results do not validate this follow-up.
+
+Archive/commit follow-up: all four planning artifacts and nine tracked tasks are
+complete. One modified and nine added requirements were synced to
+`public-group-judgments`, preserving the existing title, purpose and unrelated
+requirements. The change is archived at
+`openspec/changes/archive/2026-10-23-add-course-group-sorting/`. Final code tests and
+browser verification remain intentionally unrun after the slideshow correction
+at the owner's request; the earlier results above apply to the preceding version.
+The commit review checks the staged scope, whitespace and spec structure only.

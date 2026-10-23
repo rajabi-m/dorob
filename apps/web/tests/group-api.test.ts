@@ -27,3 +27,14 @@ test('detail transport retains judgment pin and rejects a different returned rev
  const other=crypto.randomUUID();
  expect((await client.detail(g.slug,{limit:g.courses.limit,offset:0,judgmentId:other})).ok).toBe(false);
 });
+
+
+test('detail boundary forwards sorting and rejects invalid or list sorting',async()=>{
+ const g=groupExample();let seen='';const client=createGroupClient({origin:'http://api.test',fetcher:async url=>{seen=url;return Response.json(g);}});
+ for(const sort of ['recommended','price-asc','price-desc']){
+  expect((await groupDetailHandler(new Request('http://web.test/?sort='+sort),'python',client)).status).toBe(200);
+  expect(new URL(seen).searchParams.get('sort')??'recommended').toBe(sort);
+ }
+ for(const q of ['sort=','sort=nope','sort=price-asc&sort=price-desc'])expect((await groupDetailHandler(new Request('http://web.test/?'+q),'python',client)).status).toBe(422);
+ expect((await groupListHandler(new Request('http://web.test/?sort=price-asc'),client)).status).toBe(422);
+});

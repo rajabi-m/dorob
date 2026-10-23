@@ -740,3 +740,24 @@ or unsupported API selections return 422.
 
 Example: `/api/v1/courses?q=Python&provider=roocket&priceStatus=free&duration=under-3h&limit=18&offset=0`.
 No scraping, inference, source refresh or catalogue writes occur during reads.
+
+
+### Public comparison sorting — October 23, 2026
+
+Detail `/api/v1/judged-groups/:slug` accepts optional `sort=recommended|price-asc|price-desc`.
+Omission preserves exact stored judge order. Empty, duplicate or unsupported sort
+values return 422; list routes still reject sort. For example,
+`/api/v1/judged-groups/python?sort=price-asc&limit=20&offset=0` orders the full retained
+edition before slicing. Displayed discounted/starting amounts are used, not original
+prices or refreshed facts. Free is zero. Known outright/free prices follow the
+requested direction; known subscriptions then follow in judge order, and unknown
+amounts are last in judge order in both modes. Equal comparable prices retain
+judge order. Monthly/yearly rates are not normalized. Judgment pins and existing
+409 replacement/withdrawal behavior apply unchanged. Response schemas and stored
+judgments do not change; discovery covers remain in judge order.
+
+Group detail also returns `covers` for every assessed member in canonical judge
+order (courseId, title, retained thumbnail). This complete list is independent of
+row sort/offset/limit and belongs to the same selected edition. Discovery summary
+covers remain limited to three. API/web consumers must deploy together because
+the strict detail boundary now requires this cover list.
