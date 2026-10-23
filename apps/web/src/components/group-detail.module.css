@@ -65,9 +65,9 @@
   .intro > div > p { font-size: 13px; }
   .listHeading { gap: 18px; }
   .listHeading h2 { font-size: 20px; }
-  .course { grid-template-columns: 110px minmax(0, 1fr); padding: 16px; gap: 16px 14px; }
-  .course .cover { grid-column: 1; grid-row: 1; align-self: start; }
-  .course .info { grid-column: 2; grid-row: 1; }
+  .course { grid-template-columns: minmax(0, 1fr); padding: 16px; gap: 16px 14px; }
+  .course .cover { grid-column: 1; grid-row: 1; align-self: start; inline-size: 100%; aspect-ratio: 16 / 9; }
+  .course .info { grid-column: 1; grid-row: 2; }
   .info h3 { font-size: 15px; }
   .provider { gap: 5px; font-size: 11px; }
   .rating { margin-inline-start: 0; padding-inline-start: 0; border: 0; }
@@ -75,14 +75,13 @@
   .metadata { gap: 6px 12px; }
   .tags { gap: 5px; }
   .tags > span { font-size: 9px; padding-inline: 5px; }
-  .course > .analysis { grid-column: 1 / -1; grid-row: 2; }
-  .course .offer { grid-column: 1 / -1; grid-row: 3; border-inline-start: 0; border-block-start: 1px solid var(--ds-border); padding-inline-start: 0; padding-block-start: 14px; flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: center; }
+  .course > .analysis { grid-column: 1 / -1; grid-row: 3; }
+  .course .offer { grid-column: 1 / -1; grid-row: 4; border-inline-start: 0; border-block-start: 1px solid var(--ds-border); padding-inline-start: 0; padding-block-start: 14px; flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: center; }
   .sourceLink { min-inline-size: 125px; }
-  .analysisGrid { gap: 8px; }
+  .analysisGrid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
 }
 @media (max-width: 420px) {
-  .course { grid-template-columns: 86px minmax(0, 1fr); padding: 12px; gap: 14px 10px; }
-  .analysisGrid { grid-template-columns: 1fr; }
+  .course { padding: 12px; gap: 14px 10px; }
   .course .offer { flex-wrap: wrap; }
   .footer { flex-direction: column; }
 }

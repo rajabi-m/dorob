@@ -2,6 +2,11 @@
 
 Phase 2 was closed by the owner on October 4, 2026. The six-course horizontally scrollable homepage shelf and dedicated `/courses` catalogue use the public course API; group cards and group destinations now use real published groups with retained judgments and exact presentation-ready evaluated snapshots. The selected Python layout is shared across categories, with source facts separate from generated content. The homepage hero uses a selected real group; design-system fixtures remain isolated. The dated design history below includes superseded fixture behavior and layouts; [validation](validation.md) records current checks.
 
+At widths up to 760px, comparison course rows use a full-width 16:9 cover above
+the course details. Strengths and weaknesses stack vertically, with strengths
+first, followed by the price and provider action. Wider layouts retain the
+side-by-side cover/details and assessment columns.
+
 ## Maintained frontend ownership — October 21, 2026
 
 The frontend refactor extracts shared brand, provider/category presentation,

@@ -1,5 +1,11 @@
 # Dorob | دورُب
 
+October 23, 2026 — Mobile comparison cards now place full-width 16:9 course
+covers above the details and stack weaknesses below strengths at widths up to
+760px. Desktop layouts are retained. Web lint, type checking, production build
+and the touched-file RTL audit pass; browser checks at 320px, 394px, 760px and
+1280px show no horizontal overflow. See [frontend behavior](docs/frontend.md).
+
 October 23, 2026 — `add-course-group-sorting` implements public comparison sorting:
 «ارزش خرید» preserves judge order; explicit low-to-high/high-to-low price controls
 sort the entire retained edition before pagination. URL state, judgment pins,
