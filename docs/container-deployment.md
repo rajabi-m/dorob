@@ -402,3 +402,23 @@ still require their evaluated assets; their queries are not optimized here.
 
 See [projection semantics and commands](course-query-preparation.md) and
 [measured validation](validation.md#course-query-optimization--october-22-2026).
+
+## Web build concurrency
+
+October 23: `experimental.cpus: 1` limits Next.js page-data/static generation
+workers. The Docker web-build command sets `TOKIO_WORKER_THREADS=1` to limit
+Tokio's runtime worker threads inside native build tooling. That environment
+setting applies only to the build command, not the deployed application.
+
+Fresh hosted builds previously selected 47 page-data workers and aborted with
+`OS can't spawn worker thread`. The reported successful earlier commit used a
+cached build. A fresh local run of that earlier commit with 47 workers exited
+137 under a 4 GiB memory limit; it did not reproduce the exact hosted panic.
+The hosted builder/server allocation is 0.25 CPU and 512 MB. Reduced concurrency
+does not guarantee that this allocation can build or run the combined services.
+Hosted retry remains necessary after publication.
+
+Validation: web lint, type checking and a production build with the Docker
+build-time environment pass with one page-data worker. The same one-worker
+Next.js/Tokio settings also passed the local Linux AMD64 Docker build stage
+during diagnosis; neither check reproduced the hosted 512 MB limit.

@@ -19,7 +19,7 @@ FROM dependencies AS build
 COPY apps ./apps
 COPY packages ./packages
 COPY scripts/container/package-api.mjs ./scripts/container/package-api.mjs
-RUN cd apps/web && NEXT_TELEMETRY_DISABLED=1 DOROB_API_URL=http://127.0.0.1:9 node node_modules/next/dist/bin/next build
+RUN cd apps/web && NEXT_TELEMETRY_DISABLED=1 TOKIO_WORKER_THREADS=1 DOROB_API_URL=http://127.0.0.1:9 node node_modules/next/dist/bin/next build
 RUN cd apps/api && bun build src/index.ts src/raster-worker.ts src/migrate.ts --target bun --external sharp --external swagger-ui-dist --outdir dist
 RUN node scripts/container/package-api.mjs /runtime-api
 RUN bun build packages/admin-auth/src/rotate.ts --target bun --outdir /runtime-auth

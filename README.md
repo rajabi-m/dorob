@@ -1,5 +1,12 @@
 # Dorob | دورُب
 
+October 23, 2026 — Reduce Next.js page-data build concurrency to one worker and
+set `TOKIO_WORKER_THREADS=1` for the Docker web-build command after fresh hosted
+builds exhausted threads with 47 page-data workers. Earlier cached success did
+not exercise the failing step. These are build-resource mitigations; hosted
+build/runtime capacity at 0.25 CPU and 512 MB remains unverified. See
+[build limits](docs/container-deployment.md#web-build-concurrency).
+
 October 22, 2026 — Public course and group cards now have matching animated
 skeletons for initial loading and error retries, including homepage shelves and
 the featured hero. Catalogue loading preserves search, URL-selected filters and

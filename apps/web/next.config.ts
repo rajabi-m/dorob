@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: resolve(import.meta.dirname, "../.."),
   experimental: {
+    // Hosted builders expose more CPUs than their process/memory budget supports.
+    cpus: 1,
     // Avoid socket-based PostCSS workers in restricted build environments.
     turbopackPluginRuntimeStrategy: "workerThreads",
   },
