@@ -1,5 +1,11 @@
 # Dorob | دورُب
 
+October 26, 2026 — Public page openings now log UTC time, IP and pathname to
+standard output. Visitor IPs come automatically from `X-Real-IP`, with
+`X-Forwarded-For` as fallback. No additional configuration is required. Deployment
+of this change remains pending. All four tasks are complete; the spec is synced
+and the change is [archived](openspec/changes/archive/2026-10-26-add-visitor-logs/).
+
 October 23, 2026 — Mobile comparison cards now place full-width 16:9 course
 covers above the details and stack weaknesses below strengths at widths up to
 760px. Desktop layouts are retained. Web lint, type checking, production build
@@ -57,7 +63,7 @@ and deployment remain separate operations.
 
 نام فارسی پروژه «دورُب» است؛ ترکیبی از نام‌های «دوره» و «ترب».
 
-A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 includes an independent local API/PostgreSQL foundation and manual curated catalog APIs. The dedicated course catalogue and bounded homepage shelf read the local public catalog; group cards and destinations use retained comparison editions and their evaluated provider facts. The homepage hero shelf also uses a selected real group; design-system fixtures remain separate. Production deployment remains pending.
+A Persian-only RTL course discovery and comparison product. Phase 1's design system is accepted; **phase 2 is complete for now**, by owner decision on October 4, 2026. Phase 3 includes an independent local API/PostgreSQL foundation and manual curated catalog APIs. The dedicated course catalogue and bounded homepage shelf read the local public catalog; group cards and destinations use retained comparison editions and their evaluated provider facts. The homepage hero shelf also uses a selected real group; design-system fixtures remain separate. The owner reports the product is running on Hamravesh; new changes require a separate deployment.
 
 Start with the [documentation hub](docs/index.md), [project plan](Plan.md), and [contributor instructions](AGENTS.md).
 

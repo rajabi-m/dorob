@@ -1,5 +1,21 @@
 # Validation and known limitations
 
+## Visitor logs — October 26, 2026
+
+Seven visitor tests (65 assertions) cover standard ingress IP extraction without
+configuration, proxy chains, IPv6, fallback/invalid headers, background filtering,
+admin protection and bounded output. Three existing admin-auth tests also pass
+in isolation. The logger reads `X-Real-IP` first, then `X-Forwarded-For`; it uses
+`unknown` only when neither supplies a valid address. No hosting setting is needed.
+
+Web lint, type checking, production build and strict OpenSpec validation pass.
+The Linux AMD64 single-container image `dorob:visitor-logs` also builds and runs
+healthy as `dorob-visitor-review` on port 3100 using its own fresh data volume.
+Actual image checks verify three public visit lines, forwarded-chain and IPv6
+Real-IP extraction without settings, background exclusion and admin protection.
+A direct local visit logs Docker's bridge IP. Hamravesh deployment is unchanged;
+these are informational arrivals, not proof of identity or full navigation history.
+
 ## Dedicated course catalogue — October 21, 2026
 
 `add-course-catalog-page` implements group-first homepage search, a bounded

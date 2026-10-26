@@ -1,5 +1,14 @@
 # Dorob — Project Plan
 
+October 26, 2026 — `add-visitor-logs` adds public document-arrival logs with UTC
+time, pathname and automatic standard ingress IP extraction. No custom header
+setting, analytics service or storage is needed. Background/private traffic and
+queries/credentials are excluded; admin protection is preserved. Deployment
+remains separate. See [validation](docs/validation.md#visitor-logs--october-26-2026).
+All four tasks are complete; the four requirements are synced to the main
+`visitor-logging` spec and the change is [archived](openspec/changes/archive/2026-10-26-add-visitor-logs/).
+Web lint/types/build, ten focused tests and single-image runtime checks pass.
+
 October 23, 2026 — Owner-approved mobile comparison refinement uses full-width
 16:9 covers above course details and stacks strengths before weaknesses through
 760px. Desktop layouts are retained. Web lint, type checking, production build
